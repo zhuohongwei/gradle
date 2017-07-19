@@ -22,6 +22,7 @@ import org.gradle.api.file.FileCopyDetails
 import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.artifacts.ivyservice.projectmodule.ProjectPublicationRegistry
 import org.gradle.api.internal.plugins.PluginDescriptor
+import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.internal.logging.ConfigureLogging
 import org.gradle.internal.logging.events.LogEvent
@@ -156,21 +157,21 @@ class JavaGradlePluginPluginTest extends AbstractProjectBuilderSpec {
         null    | 'x.y.z'   | null
     }
 
-    def "apply adds java plugin"() {
+    def "apply adds java-library plugin"() {
         when:
         project.pluginManager.apply(JavaGradlePluginPlugin)
 
         then:
-        project.plugins.findPlugin(JavaPlugin)
+        project.plugins.findPlugin(JavaLibraryPlugin)
     }
 
-    def "apply adds gradleApi dependency to compile"() {
+    def "apply adds gradleApi dependency to api"() {
         when:
         project.pluginManager.apply(JavaGradlePluginPlugin)
 
         then:
         project.configurations
-            .getByName(JavaGradlePluginPlugin.COMPILE_CONFIGURATION)
+            .getByName(JavaGradlePluginPlugin.API_CONFIGURATION)
             .dependencies.find {
             it.files == project.dependencies.gradleApi().files
         }
@@ -202,13 +203,19 @@ class JavaGradlePluginPluginTest extends AbstractProjectBuilderSpec {
                 a { id = "a.plugin" }
                 b { id = "b.plugin" }
             }
-        }
 
         then:
         def publications = project.services.get(ProjectPublicationRegistry).getPublications(PluginPublication, project.identityPath)
         publications.size() == 2
         publications[0].pluginId == DefaultPluginId.of("a.plugin")
         publications[1].pluginId == DefaultPluginId.of("b.plugin")
+    }
+
+    private Jar mockJar(project) {
+        Jar mockJar = Mock(Jar) {
+            _ * getName() >> { JavaGradlePluginPlugin.JAR_TASK }
+            _ * getConventionMapping() >> { Stub(ConventionMapping) }
+        }
     }
 
     static class ResettableOutputEventListener implements OutputEventListener {
