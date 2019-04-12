@@ -146,20 +146,20 @@ public class Main {
     private static Experiment runExperiment(String version) {
         doWarmUp(version);
 
-        String pid = readFile(getPidFile(version));
+//        String pid = readFile(getPidFile(version));
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", pid), pid);
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble"));
 
         stopDaemon(version);
 
         return new Experiment(version, results);
     }
 
-    private static List<ExecutionResult> doRun(String version, List<String> args, String daemonPid) {
-        return IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args, daemonPid)).collect(Collectors.toList());
+    private static List<ExecutionResult> doRun(String version, List<String> args) {
+        return IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args, String daemonPid) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
         File workingDir = getExpProject(version);
 
         long t0 = System.currentTimeMillis();
@@ -196,7 +196,7 @@ public class Main {
         );
     }
 
-    private static List<String> getExpArgs(String version, String task, String pid) {
+    private static List<String> getExpArgs(String version, String task) {
 //        List<String> args = new ArrayList<>(Arrays.asList("perf", "stat", "-p", pid, "--"));
 //        args.addAll(getWarmupExpArgs(version, task));
 //        return args;
