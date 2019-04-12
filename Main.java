@@ -35,6 +35,7 @@ public class Main {
     private static String flameGraphDir = "/root/FlameGraph";
     private static String cpuTempCmd = "/root/msr-cloud-tools/cputemp";
     private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    private static String template = "largeMonolithicJavaProject";
 
     static {
         gradleBinary.put("baseline1",
@@ -134,7 +135,7 @@ public class Main {
         deleteDirectory(getExpProject(version));
 
         run(projectDir, "cp", "-r",
-            projectDirPath + "/subprojects/performance/build/largeJavaMultiProjectKotlinDsl",
+            projectDirPath + "/subprojects/performance/build/" + template,
             getExpProject(version).getAbsolutePath());
     }
 
@@ -147,7 +148,7 @@ public class Main {
 
         String pid = readFile(getPidFile(version));
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "help", pid), pid);
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", pid), pid);
 
         stopDaemon(version);
 
@@ -196,9 +197,10 @@ public class Main {
     }
 
     private static List<String> getExpArgs(String version, String task, String pid) {
-        List<String> args = new ArrayList<>(Arrays.asList("perf", "stat", "-p", pid, "--"));
-        args.addAll(getWarmupExpArgs(version, task));
-        return args;
+//        List<String> args = new ArrayList<>(Arrays.asList("perf", "stat", "-p", pid, "--"));
+//        args.addAll(getWarmupExpArgs(version, task));
+//        return args;
+        return getWarmupExpArgs(version, task);
     }
 
     private static File getGradleUserHome(String version) {
@@ -217,17 +219,17 @@ public class Main {
         File workingDir = getExpProject(version);
         int warmups = Integer.parseInt(System.getProperty("warmUp"));
 
-        List<String> args = new ArrayList<>(getWarmupExpArgs(version, "help"));
-        args.add("--init-script");
-        args.add(projectDirPath + "/pid-instrumentation.gradle");
+        List<String> args = new ArrayList<>(getWarmupExpArgs(version, "assemble"));
+//        args.add("--init-script");
+//        args.add(projectDirPath + "/pid-instrumentation.gradle");
 
         Map<String, String> env = new HashMap<>();
-        env.put("PID_FILE_PATH", getPidFile(version).getAbsolutePath());
+//        env.put("PID_FILE_PATH", getPidFile(version).getAbsolutePath());
 
         run(workingDir, env, args);
 
         IntStream.range(1, warmups).forEach(i -> {
-            run(workingDir, getWarmupExpArgs(version, "help"));
+            run(workingDir, getWarmupExpArgs(version, "assemble"));
         });
     }
 
