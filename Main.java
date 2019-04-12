@@ -166,7 +166,7 @@ public class Main {
         String output = runGetStderr(workingDir, args);
         long time = System.currentTimeMillis() - t0;
 
-        String cpuTemp = runGetStdout(workingDir, Arrays.asList(cpuTempCmd));
+        String cpuTemp = "";//runGetStdout(workingDir, Arrays.asList(cpuTempCmd));
 
         return new ExecutionResult(output + "\n" + cpuTemp, time);
     }
