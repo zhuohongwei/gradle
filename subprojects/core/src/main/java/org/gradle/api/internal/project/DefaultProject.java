@@ -78,6 +78,7 @@ import org.gradle.configuration.ScriptPluginFactory;
 import org.gradle.configuration.internal.ListenerBuildOperationDecorator;
 import org.gradle.configuration.project.ProjectConfigurationActionContainer;
 import org.gradle.configuration.project.ProjectEvaluator;
+import org.gradle.deployment.DeploymentSpecRegistry;
 import org.gradle.groovy.scripts.ScriptSource;
 import org.gradle.internal.Actions;
 import org.gradle.internal.Factories;
@@ -1451,5 +1452,15 @@ public class DefaultProject extends AbstractPluginAware implements ProjectIntern
     @Override
     public ProjectState getMutationState() {
         return services.get(ProjectStateRegistry.class).stateFor(this);
+    }
+
+    @Override
+    public DeploymentSpecRegistry getDeployments() {
+        return services.get(DeploymentSpecRegistry.class);
+    }
+
+    @Override
+    public void deployments(Action<? super DeploymentSpecRegistry> configurationAction) {
+         configurationAction.execute(getDeployments());
     }
 }

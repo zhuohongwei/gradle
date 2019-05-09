@@ -16,6 +16,7 @@
 
 package org.gradle.deployment.internal;
 
+import org.gradle.deployment.DeploymentHandle;
 import org.gradle.initialization.ContinuousExecutionGate;
 import org.gradle.internal.concurrent.Stoppable;
 

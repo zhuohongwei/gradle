@@ -16,8 +16,8 @@
 
 package org.gradle.test.fixtures
 
-import org.gradle.deployment.internal.Deployment
-import org.gradle.deployment.internal.DeploymentHandle
+import org.gradle.deployment.Deployment
+import org.gradle.deployment.DeploymentHandle
 import org.gradle.deployment.internal.DeploymentRegistry
 import org.gradle.test.fixtures.file.TestFile
 

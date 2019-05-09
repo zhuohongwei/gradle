@@ -19,6 +19,7 @@ package org.gradle.internal.service.scopes;
 import org.apache.tools.ant.DirectoryScanner;
 import org.gradle.StartParameter;
 import org.gradle.api.Action;
+import org.gradle.api.internal.CollectionCallbackActionDecorator;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.internal.attributes.DefaultImmutableAttributesFactory;
 import org.gradle.api.internal.cache.StringInterner;
@@ -44,6 +45,8 @@ import org.gradle.cache.internal.CleanupActionFactory;
 import org.gradle.cache.internal.InMemoryCacheDecoratorFactory;
 import org.gradle.cache.internal.VersionStrategy;
 import org.gradle.deployment.internal.DefaultDeploymentRegistry;
+import org.gradle.deployment.internal.DefaultDeploymentSpecRegistry;
+import org.gradle.deployment.DeploymentSpecRegistry;
 import org.gradle.groovy.scripts.internal.DefaultScriptSourceHasher;
 import org.gradle.groovy.scripts.internal.ScriptSourceHasher;
 import org.gradle.initialization.BuildCancellationToken;
@@ -136,6 +139,10 @@ public class BuildSessionScopeServices extends DefaultServiceRegistry {
 
     DefaultDeploymentRegistry createDeploymentRegistry(PendingChangesManager pendingChangesManager, BuildOperationExecutor buildOperationExecutor, ObjectFactory objectFactory) {
         return new DefaultDeploymentRegistry(pendingChangesManager, buildOperationExecutor, objectFactory);
+    }
+
+    DeploymentSpecRegistry createDeploymentSpecRegistry(Instantiator instantiator, CollectionCallbackActionDecorator collectionCallbackActionDecorator) {
+        return new DefaultDeploymentSpecRegistry(instantiator, collectionCallbackActionDecorator);
     }
 
     ListenerManager createListenerManager(ListenerManager parent) {

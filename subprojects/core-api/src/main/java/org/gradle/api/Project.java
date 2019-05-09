@@ -44,6 +44,7 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.resources.ResourceHandler;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.WorkResult;
+import org.gradle.deployment.DeploymentSpecRegistry;
 import org.gradle.internal.HasInternalProtocol;
 import org.gradle.normalization.InputNormalizationHandler;
 import org.gradle.process.ExecResult;
@@ -1752,4 +1753,13 @@ public interface Project extends Comparable<Project>, ExtensionAware, PluginAwar
      */
     @Incubating
     DependencyLockingHandler getDependencyLocking();
+
+    /**
+     * Provides access tot the deployment spec registry
+     *
+     * @return the deployment spec registry
+     */
+    DeploymentSpecRegistry getDeployments();
+
+    void deployments(Action<? super DeploymentSpecRegistry> configurationAction);
 }

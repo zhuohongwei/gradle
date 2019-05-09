@@ -16,6 +16,9 @@
 
 package org.gradle.deployment.internal;
 
+import org.gradle.deployment.Deployment;
+import org.gradle.deployment.DeploymentHandle;
+
 import javax.annotation.concurrent.ThreadSafe;
 
 import javax.annotation.Nullable;
