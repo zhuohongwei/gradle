@@ -59,6 +59,7 @@ class DeploymentSpecRegistryIntegrationTest extends AbstractIntegrationSpec {
                     def testDeployment = services.get(DeploymentRegistry).get("test", TestDeploymentHandle)
                     assert testDeployment != null
                     assert testDeployment.running
+                    assert testDeployment.starts == 1
                 }
             }
             
@@ -68,6 +69,7 @@ class DeploymentSpecRegistryIntegrationTest extends AbstractIntegrationSpec {
                     def testDeployment = services.get(DeploymentRegistry).get("test", TestDeploymentHandle)
                     assert testDeployment != null
                     assert testDeployment.running
+                    assert testDeployment.starts == 1
                 }
             }
 
@@ -78,31 +80,121 @@ class DeploymentSpecRegistryIntegrationTest extends AbstractIntegrationSpec {
 
         expect:
         succeeds("assertDeployment")
+
+        and:
+        result.assertHasPostBuildOutput("Stopping 'bar' service")
+    }
+
+    def "can configure the deployment state on startup"() {
+        buildFile << """
+            ${testDeploymentImpl}
+
+            import org.gradle.deployment.internal.DeploymentRegistry
+
+            deployments {
+                test(TestDeploymentSpec) {
+                    foo = "bar"
+                }
+            }
+
+            task predecessor {
+                doLast {
+                    def testDeployment = services.get(DeploymentRegistry).get("test", TestDeploymentHandle)
+                    assert testDeployment == null
+                }
+            }
+
+            task assertDeployment {
+                dependsOn predecessor
+                requires "test"
+                doLast {
+                    def testDeployment = services.get(DeploymentRegistry).get("test", TestDeploymentHandle)
+                    assert testDeployment.deploymentState.port == 1234
+                }
+            }
+        """
+
+        expect:
+        succeeds("assertDeployment")
+    }
+
+    def "can register a task to use multiple deployments"() {
+        buildFile << """
+            ${testDeploymentImpl}
+
+            import org.gradle.deployment.internal.DeploymentRegistry
+
+            deployments {
+                test1(TestDeploymentSpec) {
+                    foo = "bar"
+                }
+                test2(TestDeploymentSpec) {
+                    foo = "baz"
+                }
+            }
+            
+            task assertDeployment {
+                requires "test1"
+                requires "test2"
+                doLast {
+                    def testDeployment1 = services.get(DeploymentRegistry).get("test1", TestDeploymentHandle)
+                    assert testDeployment1 != null
+                    assert testDeployment1.running
+                    assert testDeployment1.starts == 1
+
+                    def testDeployment2 = services.get(DeploymentRegistry).get("test2", TestDeploymentHandle)
+                    assert testDeployment2 != null
+                    assert testDeployment2.running
+                    assert testDeployment2.starts == 1
+                }
+            }          
+        """
+
+        expect:
+        succeeds("assertDeployment")
+
+        and:
+        result.assertHasPostBuildOutput("Stopping 'bar' service")
+        result.assertHasPostBuildOutput("Stopping 'baz' service")
     }
 
     def getTestDeploymentImpl() {
         return """
             import org.gradle.deployment.*
+            import javax.inject.Inject
             
             deployments.registerBinding(TestDeploymentSpec.class, DefaultTestDeploymentSpec.class)
             
-            class TestDeploymentState { }
+            class TestDeploymentState { 
+                int port
+            }
             
             class TestDeploymentHandle implements DeploymentHandle<TestDeploymentState> {
                 boolean running
+                int starts = 0
+                TestDeploymentState state = new TestDeploymentState()
+                String foo
+                
+                @Inject
+                TestDeploymentHandle(String foo) {
+                    this.foo = foo
+                }
                 
                 boolean isRunning() { return running }
 
                 void start(Deployment deployment) { 
-                    println "Starting service..."
+                    println "Starting '\$foo' service..."
+                    starts++
+                    state.port = 1234
                     running = true
                 }
             
                 void stop() { 
+                    println "Stopping '\$foo' service..."
                     running = false
                 }
             
-                TestDeploymentState getDeploymentState() { return new TestDeploymentState() }
+                TestDeploymentState getDeploymentState() { return state }
             } 
             
             interface TestDeploymentSpec extends DeploymentSpec<TestDeploymentHandle> {
@@ -125,7 +217,7 @@ class DeploymentSpecRegistryIntegrationTest extends AbstractIntegrationSpec {
                 }
                 
                 Object[] getConstructorArgs() {
-                    return [] as Object[]
+                    return [foo] as Object[]
                 }
             }
         """
