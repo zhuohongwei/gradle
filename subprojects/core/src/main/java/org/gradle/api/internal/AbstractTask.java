@@ -19,6 +19,7 @@ package org.gradle.api.internal;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import groovy.lang.Closure;
 import groovy.lang.MissingPropertyException;
 import groovy.util.ObservableList;
@@ -134,6 +135,8 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
     private final TaskDestroyables taskDestroyables;
     private final TaskLocalStateInternal taskLocalState;
     private LoggingManagerInternal loggingManager;
+
+    private final List<String> requiredDeployments = Lists.newArrayList();
 
     private String toStringValue;
 
@@ -906,5 +909,15 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
     @Override
     public Property<Duration> getTimeout() {
         return timeout;
+    }
+
+    @Override
+    public void requires(String deploymentSpec) {
+        requiredDeployments.add(deploymentSpec);
+    }
+
+    @Override
+    public List<String> getRequiredDeployments() {
+        return requiredDeployments;
     }
 }

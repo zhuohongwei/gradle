@@ -24,7 +24,7 @@ import org.gradle.process.internal.JavaExecHandleBuilder;
 
 import javax.inject.Inject;
 
-public class JavaApplicationHandle implements DeploymentHandle {
+public class JavaApplicationHandle implements DeploymentHandle<String> {
     private final JavaExecHandleBuilder builder;
     private ExecHandle handle;
 
@@ -46,5 +46,10 @@ public class JavaApplicationHandle implements DeploymentHandle {
     @Override
     public void stop() {
         handle.abort();
+    }
+
+    @Override
+    public String getDeploymentState() {
+        return null;
     }
 }

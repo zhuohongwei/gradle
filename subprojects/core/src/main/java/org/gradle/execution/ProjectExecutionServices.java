@@ -34,6 +34,7 @@ import org.gradle.api.internal.tasks.execution.DefaultTaskFingerprinter;
 import org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter;
 import org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter;
 import org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter;
+import org.gradle.api.internal.tasks.execution.RequiresDeploymentTaskExecuter;
 import org.gradle.api.internal.tasks.execution.ResolveAfterPreviousExecutionStateTaskExecuter;
 import org.gradle.api.internal.tasks.execution.ResolveBeforeExecutionOutputsTaskExecuter;
 import org.gradle.api.internal.tasks.execution.ResolveBeforeExecutionStateTaskExecuter;
@@ -47,6 +48,7 @@ import org.gradle.api.internal.tasks.execution.TaskFingerprinter;
 import org.gradle.api.internal.tasks.execution.ValidatingTaskExecuter;
 import org.gradle.api.internal.tasks.properties.PropertyWalker;
 import org.gradle.caching.internal.controller.BuildCacheController;
+import org.gradle.deployment.internal.DeploymentRegistry;
 import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
 import org.gradle.internal.classloader.ClassLoaderHierarchyHasher;
 import org.gradle.internal.cleanup.BuildOutputCleanupRegistry;
@@ -113,7 +115,8 @@ public class ProjectExecutionServices extends DefaultServiceRegistry {
                                     TaskExecutionListener taskExecutionListener,
                                     TaskCacheabilityResolver taskCacheabilityResolver,
                                     WorkExecutor<IncrementalContext, CachingResult> workExecutor,
-                                    ReservedFileSystemLocationRegistry reservedFileSystemLocationRegistry
+                                    ReservedFileSystemLocationRegistry reservedFileSystemLocationRegistry,
+                                    DeploymentRegistry deploymentRegistry
     ) {
 
         boolean buildCacheEnabled = buildCacheController.isEnabled();
@@ -130,6 +133,7 @@ public class ProjectExecutionServices extends DefaultServiceRegistry {
             taskCacheabilityResolver,
             workExecutor
         );
+        executer = new RequiresDeploymentTaskExecuter(executer, deploymentRegistry);
         executer = new ResolveBeforeExecutionStateTaskExecuter(classLoaderHierarchyHasher, valueSnapshotter, taskFingerprinter, executer);
         executer = new ValidatingTaskExecuter(executer, reservedFileSystemLocationRegistry);
         executer = new SkipEmptySourceFilesTaskExecuter(inputsListener, executionHistoryStore, cleanupRegistry, outputChangeListener, executer);

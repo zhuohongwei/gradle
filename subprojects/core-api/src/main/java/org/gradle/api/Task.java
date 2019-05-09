@@ -749,4 +749,6 @@ public interface Task extends Comparable<Task>, ExtensionAware {
     @Optional
     @Incubating
     Property<Duration> getTimeout();
+
+    void requires(String deploymentSpec);
 }

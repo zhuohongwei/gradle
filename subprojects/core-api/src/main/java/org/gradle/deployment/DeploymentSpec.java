@@ -16,7 +16,9 @@
 
 package org.gradle.deployment;
 
-public interface DeploymentSpec<T extends DeploymentHandle> {
+import org.gradle.api.Named;
+
+public interface DeploymentSpec<T extends DeploymentHandle> extends Named {
     Class<T> getDeploymentHandleClass();
     Object[] getConstructorArgs();
 }
