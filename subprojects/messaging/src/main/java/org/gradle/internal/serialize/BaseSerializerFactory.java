@@ -237,11 +237,13 @@ public class BaseSerializerFactory {
 
     private static class ThrowableSerializer extends AbstractSerializer<Throwable> {
         public Throwable read(Decoder decoder) throws Exception {
-            return (Throwable) Message.receive(decoder.getInputStream(), getClass().getClassLoader());
+            //return (Throwable) Message.receive(decoder.getInputStream(), getClass().getClassLoader());
+            return new RuntimeException(decoder.readString());
         }
 
         public void write(Encoder encoder, Throwable value) throws Exception {
-            Message.send(value, encoder.getOutputStream());
+            encoder.writeString(value.getMessage());
+            //Message.send(value, encoder.getOutputStream());
         }
     }
 }

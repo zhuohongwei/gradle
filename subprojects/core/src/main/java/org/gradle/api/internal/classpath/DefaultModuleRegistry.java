@@ -85,7 +85,8 @@ public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore
             builder.addAll(gradleInstallation.getLibDirs());
         }
         builder.addAll(classpath);
-        return builder.build();
+        ImmutableList<File> build = builder.build();
+        return build;
     }
 
     @Override
@@ -312,7 +313,8 @@ public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore
         Pattern pattern = Pattern.compile(Pattern.quote(name) + "-\\d.+\\.jar");
         if (gradleInstallation != null) {
             for (File libDir : gradleInstallation.getLibDirs()) {
-                for (File file : libDir.listFiles()) {
+                File[] files = libDir.listFiles();
+                for (File file : files) {
                     if (pattern.matcher(file.getName()).matches()) {
                         return file;
                     }

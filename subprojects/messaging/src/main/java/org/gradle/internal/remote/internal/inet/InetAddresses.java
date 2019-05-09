@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -78,6 +79,11 @@ class InetAddresses {
             logger.debug("Error while querying interface {} for IP addresses", networkInterface, e);
         } catch (Throwable e) {
             //throw new RuntimeException(String.format("Could not determine the IP addresses for network interface %s", networkInterface.getName()), e);
+            try {
+                loopback.add(InetAddress.getByName("localhost"));
+            } catch (UnknownHostException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 

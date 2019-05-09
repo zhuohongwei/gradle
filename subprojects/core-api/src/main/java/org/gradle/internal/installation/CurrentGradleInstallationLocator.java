@@ -21,7 +21,6 @@ import org.gradle.internal.classloader.ClasspathUtil;
 import java.io.File;
 
 abstract class CurrentGradleInstallationLocator {
-
     private static final String BEACON_CLASS_NAME = "org.gradle.internal.installation.beacon.InstallationBeacon";
 
     private CurrentGradleInstallationLocator() {
@@ -43,7 +42,9 @@ abstract class CurrentGradleInstallationLocator {
 
     static CurrentGradleInstallation locateViaClass(Class<?> clazz) {
         if (true) {
-            return new CurrentGradleInstallation(new GradleInstallation(new File(".")));
+            File absoluteFile = null;
+            absoluteFile = new File("/home/cchampeau/DEV/gradle-source-build");
+            return new CurrentGradleInstallation(new GradleInstallation(absoluteFile));
         }
         File dir = null;
         try {

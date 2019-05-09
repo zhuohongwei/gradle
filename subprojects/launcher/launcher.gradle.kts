@@ -106,7 +106,7 @@ testFilesCleanup {
 graal {
     mainClass("org.gradle.launcher.GradleMain")
     outputName("launcher-native")
-    graalVersion("1.0.0-rc13")
+    graalVersion("1.0.0-rc16")
     option("--report-unsupported-elements-at-runtime")
     option("--allow-incomplete-classpath")
     option("-H:ReflectionConfigurationFiles=${file("graal-reflect.json")}")

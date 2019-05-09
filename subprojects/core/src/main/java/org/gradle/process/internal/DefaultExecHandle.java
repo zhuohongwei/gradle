@@ -18,6 +18,7 @@ package org.gradle.process.internal;
 
 import com.google.common.base.Joiner;
 import net.rubygrapefruit.platform.ProcessLauncher;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.initialization.BuildCancellationToken;
@@ -30,6 +31,9 @@ import org.gradle.process.internal.shutdown.ShutdownHooks;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -176,12 +180,14 @@ public class DefaultExecHandle implements ExecHandle, ProcessSettings {
     }
 
     private void setState(ExecHandleState state) {
+        LOGGER.debug("Trying to acquire lock to switch to state {}", state);
         lock.lock();
         try {
             LOGGER.debug("Changing state to: {}", state);
             this.state = state;
             this.stateChanged.signalAll();
         } finally {
+            LOGGER.debug("Releasing lock after switch to state {}", state);
             lock.unlock();
         }
     }
@@ -294,12 +300,21 @@ public class DefaultExecHandle implements ExecHandle, ProcessSettings {
     }
 
     public ExecResult waitForFinish() {
+        LOGGER.debug("Acquiring lock for waitForFinish");
         lock.lock();
         try {
+            LOGGER.debug("Acquired lock for waitForFinish");
             while (!state.isTerminal()) {
                 try {
+                    LOGGER.debug("Waiting... current state is {}", state);
                     stateChanged.await();
+//                    stateChanged.await(1, TimeUnit.SECONDS);
+//                    logOutput("error", execHandleRunner.process.getErrorStream());
+//                    logOutput("output", execHandleRunner.process.getInputStream());
+//                    LOGGER.debug("Process isAlive: {}", execHandleRunner.process.isAlive());
+//                    LOGGER.debug("Process info: {}", execHandleRunner.process.info());
                 } catch (InterruptedException e) {
+                    LOGGER.debug("Oops", e);
                     execHandleRunner.abortProcess();
                     throw UncheckedException.throwAsUncheckedException(e);
                 }
@@ -316,6 +331,12 @@ public class DefaultExecHandle implements ExecHandle, ProcessSettings {
         return result();
     }
 
+    private void logOutput(String output, InputStream errorStream) throws IOException {
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(errorStream, writer);
+        LOGGER.debug("{} stream : {}", output, writer);
+    }
+
     private ExecResult result() {
         lock.lock();
         try {
@@ -330,6 +351,7 @@ public class DefaultExecHandle implements ExecHandle, ProcessSettings {
     }
 
     void started() {
+        LOGGER.debug("Calling started");
         ShutdownHooks.addShutdownHook(shutdownHookAction);
         buildCancellationToken.addCallback(shutdownHookAction);
         setState(ExecHandleState.STARTED);

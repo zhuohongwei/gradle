@@ -33,7 +33,7 @@ public class ExecHandleRunner implements Runnable {
     private final ProcessLauncher processLauncher;
     private final Executor executor;
 
-    private Process process;
+    public Process process;
     private boolean aborted;
     private final StreamsHandler streamsHandler;
 
@@ -95,7 +95,9 @@ public class ExecHandleRunner implements Runnable {
             }
             ProcessBuilder processBuilder = processBuilderFactory.createProcessBuilder(execHandle);
             Process process = processLauncher.start(processBuilder);
+            LOGGER.debug("Connecting streams {}", process);
             streamsHandler.connectStreams(process, execHandle.getDisplayName(), executor);
+            LOGGER.debug("Streams connected {}", process);
             this.process = process;
         } finally {
             lock.unlock();

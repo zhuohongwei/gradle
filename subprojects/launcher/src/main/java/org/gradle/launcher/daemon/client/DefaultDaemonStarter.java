@@ -167,6 +167,8 @@ public class DefaultDaemonStarter implements DaemonStarter {
                 LOGGER.debug("Gradle daemon process is starting. Waiting for the daemon to detach...");
                 handle.waitForFinish();
                 LOGGER.debug("Gradle daemon process is now detached.");
+            } catch (Exception ex) {
+                LOGGER.debug("Process error", ex);
             } finally {
                 CompositeStoppable.stoppable(execActionFactory).stop();
             }
