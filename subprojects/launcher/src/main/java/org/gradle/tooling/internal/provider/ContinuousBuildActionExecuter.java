@@ -99,16 +99,16 @@ public class ContinuousBuildActionExecuter implements BuildActionExecuter<BuildA
 
     private void waitForDeployments(BuildAction action, BuildRequestContext requestContext, final BuildActionParameters actionParameters, ServiceRegistry buildSessionScopeServices, CancellableOperationManager cancellableOperationManager) {
         final DeploymentRegistryInternal deploymentRegistry = buildSessionScopeServices.get(DeploymentRegistryInternal.class);
-        if (!deploymentRegistry.getRunningDeployments().isEmpty()) {
-            // Deployments are considered outOfDate until initial execution with file watching
-            for (Deployment deployment : deploymentRegistry.getRunningDeployments()) {
-                ((DeploymentInternal) deployment).outOfDate();
-            }
-            logger.println().println("Reloadable deployment detected. Entering continuous build.");
-            resetBuildStartedTime(buildSessionScopeServices);
-            ContinuousExecutionGate deploymentRequestExecutionGate = deploymentRegistry.getExecutionGate();
-            executeMultipleBuilds(action, requestContext, actionParameters, buildSessionScopeServices, cancellableOperationManager, deploymentRequestExecutionGate);
-        }
+//        if (!deploymentRegistry.getRunningDeployments().isEmpty()) {
+//            // Deployments are considered outOfDate until initial execution with file watching
+//            for (Deployment deployment : deploymentRegistry.getRunningDeployments()) {
+//                ((DeploymentInternal) deployment).outOfDate();
+//            }
+//            logger.println().println("Reloadable deployment detected. Entering continuous build.");
+//            resetBuildStartedTime(buildSessionScopeServices);
+//            ContinuousExecutionGate deploymentRequestExecutionGate = deploymentRegistry.getExecutionGate();
+//            executeMultipleBuilds(action, requestContext, actionParameters, buildSessionScopeServices, cancellableOperationManager, deploymentRequestExecutionGate);
+//        }
         cancellableOperationManager.closeInput();
     }
 
