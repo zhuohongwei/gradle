@@ -21,14 +21,21 @@ import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.deployment.internal.Deployment;
+import org.gradle.deployment.internal.DeploymentHandle;
+import org.gradle.deployment.internal.DeploymentRegistry;
 import org.gradle.internal.jvm.inspection.JvmVersionDetector;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.JavaExecSpec;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.process.ProcessForkOptions;
 import org.gradle.process.internal.ExecActionFactory;
+import org.gradle.process.internal.ExecHandle;
+import org.gradle.process.internal.ExecHandleState;
 import org.gradle.process.internal.JavaExecAction;
+import org.gradle.process.internal.JavaExecHandleBuilder;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -65,8 +72,51 @@ import java.util.Map;
 public class JavaExec extends ConventionTask implements JavaExecSpec {
     private final JavaExecAction javaExecHandleBuilder;
 
+    public enum BackgroundBehavior {
+        FOREGROUND,
+        APP_RELOAD,
+        RESTART;
+    }
+
+    public static class JavaApplicationHandle implements DeploymentHandle {
+        private final JavaExecHandleBuilder builder;
+        private ExecHandle handle;
+
+        @Inject
+        public JavaApplicationHandle(JavaExecHandleBuilder builder) {
+            this.builder = builder;
+        }
+
+        @Override
+        public boolean isRunning() {
+            return handle != null && handle.getState() == ExecHandleState.STARTED;
+        }
+
+        @Override
+        public void start(Deployment deployment) {
+            handle = builder.build().start();
+        }
+
+        @Override
+        public void stop() {
+            handle.abort();
+        }
+    }
+
+    private final Property<BackgroundBehavior> behavior;
+
+    public Property<BackgroundBehavior> getBehavior() {
+        return behavior;
+    }
+
     public JavaExec() {
         javaExecHandleBuilder = getExecActionFactory().newJavaExecAction();
+        this.behavior = getProject().getObjects().property(BackgroundBehavior.class).value(BackgroundBehavior.FOREGROUND);
+    }
+
+    @Inject
+    protected DeploymentRegistry getDeploymentRegistry() {
+        throw new UnsupportedOperationException();
     }
 
     @Inject
@@ -78,7 +128,27 @@ public class JavaExec extends ConventionTask implements JavaExecSpec {
     public void exec() {
         setMain(getMain()); // make convention mapping work (at least for 'main'...
         setJvmArgs(getJvmArgs()); // ...and for 'jvmArgs')
-        javaExecHandleBuilder.execute();
+        switch(behavior.get()) {
+            case FOREGROUND:
+                javaExecHandleBuilder.execute();
+                break;
+            case APP_RELOAD:
+                startWithDeployment(true);
+                break;
+            case RESTART:
+                startWithDeployment(false);
+                break;
+            default:
+                throw new IllegalStateException("unknown behavior");
+        }
+    }
+
+    private void startWithDeployment(boolean appCanReload) {
+        DeploymentRegistry registry = getDeploymentRegistry();
+        JavaApplicationHandle handle = registry.get(getPath(), JavaApplicationHandle.class);
+        if (handle == null) {
+            registry.start(getPath(), appCanReload ? DeploymentRegistry.ChangeBehavior.NONE : DeploymentRegistry.ChangeBehavior.RESTART, JavaApplicationHandle.class, javaExecHandleBuilder);
+        }
     }
 
     /**
