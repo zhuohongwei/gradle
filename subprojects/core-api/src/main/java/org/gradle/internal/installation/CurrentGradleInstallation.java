@@ -17,6 +17,7 @@
 package org.gradle.internal.installation;
 
 import javax.annotation.Nullable;
+import java.io.File;
 
 /**
  * Provides access to the current Gradle installation associated with the runtime.
@@ -28,7 +29,12 @@ public class CurrentGradleInstallation {
     private final GradleInstallation gradleInstallation;
 
     public CurrentGradleInstallation(@Nullable GradleInstallation gradleInstallation) {
-        this.gradleInstallation = gradleInstallation;
+        this.gradleInstallation = gradleInstallation == null ? new GradleInstallation(getGradleHome()) : gradleInstallation;
+    }
+
+    private File getGradleHome() {
+        File file = new File(System.getProperty("gradle.home"));
+        return file;
     }
 
     @Nullable // if no installation can be located

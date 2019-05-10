@@ -41,16 +41,11 @@ abstract class CurrentGradleInstallationLocator {
     }
 
     static CurrentGradleInstallation locateViaClass(Class<?> clazz) {
-        if (true) {
-            File absoluteFile = null;
-            absoluteFile = new File("/home/cchampeau/DEV/gradle-source-build");
-            return new CurrentGradleInstallation(new GradleInstallation(absoluteFile));
-        }
         File dir = null;
         try {
             dir = findDistDir(clazz);
         } catch (Exception e) {
-            return new CurrentGradleInstallation(new GradleInstallation(new File(".")));
+            return new CurrentGradleInstallation(null);
         }
         if (dir == null) {
             return new CurrentGradleInstallation(null);

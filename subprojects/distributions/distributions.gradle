@@ -93,6 +93,7 @@ ext {
         from('src/toplevel')
         into('bin') {
             from configurations.gradleScripts
+            from 'src/scripts'
             fileMode = 0755
         }
         into('lib') {
