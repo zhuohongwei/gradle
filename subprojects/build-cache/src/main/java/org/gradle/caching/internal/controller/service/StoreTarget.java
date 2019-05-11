@@ -50,6 +50,11 @@ public class StoreTarget implements BuildCacheEntryWriter {
         }
     }
 
+    @Override
+    public File getFile() {
+        return file;
+    }
+
     public boolean isStored() {
         return stored;
     }

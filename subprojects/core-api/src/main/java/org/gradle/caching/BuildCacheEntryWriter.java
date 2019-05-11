@@ -16,6 +16,7 @@
 
 package org.gradle.caching;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -34,6 +35,8 @@ public interface BuildCacheEntryWriter {
      * @throws IOException when an I/O error occurs when writing the cache entry to the given output stream
      */
     void writeTo(OutputStream output) throws IOException;
+
+    File getFile();
 
     /**
      * Returns the size of the build cache entry to be written.

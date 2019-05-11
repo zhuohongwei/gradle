@@ -18,6 +18,7 @@ package org.gradle.caching.http.internal;
 
 import org.gradle.caching.configuration.internal.BuildCacheServiceRegistration;
 import org.gradle.caching.configuration.internal.DefaultBuildCacheServiceRegistration;
+import org.gradle.caching.http.Http2BuildCache;
 import org.gradle.caching.http.HttpBuildCache;
 import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.scopes.AbstractPluginServiceRegistry;
@@ -26,5 +27,6 @@ public class HttpBuildCacheServiceServices extends AbstractPluginServiceRegistry
 
     public void registerBuildServices(ServiceRegistration registration) {
         registration.add(BuildCacheServiceRegistration.class, new DefaultBuildCacheServiceRegistration(HttpBuildCache.class, DefaultHttpBuildCacheServiceFactory.class));
+        registration.add(BuildCacheServiceRegistration.class, new DefaultBuildCacheServiceRegistration(Http2BuildCache.class, DefaultHttp2BuildCacheServiceFactory.class));
     }
 }

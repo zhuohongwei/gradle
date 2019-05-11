@@ -65,6 +65,7 @@ import org.gradle.authentication.http.DigestAuthentication;
 import org.gradle.authentication.http.HttpHeaderAuthentication;
 import org.gradle.internal.authentication.AllSchemesAuthentication;
 import org.gradle.internal.authentication.AuthenticationInternal;
+import org.gradle.internal.authentication.DefaultBasicAuthentication;
 import org.gradle.internal.jvm.Jvm;
 import org.gradle.internal.resource.UriTextResource;
 import org.gradle.internal.resource.transport.http.ntlm.NTLMCredentials;
@@ -74,7 +75,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.ProxySelector;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -116,6 +123,37 @@ public class HttpClientConfigurer {
         builder.setDefaultCredentialsProvider(credentialsProvider);
         builder.setMaxConnTotal(MAX_HTTP_CONNECTIONS);
         builder.setMaxConnPerRoute(MAX_HTTP_CONNECTIONS);
+    }
+
+    public void configure(HttpClient.Builder builder) {
+        SystemDefaultCredentialsProvider credentialsProvider = new SystemDefaultCredentialsProvider();
+        SSLContext sslContext = httpSettings.getSslContextFactory().createSslContext();
+        builder.sslContext(sslContext);
+        SSLParameters sslParameters = new SSLParameters(null, new String[] {"TLSv1.2"});
+        sslParameters.setEndpointIdentificationAlgorithm("");
+        builder.sslParameters(sslParameters);
+        for (Authentication authenticationSetting : httpSettings.getAuthenticationSettings()) {
+            if (authenticationSetting instanceof DefaultBasicAuthentication) {
+                builder.authenticator(new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        org.gradle.api.credentials.PasswordCredentials credentials = (PasswordCredentials) ((DefaultBasicAuthentication) authenticationSetting).getCredentials();
+                        return new PasswordAuthentication(credentials.getUsername(), credentials.getPassword().toCharArray());
+                    }
+                });
+            }
+        }
+//        configureAuthSchemeRegistry(builder);
+//        configureCredentials(builder, credentialsProvider, httpSettings.getAuthenticationSettings());
+//        configureProxy(builder, credentialsProvider, httpSettings);
+//        configureUserAgent(builder);
+//        configureCookieSpecRegistry(builder);
+//        configureRequestConfig(builder);
+//        configureSocketConfig(builder);
+//        configureRedirectStrategy(builder);
+//        builder.setDefaultCredentialsProvider(credentialsProvider);
+        HttpTimeoutSettings timeoutSettings = httpSettings.getTimeoutSettings();
+        builder.connectTimeout(Duration.ofMillis(timeoutSettings.getConnectionTimeoutMs()));
     }
 
     private void configureSslSocketConnectionFactory(HttpClientBuilder builder, SslContextFactory sslContextFactory, HostnameVerifier hostnameVerifier) {
