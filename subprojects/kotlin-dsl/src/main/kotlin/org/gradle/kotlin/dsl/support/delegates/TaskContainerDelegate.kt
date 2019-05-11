@@ -22,6 +22,7 @@ import org.gradle.api.Action
 import org.gradle.api.DomainObjectCollection
 import org.gradle.api.NamedDomainObjectCollectionSchema
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.NamedDomainObjectRegistry
 import org.gradle.api.Namer
 import org.gradle.api.Rule
 import org.gradle.api.Task
@@ -41,6 +42,9 @@ import java.util.SortedSet
  * See [GradleDelegate] for why this is currently necessary.
  */
 abstract class TaskContainerDelegate : TaskContainer {
+//    override fun addStuffLater(registrant: Action<in NamedDomainObjectRegistry<Task>>) {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+//    }
 
     internal
     abstract val delegate: TaskContainer

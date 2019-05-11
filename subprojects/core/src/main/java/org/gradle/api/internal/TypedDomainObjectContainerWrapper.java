@@ -23,12 +23,14 @@ import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.NamedDomainObjectCollectionSchema;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectRegistry;
 import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.Namer;
 import org.gradle.api.Rule;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
+import org.gradle.internal.Cast;
 import org.gradle.internal.metaobject.MethodAccess;
 import org.gradle.internal.metaobject.MethodMixIn;
 import org.gradle.internal.metaobject.PropertyAccess;
@@ -92,6 +94,12 @@ public class TypedDomainObjectContainerWrapper<U> implements NamedDomainObjectCo
     @Override
     public NamedDomainObjectProvider<U> register(String name) throws InvalidUserDataException {
         return parent.register(name, type);
+    }
+
+    @Override
+    public void addStuffLater(Action<? super NamedDomainObjectRegistry<U>> registrant) {
+//        parent.addStuffLater(Cast.cast(registrant));
+        throw new UnsupportedOperationException("nice try");
     }
 
     public Set<U> findAll(Closure spec) {

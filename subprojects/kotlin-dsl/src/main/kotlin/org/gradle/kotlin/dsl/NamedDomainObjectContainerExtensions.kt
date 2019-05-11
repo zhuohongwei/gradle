@@ -19,6 +19,7 @@ package org.gradle.kotlin.dsl
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.NamedDomainObjectProvider
+import org.gradle.api.NamedDomainObjectRegistry
 import org.gradle.api.PolymorphicDomainObjectContainer
 
 import org.gradle.kotlin.dsl.support.delegates.NamedDomainObjectContainerDelegate
@@ -223,6 +224,9 @@ class NamedDomainObjectContainerScope<T : Any>
 private constructor(
     override val delegate: NamedDomainObjectContainer<T>
 ) : NamedDomainObjectContainerDelegate<T>(), PolymorphicDomainObjectContainer<T> {
+    override fun addStuffLater(registrant: Action<in NamedDomainObjectRegistry<T>>) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     companion object {
         fun <T : Any> of(container: NamedDomainObjectContainer<T>) =

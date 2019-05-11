@@ -15,6 +15,8 @@
  */
 package org.gradle.kotlin.dsl
 
+import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectRegistry
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskCollection
 import org.gradle.api.tasks.TaskContainer
@@ -148,6 +150,9 @@ class TaskContainerScope
 private constructor(
     val container: TaskContainer
 ) : TaskContainerDelegate() {
+    override fun addStuffLater(registrant: Action<in NamedDomainObjectRegistry<Task>>) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     companion object {
         fun of(container: TaskContainer) =

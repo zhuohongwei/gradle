@@ -25,10 +25,12 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectRegistry;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
+import org.gradle.api.internal.AbstractNamedDomainObjectContainer;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
 import org.gradle.api.internal.MutationGuards;
 import org.gradle.api.internal.NamedDomainObjectContainerConfigureDelegate;
@@ -38,6 +40,8 @@ import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.internal.project.taskfactory.ITaskFactory;
 import org.gradle.api.internal.project.taskfactory.TaskIdentity;
 import org.gradle.api.internal.project.taskfactory.TaskInstantiator;
+import org.gradle.api.internal.provider.AbstractReadOnlyProvider;
+import org.gradle.api.internal.provider.CollectionProviderInternal;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.TaskProvider;
@@ -64,6 +68,7 @@ import org.gradle.util.DeprecationLogger;
 import org.gradle.util.GUtil;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -383,6 +388,12 @@ public class DefaultTaskContainer extends DefaultTaskCollection<Task> implements
     public TaskProvider<Task> register(String name) throws InvalidUserDataException {
         assertMutable("register(String)");
         return Cast.uncheckedCast(register(name, DefaultTask.class));
+    }
+
+    @Override
+    public void addStuffLater(Action<? super NamedDomainObjectRegistry<Task>> registrant) {
+        System.out.println("Adding stuff to task container");
+        super.addAllLater(new RegistrantAdapter(registrant));
     }
 
     @Override
@@ -845,4 +856,45 @@ public class DefaultTaskContainer extends DefaultTaskCollection<Task> implements
 
     }
 
+    private class RegistrantAdapter extends AbstractReadOnlyProvider<Collection<Task>> implements CollectionProviderInternal<Task, Collection<Task>> {
+        private final Action<? super NamedDomainObjectRegistry<Task>> registrant;
+        private List<Task> result;
+
+        public RegistrantAdapter(Action<? super NamedDomainObjectRegistry<Task>> registrant) {
+            this.registrant = registrant;
+        }
+
+        @Nullable
+        @Override
+        public Class<Collection<Task>> getType() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Collection<Task> getOrNull() {
+            System.out.println("GET OR NULL");
+            if (result == null) {
+                result = new ArrayList<Task>();
+                registrant.execute(new NamedDomainObjectRegistry<Task>() {
+                    @Override
+                    public void register(String name) throws InvalidUserDataException {
+                        result.add(DefaultTaskContainer.this.createTask(TaskIdentity.create(name, DefaultTask.class, project), NO_ARGS));
+                    }
+                });
+            }
+            return result;
+        }
+
+        @Override
+        public Class<Task> getElementType() {
+            return Task.class;
+        }
+
+        @Override
+        public int size() {
+            System.out.println("GETTING SIZE");
+            return getOrNull().size();
+        }
+    }
 }

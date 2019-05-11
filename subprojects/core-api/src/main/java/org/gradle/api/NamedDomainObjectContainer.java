@@ -106,4 +106,6 @@ public interface NamedDomainObjectContainer<T> extends NamedDomainObjectSet<T>, 
      * @since 4.10
      */
     NamedDomainObjectProvider<T> register(String name) throws InvalidUserDataException;
+
+    void addStuffLater(Action<? super NamedDomainObjectRegistry<T>> registrant);
 }

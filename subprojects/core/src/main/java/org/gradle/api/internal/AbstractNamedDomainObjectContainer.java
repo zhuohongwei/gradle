@@ -15,13 +15,19 @@
  */
 package org.gradle.api.internal;
 
+import com.google.common.collect.Lists;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectProvider;
+import org.gradle.api.NamedDomainObjectRegistry;
 import org.gradle.api.Namer;
+import org.gradle.api.internal.provider.AbstractReadOnlyProvider;
+import org.gradle.api.internal.provider.CollectionProviderInternal;
+import org.gradle.api.internal.provider.DefaultProvider;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.reflect.HasPublicType;
 import org.gradle.api.reflect.TypeOf;
 import org.gradle.internal.Actions;
@@ -32,6 +38,12 @@ import org.gradle.util.ConfigureUtil;
 import org.gradle.util.DeprecationLogger;
 
 import javax.annotation.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 import static org.gradle.api.reflect.TypeOf.parameterizedTypeOf;
 import static org.gradle.api.reflect.TypeOf.typeOf;
@@ -123,6 +135,12 @@ public abstract class AbstractNamedDomainObjectContainer<T> extends DefaultNamed
     }
 
     @Override
+    public void addStuffLater(final Action<? super NamedDomainObjectRegistry<T>> registrant) {
+        System.out.println("INSIDE ADD STUFF LATER");
+        addAllLater(new RegistrantAdapter(registrant));
+    }
+
+    @Override
     public NamedDomainObjectProvider<T> register(String name, Action<? super T> configurationAction) throws InvalidUserDataException {
         assertMutable("register(String, Action)");
         return createDomainObjectProvider(name, configurationAction);
@@ -146,6 +164,48 @@ public abstract class AbstractNamedDomainObjectContainer<T> extends DefaultNamed
         @Override
         protected I createDomainObject() {
             return Cast.uncheckedCast(doCreate(getName()));
+        }
+    }
+
+    private class RegistrantAdapter extends AbstractReadOnlyProvider<Collection<T>> implements CollectionProviderInternal<T, Collection<T>> {
+        private final Action<? super NamedDomainObjectRegistry<T>> registrant;
+        private List<T> result;
+
+        public RegistrantAdapter(Action<? super NamedDomainObjectRegistry<T>> registrant) {
+            this.registrant = registrant;
+        }
+
+        @Nullable
+        @Override
+        public Class<Collection<T>> getType() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Collection<T> getOrNull() {
+            System.out.println("GET OR NULL");
+            if (result == null) {
+                result = new ArrayList<T>();
+                registrant.execute(new NamedDomainObjectRegistry<T>() {
+                    @Override
+                    public void register(String name) throws InvalidUserDataException {
+                        result.add(AbstractNamedDomainObjectContainer.this.doCreate(name));
+                    }
+                });
+            }
+            return result;
+        }
+
+        @Override
+        public Class<? extends T> getElementType() {
+            return AbstractNamedDomainObjectContainer.this.getType();
+        }
+
+        @Override
+        public int size() {
+            System.out.println("GETTING SIZE");
+            return getOrNull().size();
         }
     }
 }
