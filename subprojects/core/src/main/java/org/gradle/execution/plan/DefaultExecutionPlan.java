@@ -1037,12 +1037,9 @@ public class DefaultExecutionPlan implements ExecutionPlan {
 
     @Override
     public boolean hasNodesRemaining() {
-        for (Node node : executionQueue) {
-            if (!node.isComplete()) {
-                return true;
-            }
-        }
-        return !runningNodes.isEmpty();
+        return !runningNodes.isEmpty()
+            || !readyQueue.isEmpty()
+            || !executionQueue.isEmpty();
     }
 
     @Override
