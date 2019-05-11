@@ -106,7 +106,6 @@ public class DefaultExecutionPlan implements ExecutionPlan {
     private final Map<File, String> canonicalizedFileCache = Maps.newIdentityHashMap();
     private final Map<Pair<Node, Node>, Boolean> reachableCache = Maps.newHashMap();
     private final List<Node> dependenciesWhichRequireMonitoring = Lists.newArrayList();
-    private boolean maybeNodesReady;
     private final WorkerLeaseService workerLeaseService;
     private final GradleInternal gradle;
 
@@ -345,9 +344,7 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         }
         executionQueue.clear();
         Iterables.addAll(executionQueue, nodeMapping);
-        for (Node node : executionQueue) {
-            maybeNodesReady |= node.updateAllDependenciesComplete() && node.isReady();
-        }
+        updateAllDependenciesCompleteOf(executionQueue);
         this.dependenciesWhichRequireMonitoring.addAll(dependenciesWhichRequireMonitoring);
     }
 
@@ -562,13 +559,8 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             }
         }
 
-        if (!maybeNodesReady) {
-            return null;
-        }
-
         Node readyNode = selectFirstReadyNode(workerLease, resourceLockState);
         if (readyNode != null) {
-            maybeNodesReady = true;
             return readyNode;
         }
 
@@ -577,7 +569,6 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         if (readyQueue.isEmpty()) {
             return null;
         }
-        maybeNodesReady = true;
         return selectFirstReadyNode(workerLease, resourceLockState);
     }
 
@@ -622,8 +613,12 @@ public class DefaultExecutionPlan implements ExecutionPlan {
     }
 
     private void updateAllDependenciesCompleteForPredecessors(Node node) {
-        for (Node predecessor : node.getAllPredecessors()) {
-            maybeNodesReady |= predecessor.updateAllDependenciesComplete() && predecessor.isReady();
+        updateAllDependenciesCompleteOf(node.getAllPredecessors());
+    }
+
+    private void updateAllDependenciesCompleteOf(Iterable<Node> nodes) {
+        for (Node node : nodes) {
+            node.updateAllDependenciesComplete();
         }
     }
 
@@ -921,7 +916,6 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         try {
             if (!node.isComplete()) {
                 enforceFinalizers(node);
-                maybeNodesReady = true;
                 if (node.isFailed()) {
                     handleFailure(node);
                 }
