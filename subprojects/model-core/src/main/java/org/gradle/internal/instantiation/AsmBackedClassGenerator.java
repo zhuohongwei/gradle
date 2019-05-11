@@ -41,6 +41,7 @@ import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.extensibility.ConventionAwareHelper;
@@ -62,6 +63,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import sun.jvm.hotspot.oops.ReturnTypeEntry;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
@@ -296,12 +298,14 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
         private static final Type REGULAR_FILE_PROPERTY_TYPE = Type.getType(RegularFileProperty.class);
         private static final Type DIRECTORY_PROPERTY_TYPE = Type.getType(DirectoryProperty.class);
         private static final Type PROPERTY_TYPE = Type.getType(Property.class);
+        private static final Type PROVIDER_TYPE = Type.getType(Provider.class);
         private static final Type LIST_PROPERTY_TYPE = Type.getType(ListProperty.class);
         private static final Type SET_PROPERTY_TYPE = Type.getType(SetProperty.class);
         private static final Type MAP_PROPERTY = Type.getType(MapProperty.class);
         private static final Type EXTENSION_CONTAINER_TYPE = Type.getType(ExtensionContainer.class);
 
         private static final String RETURN_VOID_FROM_OBJECT = Type.getMethodDescriptor(Type.VOID_TYPE, OBJECT_TYPE);
+        private static final String RETURN_VOID_FROM_PROVIDER = Type.getMethodDescriptor(Type.VOID_TYPE, PROVIDER_TYPE);
         private static final String RETURN_VOID_FROM_OBJECT_CLASS_DYNAMIC_OBJECT_SERVICE_LOOKUP = Type.getMethodDescriptor(Type.VOID_TYPE, OBJECT_TYPE, CLASS_TYPE, DYNAMIC_OBJECT_TYPE, SERVICE_LOOKUP_TYPE);
         private static final String RETURN_OBJECT_FROM_STRING_OBJECT_BOOLEAN = Type.getMethodDescriptor(OBJECT_TYPE, OBJECT_TYPE, STRING_TYPE, Type.BOOLEAN_TYPE);
         private static final String RETURN_CLASS = Type.getMethodDescriptor(CLASS_TYPE);
@@ -687,6 +691,32 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
             methodVisitor.visitInsn(Opcodes.RETURN);
             methodVisitor.visitMaxs(0, 0);
             methodVisitor.visitEnd();
+        }
+
+        @Override
+        public void addProviderSetterOverload(PropertyMetadata property, Class<?> parameterType) {
+            System.out.println("Generating provider setter overload for '" + property.getName() + "'");
+            // GENERATE public void set<Name>(Provider<?> p) {
+            //    ((PropertyInternal)getParameters().get<Name>()).setFromAnyValue(p);
+            // }
+
+            try {
+                Class<?> returnType = parameterType.getMethod(MetaProperty.getGetterName(property.getName(), property.getType())).getReturnType();
+
+                MethodVisitor methodVisitor = visitor.visitMethod(Opcodes.ACC_PUBLIC, MetaProperty.getSetterName(property.getName()), RETURN_VOID_FROM_PROVIDER, null, EMPTY_STRINGS);
+                methodVisitor.visitCode();
+                methodVisitor.visitVarInsn(ALOAD, 0);
+                methodVisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, generatedType.getInternalName(), "getParameters", Type.getMethodDescriptor(OBJECT_TYPE), false);
+                methodVisitor.visitMethodInsn(Opcodes.INVOKEINTERFACE, Type.getType(parameterType).getInternalName(), MetaProperty.getGetterName(property.getName(), property.getType()), Type.getMethodDescriptor(Type.getType(returnType)), true);
+                methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, PROPERTY_INTERNAL_TYPE.getInternalName());
+                methodVisitor.visitVarInsn(ALOAD, 1);
+                methodVisitor.visitMethodInsn(Opcodes.INVOKEINTERFACE, PROPERTY_INTERNAL_TYPE.getInternalName(), "setFromAnyValue", ClassBuilderImpl.RETURN_VOID_FROM_OBJECT, true);
+                methodVisitor.visitInsn(Opcodes.RETURN);
+                methodVisitor.visitMaxs(0, 0);
+                methodVisitor.visitEnd();
+            } catch (NoSuchMethodException e) {
+                System.out.println("Not!");
+            }
         }
 
         /**
@@ -1619,6 +1649,10 @@ public class AsmBackedClassGenerator extends AbstractClassGenerator {
 
         @Override
         public void addPropertySetters(PropertyMetadata property, Method getter) {
+        }
+
+        @Override
+        public void addProviderSetterOverload(PropertyMetadata property, Class<?> parameterType) {
         }
 
         @Override

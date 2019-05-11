@@ -22,6 +22,7 @@ import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.NamedDomainObjectCollectionSchema;
 import org.gradle.api.Task;
+import org.gradle.api.TaskWithParameters;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.internal.DefaultNamedDomainObjectSet;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
@@ -193,6 +194,18 @@ public class DefaultTaskCollection<T extends Task> extends DefaultNamedDomainObj
         public boolean maybeVisitBuildDependencies(TaskDependencyResolveContext context) {
             context.add(get());
             return true;
+        }
+
+        public void parameters(final Action<Object> action) {
+            if (!TaskWithParameters.class.isAssignableFrom(getType())) {
+                throw new IllegalArgumentException("Just don't (from existing)");
+            }
+            configure(new Action<I>() {
+                @Override
+                public void execute(I it) {
+                    action.execute(((TaskWithParameters) it).getParameters());
+                }
+            });
         }
     }
 }

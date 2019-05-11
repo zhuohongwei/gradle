@@ -28,6 +28,7 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.TaskWithParameters;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
 import org.gradle.api.internal.MutationGuards;
@@ -693,6 +694,19 @@ public class DefaultTaskContainer extends DefaultTaskCollection<Task> implements
         @Override
         protected RuntimeException domainObjectCreationException(Throwable cause) {
             return taskCreationException(getName(), cause);
+        }
+
+        // TODO: Add entry in DSL reference
+        public void parameters(final Action<Object> action) {
+            if (!TaskWithParameters.class.isAssignableFrom(getType())) {
+                throw new IllegalArgumentException("Just don't (from existing)");
+            }
+            configure(new Action<I>() {
+                @Override
+                public void execute(I it) {
+                    action.execute(((TaskWithParameters) it).getParameters());
+                }
+            });
         }
     }
 

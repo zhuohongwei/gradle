@@ -64,6 +64,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -167,6 +168,17 @@ abstract class AbstractClassGenerator implements ClassGenerator {
         handlers.add(propertyTypedHandler);
         handlers.add(servicesHandler);
         handlers.add(managedTypeHandler);
+        try {
+            Class<?> taskWithParameters = Class.forName("org.gradle.api.TaskWithParameters");
+            if (taskWithParameters.isAssignableFrom(type)) {
+                Class<?> parameterType = (Class)((ParameterizedType)type.getGenericSuperclass()).getActualTypeArguments()[0];
+                System.out.println("Parameter type: " + parameterType.getCanonicalName());
+                PropertyTypeParametersHandler parameterHandler = new PropertyTypeParametersHandler(parameterType);
+                handlers.add(parameterHandler);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         for (Class<? extends Annotation> annotation : enabledAnnotations) {
             customAnnotationPropertyHandlers.add(new CustomInjectAnnotationPropertyHandler(annotation));
         }
@@ -969,6 +981,29 @@ abstract class AbstractClassGenerator implements ClassGenerator {
         }
     }
 
+    private static class PropertyTypeParametersHandler extends ClassGenerationHandler {
+        private final List<PropertyMetadata> propertyToAddOverloads = new ArrayList<PropertyMetadata>();
+        private final Class<?> parameterType;
+
+        public PropertyTypeParametersHandler(Class<?> parameterType) {
+            this.parameterType = parameterType;
+        }
+
+        @Override
+        void visitProperty(PropertyMetadata property) {
+            if (!property.setters.isEmpty()) {
+                propertyToAddOverloads.add(property);
+            }
+        }
+
+        @Override
+        void applyTo(ClassGenerationVisitor visitor) {
+            for (PropertyMetadata property : propertyToAddOverloads) {
+                visitor.addProviderSetterOverload(property, parameterType);
+            }
+        }
+    }
+
     private static class InjectionAnnotationValidator implements ClassValidator {
         private final Set<Class<? extends Annotation>> annotationTypes;
         private final ImmutableMultimap<Class<? extends Annotation>, TypeToken<?>> allowedTypesForAnnotation;
@@ -1269,6 +1304,8 @@ abstract class AbstractClassGenerator implements ClassGenerator {
         void addActionMethod(Method method);
 
         void addPropertySetters(PropertyMetadata property, Method getter);
+
+        void addProviderSetterOverload(PropertyMetadata property, Class<?> parameterType);
 
         Class<?> generate() throws Exception;
     }
