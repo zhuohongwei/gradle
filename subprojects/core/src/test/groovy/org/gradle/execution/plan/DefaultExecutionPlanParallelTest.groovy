@@ -841,6 +841,7 @@ class DefaultExecutionPlanParallelTest extends AbstractProjectBuilderSpec {
     }
 
     private TaskNode selectNextTaskNode() {
+        executionPlan.populateReadyQueue()
         def nextTaskNode = executionPlan.selectNext(lockSetup.workerLease, lockSetup.createResourceLockState())
         if (nextTaskNode?.task instanceof Async) {
             def project = (ProjectInternal) nextTaskNode.task.project
