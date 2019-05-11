@@ -559,20 +559,10 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             }
         }
 
-        Node readyNode = selectFirstReadyNode(workerLease, resourceLockState);
-        if (readyNode != null) {
-            return readyNode;
-        }
-
-        populateReadyQueue();
-
-        if (readyQueue.isEmpty()) {
-            return null;
-        }
         return selectFirstReadyNode(workerLease, resourceLockState);
     }
 
-    private void populateReadyQueue() {
+    public void populateReadyQueue() {
         Iterator<Node> iterator = executionQueue.iterator();
         while (iterator.hasNext()) {
             Node node = iterator.next();
@@ -588,9 +578,10 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         Iterator<Node> readyIterator = readyQueue.iterator();
         while (readyIterator.hasNext()) {
             Node node = readyIterator.next();
+            MutationInfo mutations = getResolvedMutationInfo(node);
+
             if (tryLockProjectFor(node)) {
                 if (workerLease.tryLock()) {
-                    MutationInfo mutations = getResolvedMutationInfo(node);
                     // TODO: convert output file checks to a resource lock
                     if (canRunWithCurrentlyExecutedNodes(node, mutations)) {
                         if (node.allDependenciesSuccessful()) {
@@ -1038,6 +1029,11 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         }
         // TODO:lptr why don't we check runningNodes here like we do in hasNodesRemaining()?
         return true;
+    }
+
+    @Override
+    public boolean allNodesQueued() {
+        return !hasNodesRemaining();
     }
 
     @Override

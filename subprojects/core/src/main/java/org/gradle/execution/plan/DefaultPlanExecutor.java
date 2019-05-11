@@ -23,6 +23,7 @@ import org.gradle.concurrent.ParallelismConfiguration;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.internal.MutableBoolean;
 import org.gradle.internal.MutableReference;
+import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.ManagedExecutor;
 import org.gradle.internal.resources.ResourceLockCoordinationService;
@@ -40,6 +41,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.gradle.internal.resources.DefaultResourceLockCoordinationService.unlock;
 import static org.gradle.internal.resources.ResourceLockState.Disposition.FINISHED;
@@ -92,8 +96,9 @@ public class DefaultPlanExecutor implements PlanExecutor {
         ManagedExecutor executor = executorFactory.create("Execution worker for '" + executionPlan.getDisplayName() + "'");
         try {
             WorkerLease parentWorkerLease = workerLeaseService.getCurrentWorkerLease();
-            startAdditionalWorkers(executionPlan, nodeExecutor, executor, parentWorkerLease);
-            new ExecutorWorker(executionPlan, nodeExecutor, parentWorkerLease, cancellationToken, coordinationService).run();
+            ExecutorQueuer queuer = new ExecutorQueuer(executionPlan, cancellationToken, coordinationService);
+            startWorkers(queuer, executionPlan, nodeExecutor, executor, parentWorkerLease);
+            queuer.run();
             awaitCompletion(executionPlan, failures);
         } finally {
             executor.stop();
@@ -117,11 +122,105 @@ public class DefaultPlanExecutor implements PlanExecutor {
         });
     }
 
-    private void startAdditionalWorkers(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, Executor executor, WorkerLease parentWorkerLease) {
+    private void startWorkers(ExecutorQueuer queuer, ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, Executor executor, WorkerLease parentWorkerLease) {
         LOGGER.debug("Using {} parallel executor threads", executorCount);
+        for (int i = 0; i < executorCount; i++) {
+            executor.execute(new ExecutorWorker(executionPlan, nodeExecutor, parentWorkerLease, queuer, cancellationToken, coordinationService));
+        }
+    }
 
-        for (int i = 1; i < executorCount; i++) {
-            executor.execute(new ExecutorWorker(executionPlan, nodeExecutor, parentWorkerLease, cancellationToken, coordinationService));
+    private interface Queuer {
+        void checkForMoreWork();
+        void waitForWork();
+    }
+
+    private class ExecutorQueuer implements Runnable, Queuer {
+        private final ExecutionPlan executionPlan;
+        private final Lock lock;
+        private final Condition nodeCompleted;
+        private final Condition nodeQueued;
+        private final BuildCancellationToken cancellationToken;
+        private final ResourceLockCoordinationService coordinationService;
+
+        private ExecutorQueuer(ExecutionPlan executionPlan, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
+            this.executionPlan = executionPlan;
+            this.lock = new ReentrantLock();
+            this.nodeCompleted = lock.newCondition();
+            this.nodeQueued = lock.newCondition();
+            this.cancellationToken = cancellationToken;
+            this.coordinationService = coordinationService;
+        }
+
+        @Override
+        public void run() {
+            final AtomicLong wait = new AtomicLong(0);
+            Timer totalTimer = Time.startTimer();
+            while (!queueNodes(wait)) {
+                lock.lock();
+                try {
+                    nodeQueued.signalAll();
+                    nodeCompleted.await();
+                } catch (InterruptedException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                } finally {
+                    lock.unlock();
+                }
+            }
+
+            long total = totalTimer.getElapsedMillis();
+
+            recordStatsFor(Thread.currentThread(), 0, total - wait.get(), wait.get());
+        }
+
+        public void checkForMoreWork() {
+            lock.lock();
+            try {
+                nodeCompleted.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        @Override
+        public void waitForWork() {
+            lock.lock();
+            try {
+                nodeQueued.await();
+            } catch (InterruptedException e) {
+                throw UncheckedException.throwAsUncheckedException(e);
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        private boolean queueNodes(final AtomicLong wait) {
+            final MutableBoolean allNodesQueued = new MutableBoolean();
+            final Timer waitTimer = Time.startTimer();
+
+            // TODO: Gary said we may be able to get rid of this coordinationService lock
+            coordinationService.withStateLock(new Transformer<ResourceLockState.Disposition, ResourceLockState>() {
+                @Override
+                public ResourceLockState.Disposition transform(ResourceLockState resourceLockState) {
+                    if (cancellationToken.isCancellationRequested()) {
+                        executionPlan.cancelExecution();
+                    }
+
+                    try {
+                        waitTimer.reset();
+                        executionPlan.populateReadyQueue();
+                        allNodesQueued.set(executionPlan.allNodesQueued());
+                        wait.addAndGet(waitTimer.getElapsedMillis());
+                    } catch (Throwable t) {
+                        resourceLockState.releaseLocks();
+                        executionPlan.abortAllAndFail(t);
+                        allNodesQueued.set(false);
+                    }
+
+                    return FINISHED;
+                }
+            });
+
+            return allNodesQueued.get();
         }
     }
 
@@ -129,13 +228,15 @@ public class DefaultPlanExecutor implements PlanExecutor {
         private final ExecutionPlan executionPlan;
         private final Action<? super Node> nodeExecutor;
         private final WorkerLease parentWorkerLease;
+        private final Queuer queuer;
         private final BuildCancellationToken cancellationToken;
         private final ResourceLockCoordinationService coordinationService;
 
-        private ExecutorWorker(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, WorkerLease parentWorkerLease, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
+        private ExecutorWorker(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, WorkerLease parentWorkerLease, Queuer queuer, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
             this.executionPlan = executionPlan;
             this.nodeExecutor = nodeExecutor;
             this.parentWorkerLease = parentWorkerLease;
+            this.queuer = queuer;
             this.cancellationToken = cancellationToken;
             this.coordinationService = coordinationService;
         }
@@ -148,6 +249,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
             final Timer executionTimer = Time.startTimer();
 
             WorkerLease childLease = parentWorkerLease.createChild();
+            queuer.waitForWork();
             while (true) {
                 boolean nodesRemaining = executeNextNode(childLease, wait, new Action<Node>() {
                     @Override
@@ -241,6 +343,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
                         return unlock(workerLease).transform(state);
                     }
                 });
+                queuer.checkForMoreWork();
             }
         }
     }

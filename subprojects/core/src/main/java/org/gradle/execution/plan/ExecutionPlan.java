@@ -34,6 +34,7 @@ public interface ExecutionPlan extends Describable {
      */
     @Nullable
     Node selectNext(WorkerLeaseRegistry.WorkerLease workerLease, ResourceLockState resourceLockState);
+    void populateReadyQueue();
 
     void nodeComplete(Node node);
 
@@ -66,6 +67,8 @@ public interface ExecutionPlan extends Describable {
     boolean allNodesComplete();
 
     boolean hasNodesRemaining();
+
+    boolean allNodesQueued();
 
     /**
      * Returns the number of work items in the plan.
