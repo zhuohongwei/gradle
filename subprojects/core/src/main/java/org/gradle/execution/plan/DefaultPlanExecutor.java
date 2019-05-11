@@ -198,7 +198,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
                     } catch (Throwable t) {
                         resourceLockState.releaseLocks();
                         executionPlan.abortAllAndFail(t);
-                        allNodesQueued.set(false);
+                        allNodesQueued.set(true);
                     }
 
                     return FINISHED;
