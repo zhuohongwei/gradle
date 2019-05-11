@@ -76,6 +76,12 @@ configurations {
         attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
         attributes.attribute(Attribute.of("org.gradle.runtime", String), "minimal")
     }
+    
+    nativeImages {
+        canBeResolved = true
+        canBeConsumed = false
+        
+    }
 }
 
 dependencies {
@@ -83,6 +89,7 @@ dependencies {
     minimalRuntime(project(":core"))
     minimalRuntime(project(":dependencyManagement"))
     minimalRuntime(project(":platformJvm"))
+    nativeImages(project(path: ":launcher", configuration: "nativeImages"))
 }
 
 ext {
@@ -93,6 +100,7 @@ ext {
         from('src/toplevel')
         into('bin') {
             from configurations.gradleScripts
+            from configurations.nativeImages
             from 'src/scripts'
             fileMode = 0755
         }

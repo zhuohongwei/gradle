@@ -1,4 +1,5 @@
 
+import com.palantir.gradle.graal.NativeImageTask
 import org.gradle.build.GradleStartScriptGenerator
 import org.gradle.gradlebuild.test.integrationtests.IntegrationTest
 import org.gradle.gradlebuild.testing.integrationtests.cleanup.WhenNotEmpty
@@ -97,6 +98,13 @@ configurations {
             builtBy(startScripts)
         }
     }
+    create("nativeImages") {
+        isCanBeConsumed = true
+        isCanBeResolved = false
+        tasks.withType<NativeImageTask>().configureEach {
+            outgoing.artifact(outputFile)
+        }
+    }
 }
 
 testFilesCleanup {
@@ -106,13 +114,12 @@ testFilesCleanup {
 graal {
     mainClass("org.gradle.launcher.GradleMain")
     outputName("launcher-native")
-    graalVersion("1.0.0-rc16")
+    graalVersion("19.0.0")
     option("--report-unsupported-elements-at-runtime")
     option("--allow-incomplete-classpath")
     option("-H:ReflectionConfigurationFiles=${file("graal-reflect.json")}")
     option("-H:DynamicProxyConfigurationFiles=${file("graal-proxies.json")}")
     option("-H:JNIConfigurationFiles=${file("graal-jni.json")}")
     option("-H:ResourceConfigurationFiles=${file("graal-resources.json")}")
-    option("-H:Log=registerResource:")
-    option("-H:DelayClassInitialization=org.gradle.internal.nativeintegration.services.NativeServices,org.gradle.internal.nativeintegration.jansi.JansiBootPathConfigurer")
+    option("--initialize-at-build-time")
 }

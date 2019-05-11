@@ -80,7 +80,7 @@ class InetAddresses {
         } catch (Throwable e) {
             //throw new RuntimeException(String.format("Could not determine the IP addresses for network interface %s", networkInterface.getName()), e);
             try {
-                loopback.add(InetAddress.getByName("localhost"));
+                loopback.add(InetAddress.getByName("127.0.0.1"));
             } catch (UnknownHostException ex) {
                 ex.printStackTrace();
             }
