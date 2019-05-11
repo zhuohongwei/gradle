@@ -35,7 +35,9 @@ import org.gradle.internal.work.WorkerLeaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,12 +47,26 @@ import static org.gradle.internal.resources.ResourceLockState.Disposition.RETRY;
 
 @NonNullApi
 public class DefaultPlanExecutor implements PlanExecutor {
+
+    public static class Stats {
+        public final String executorName;
+        public final long busyTime;
+        public final long idleTime;
+
+        Stats(String executorName, long busyTime, long idleTime) {
+            this.executorName = executorName;
+            this.busyTime = busyTime;
+            this.idleTime = idleTime;
+        }
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPlanExecutor.class);
     private final int executorCount;
     private final ExecutorFactory executorFactory;
     private final WorkerLeaseService workerLeaseService;
     private final BuildCancellationToken cancellationToken;
     private final ResourceLockCoordinationService coordinationService;
+    private final List<Stats> stats = new ArrayList<Stats>();
 
     public DefaultPlanExecutor(ParallelismConfiguration parallelismConfiguration, ExecutorFactory executorFactory, WorkerLeaseService workerLeaseService, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
         this.executorFactory = executorFactory;
@@ -63,6 +79,10 @@ public class DefaultPlanExecutor implements PlanExecutor {
 
         this.executorCount = numberOfParallelExecutors;
         this.workerLeaseService = workerLeaseService;
+    }
+
+    public List<Stats> getStats() {
+        return stats;
     }
 
     @Override
@@ -103,7 +123,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
         }
     }
 
-    private static class ExecutorWorker implements Runnable {
+    private class ExecutorWorker implements Runnable {
         private final ExecutionPlan executionPlan;
         private final Action<? super Node> nodeExecutor;
         private final WorkerLease parentWorkerLease;
@@ -149,6 +169,8 @@ public class DefaultPlanExecutor implements PlanExecutor {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Execution worker [{}] finished, busy: {}, idle: {}", Thread.currentThread(), TimeFormatting.formatDurationVerbose(busy.get()), TimeFormatting.formatDurationVerbose(total - busy.get()));
             }
+
+            recordStatsFor(Thread.currentThread(), busy.get(), total - busy.get());
         }
 
         /**
@@ -213,6 +235,12 @@ public class DefaultPlanExecutor implements PlanExecutor {
                     }
                 });
             }
+        }
+    }
+
+    private void recordStatsFor(Thread executorThread, long busy, long idle) {
+        synchronized (stats) {
+            stats.add(new Stats(executorThread.getName(), busy, idle));
         }
     }
 }
