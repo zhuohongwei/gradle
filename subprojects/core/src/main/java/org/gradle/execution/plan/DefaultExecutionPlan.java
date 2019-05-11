@@ -597,25 +597,26 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         Iterator<Node> readyIterator = readyQueue.iterator();
         while (readyIterator.hasNext()) {
             Node node = readyIterator.next();
-            MutationInfo mutations = getResolvedMutationInfo(node);
-
-            // TODO: convert output file checks to a resource lock
-            if (!tryLockProjectFor(node)
-                || !workerLease.tryLock()
-                || !canRunWithCurrentlyExecutedNodes(node, mutations)) {
-                resourceLockState.releaseLocks();
-                continue;
+            if (tryLockProjectFor(node)) {
+                if (workerLease.tryLock()) {
+                    MutationInfo mutations = getResolvedMutationInfo(node);
+                    // TODO: convert output file checks to a resource lock
+                    if (canRunWithCurrentlyExecutedNodes(node, mutations)) {
+                        if (node.allDependenciesSuccessful()) {
+                            recordNodeStarted(node);
+                            node.startExecution();
+                        } else {
+                            node.skipExecution();
+                            updateAllDependenciesCompleteForPredecessors(node);
+                        }
+                        readyIterator.remove();
+                        return node;
+                    }
+                }
             }
 
-            if (node.allDependenciesSuccessful()) {
-                recordNodeStarted(node);
-                node.startExecution();
-            } else {
-                node.skipExecution();
-                updateAllDependenciesCompleteForPredecessors(node);
-            }
-            readyIterator.remove();
-            return node;
+            resourceLockState.releaseLocks();
+
         }
         return null;
     }
