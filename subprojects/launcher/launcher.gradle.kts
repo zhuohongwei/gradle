@@ -6,7 +6,7 @@ import org.gradle.gradlebuild.unittestandcompile.ModuleType
 
 plugins {
     gradlebuild.classycle
-    id("com.palantir.graal") version ("0.3.0-2-g6c49b4d")
+    id("com.palantir.graal") version ("0.3.0-27-gf54868f")
 }
 
 dependencies {
@@ -112,4 +112,7 @@ graal {
     option("-H:ReflectionConfigurationFiles=${file("graal-reflect.json")}")
     option("-H:DynamicProxyConfigurationFiles=${file("graal-proxies.json")}")
     option("-H:JNIConfigurationFiles=${file("graal-jni.json")}")
+    option("-H:ResourceConfigurationFiles=${file("graal-resources.json")}")
+    option("-H:Log=registerResource:")
+    option("-H:DelayClassInitialization=org.gradle.internal.nativeintegration.services.NativeServices,org.gradle.internal.nativeintegration.jansi.JansiBootPathConfigurer")
 }

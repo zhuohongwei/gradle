@@ -40,6 +40,9 @@ public class JansiStorageLocator {
 
     private File makeVersionSpecificDir(File storageDir) {
         String jansiVersion = org.fusesource.jansi.Ansi.class.getPackage().getImplementationVersion();
+        if (jansiVersion == null) {
+            jansiVersion = "1.17.1";
+        }
         return new File(storageDir, "jansi/" + jansiVersion);
     }
 }

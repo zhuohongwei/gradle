@@ -37,12 +37,14 @@ import org.gradle.internal.serialize.BaseSerializerFactory
 import org.gradle.internal.serialize.kryo.KryoBackedDecoder
 import org.gradle.internal.serialize.kryo.KryoBackedEncoder
 import org.gradle.util.Path
-
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.SortedSet
 import java.util.function.Supplier
+import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashSet
+import kotlin.collections.getValue
 
 
 class DefaultInstantExecution(
@@ -228,7 +230,6 @@ class DefaultInstantExecution(
             try {
                 val value = deserializer.read(decoder) ?: continue
                 val field = taskFieldsByName.getValue(fieldName)
-                println("DESERIALIZED ${task.path} field $fieldName value $value")
                 @Suppress("unchecked_cast")
                 when (field.type) {
                     DirectoryProperty::class.java -> (field.getFieldValue(task) as? DirectoryProperty)?.set(value as File)

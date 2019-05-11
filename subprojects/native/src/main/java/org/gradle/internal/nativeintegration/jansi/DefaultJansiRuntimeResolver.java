@@ -55,6 +55,6 @@ public class DefaultJansiRuntimeResolver implements JansiRuntimeResolver {
         if (prop != null) {
             return Integer.parseInt(prop);
         }
-        return -1;
+        return 64;
     }
 }
