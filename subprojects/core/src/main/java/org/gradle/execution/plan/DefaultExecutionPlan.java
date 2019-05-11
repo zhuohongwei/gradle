@@ -74,12 +74,14 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -90,7 +92,13 @@ import java.util.function.Consumer;
 public class DefaultExecutionPlan implements ExecutionPlan {
     private final Set<TaskNode> entryTasks = new LinkedHashSet<TaskNode>();
     private final NodeMapping nodeMapping = new NodeMapping();
-    private final List<Node> readyQueue = Lists.newLinkedList();
+    private final PriorityQueue<Node> readyQueue = new PriorityQueue<Node>(new Comparator<Node>() {
+        @Override
+        public int compare(Node o1, Node o2) {
+            return Integer.compare(Iterables.size(o1.getAllSuccessors()), Iterables.size(o2.getAllSuccessors()));
+        }
+    });
+
     private final List<Node> executionQueue = Lists.newLinkedList();
     private final Map<Project, ResourceLock> projectLocks = Maps.newHashMap();
     private final FailureCollector failureCollector = new FailureCollector();
@@ -551,7 +559,7 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             return null;
         }
 
-        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext();) {
+        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext(); ) {
             Node node = iterator.next();
             if (node.isComplete()) {
                 updateAllDependenciesCompleteForPredecessors(node);
@@ -578,10 +586,10 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         Iterator<Node> readyIterator = readyQueue.iterator();
         while (readyIterator.hasNext()) {
             Node node = readyIterator.next();
-            MutationInfo mutations = getResolvedMutationInfo(node);
 
-            if (tryLockProjectFor(node)) {
-                if (workerLease.tryLock()) {
+            if (workerLease.tryLock()) {
+                if (tryLockProjectFor(node)) {
+                    MutationInfo mutations = getResolvedMutationInfo(node);
                     // TODO: convert output file checks to a resource lock
                     if (canRunWithCurrentlyExecutedNodes(node, mutations)) {
                         if (node.allDependenciesSuccessful()) {
@@ -673,20 +681,20 @@ public class DefaultExecutionPlan implements ExecutionPlan {
                 @Override
                 public void visitOutputFileProperty(final String propertyName, boolean optional, final PropertyValue value, final OutputFilePropertyType filePropertyType) {
                     withDeadlockHandling(
-                        taskNode,
-                        "an output",
-                        "output property '" + propertyName + "'",
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                FileParameterUtils.resolveOutputFilePropertySpecs(task.toString(), propertyName, value, filePropertyType, fileCollectionFactory, new Consumer<OutputFilePropertySpec>() {
-                                    @Override
-                                    public void accept(OutputFilePropertySpec outputFilePropertySpec) {
-                                        mutations.outputPaths.addAll(canonicalizedPaths(canonicalizedFileCache, outputFilePropertySpec.getPropertyFiles()));
-                                    }
-                                });
+                            taskNode,
+                            "an output",
+                            "output property '" + propertyName + "'",
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    FileParameterUtils.resolveOutputFilePropertySpecs(task.toString(), propertyName, value, filePropertyType, fileCollectionFactory, new Consumer<OutputFilePropertySpec>() {
+                                        @Override
+                                        public void accept(OutputFilePropertySpec outputFilePropertySpec) {
+                                            mutations.outputPaths.addAll(canonicalizedPaths(canonicalizedFileCache, outputFilePropertySpec.getPropertyFiles()));
+                                        }
+                                    });
+                                }
                             }
-                        }
                     );
                     mutations.hasOutputs = true;
                 }
@@ -1039,8 +1047,8 @@ public class DefaultExecutionPlan implements ExecutionPlan {
     @Override
     public boolean hasNodesRemaining() {
         return !runningNodes.isEmpty()
-            || !readyQueue.isEmpty()
-            || !executionQueue.isEmpty();
+                || !readyQueue.isEmpty()
+                || !executionQueue.isEmpty();
     }
 
     @Override
