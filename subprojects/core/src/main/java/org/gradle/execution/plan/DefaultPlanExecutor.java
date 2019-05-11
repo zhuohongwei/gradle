@@ -131,14 +131,12 @@ public class DefaultPlanExecutor implements PlanExecutor {
 
     private interface Queuer {
         void checkForMoreWork();
-        void waitForWork();
     }
 
     private class ExecutorQueuer implements Runnable, Queuer {
         private final ExecutionPlan executionPlan;
         private final Lock lock;
         private final Condition nodeCompleted;
-        private final Condition nodeQueued;
         private final BuildCancellationToken cancellationToken;
         private final ResourceLockCoordinationService coordinationService;
 
@@ -146,7 +144,6 @@ public class DefaultPlanExecutor implements PlanExecutor {
             this.executionPlan = executionPlan;
             this.lock = new ReentrantLock();
             this.nodeCompleted = lock.newCondition();
-            this.nodeQueued = lock.newCondition();
             this.cancellationToken = cancellationToken;
             this.coordinationService = coordinationService;
         }
@@ -158,7 +155,6 @@ public class DefaultPlanExecutor implements PlanExecutor {
             while (!queueNodes(wait)) {
                 lock.lock();
                 try {
-                    nodeQueued.signalAll();
                     nodeCompleted.await();
                 } catch (InterruptedException e) {
                     throw UncheckedException.throwAsUncheckedException(e);
@@ -181,18 +177,6 @@ public class DefaultPlanExecutor implements PlanExecutor {
             }
         }
 
-        @Override
-        public void waitForWork() {
-            lock.lock();
-            try {
-                nodeQueued.await();
-            } catch (InterruptedException e) {
-                throw UncheckedException.throwAsUncheckedException(e);
-            } finally {
-                lock.unlock();
-            }
-        }
-
         private boolean queueNodes(final AtomicLong wait) {
             final MutableBoolean allNodesQueued = new MutableBoolean();
             final Timer waitTimer = Time.startTimer();
@@ -210,6 +194,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
                         executionPlan.populateReadyQueue();
                         allNodesQueued.set(executionPlan.allNodesQueued());
                         wait.addAndGet(waitTimer.getElapsedMillis());
+                        coordinationService.notifyStateChange();
                     } catch (Throwable t) {
                         resourceLockState.releaseLocks();
                         executionPlan.abortAllAndFail(t);
@@ -249,7 +234,6 @@ public class DefaultPlanExecutor implements PlanExecutor {
             final Timer executionTimer = Time.startTimer();
 
             WorkerLease childLease = parentWorkerLease.createChild();
-            queuer.waitForWork();
             while (true) {
                 boolean nodesRemaining = executeNextNode(childLease, wait, new Action<Node>() {
                     @Override
