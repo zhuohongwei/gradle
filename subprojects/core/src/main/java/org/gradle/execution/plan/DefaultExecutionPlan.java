@@ -90,6 +90,7 @@ import java.util.function.Consumer;
 public class DefaultExecutionPlan implements ExecutionPlan {
     private final Set<TaskNode> entryTasks = new LinkedHashSet<TaskNode>();
     private final NodeMapping nodeMapping = new NodeMapping();
+    private final List<Node> readyQueue = Lists.newLinkedList();
     private final List<Node> executionQueue = Lists.newLinkedList();
     private final Map<Project, ResourceLock> projectLocks = Maps.newHashMap();
     private final FailureCollector failureCollector = new FailureCollector();
@@ -553,44 +554,68 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             return null;
         }
 
-        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext();) {
+        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext(); ) {
             Node node = iterator.next();
             if (node.isComplete()) {
                 updateAllDependenciesCompleteForPredecessors(node);
                 iterator.remove();
             }
         }
+
         if (!maybeNodesReady) {
             return null;
         }
+
+        Node readyNode = selectFirstReadyNode(workerLease, resourceLockState);
+        if (readyNode != null) {
+            maybeNodesReady = true;
+            return readyNode;
+        }
+
+        populateReadyQueue();
+
+        if (readyQueue.isEmpty()) {
+            return null;
+        }
+        maybeNodesReady = true;
+        return selectFirstReadyNode(workerLease, resourceLockState);
+    }
+
+    private void populateReadyQueue() {
         Iterator<Node> iterator = executionQueue.iterator();
-        boolean foundReadyNode = false;
         while (iterator.hasNext()) {
             Node node = iterator.next();
             if (node.isReady() && node.allDependenciesComplete()) {
-                foundReadyNode = true;
-                MutationInfo mutations = getResolvedMutationInfo(node);
-
-                // TODO: convert output file checks to a resource lock
-                if (!tryLockProjectFor(node)
-                    || !workerLease.tryLock()
-                    || !canRunWithCurrentlyExecutedNodes(node, mutations)) {
-                    resourceLockState.releaseLocks();
-                    continue;
-                }
-
-                if (node.allDependenciesSuccessful()) {
-                    recordNodeStarted(node);
-                    node.startExecution();
-                } else {
-                    node.skipExecution();
-                    updateAllDependenciesCompleteForPredecessors(node);
-                }
-                iterator.remove();
-                return node;
+                readyQueue.add(node);
             }
         }
-        maybeNodesReady = foundReadyNode;
+    }
+
+    @Nullable
+    private Node selectFirstReadyNode(WorkerLeaseRegistry.WorkerLease workerLease, ResourceLockState resourceLockState) {
+        Iterator<Node> readyIterator = readyQueue.iterator();
+        while (readyIterator.hasNext()) {
+            Node node = readyIterator.next();
+            MutationInfo mutations = getResolvedMutationInfo(node);
+
+            // TODO: convert output file checks to a resource lock
+            if (!tryLockProjectFor(node)
+                || !workerLease.tryLock()
+                || !canRunWithCurrentlyExecutedNodes(node, mutations)) {
+                resourceLockState.releaseLocks();
+                continue;
+            }
+
+            if (node.allDependenciesSuccessful()) {
+                recordNodeStarted(node);
+                node.startExecution();
+            } else {
+                node.skipExecution();
+                updateAllDependenciesCompleteForPredecessors(node);
+            }
+            readyIterator.remove();
+            return node;
+        }
         return null;
     }
 
