@@ -52,11 +52,13 @@ public class DefaultPlanExecutor implements PlanExecutor {
         public final String executorName;
         public final long busyTime;
         public final long idleTime;
+        public final long waitTime;
 
-        Stats(String executorName, long busyTime, long idleTime) {
+        Stats(String executorName, long busyTime, long idleTime, long waitTime) {
             this.executorName = executorName;
             this.busyTime = busyTime;
             this.idleTime = idleTime;
+            this.waitTime = waitTime;
         }
     }
 
@@ -141,12 +143,13 @@ public class DefaultPlanExecutor implements PlanExecutor {
         @Override
         public void run() {
             final AtomicLong busy = new AtomicLong(0);
+            final AtomicLong wait = new AtomicLong(0);
             Timer totalTimer = Time.startTimer();
             final Timer executionTimer = Time.startTimer();
 
             WorkerLease childLease = parentWorkerLease.createChild();
             while (true) {
-                boolean nodesRemaining = executeNextNode(childLease, new Action<Node>() {
+                boolean nodesRemaining = executeNextNode(childLease, wait, new Action<Node>() {
                     @Override
                     public void execute(Node work) {
                         LOGGER.info("{} ({}) started.", work, Thread.currentThread());
@@ -170,7 +173,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
                 LOGGER.debug("Execution worker [{}] finished, busy: {}, idle: {}", Thread.currentThread(), TimeFormatting.formatDurationVerbose(busy.get()), TimeFormatting.formatDurationVerbose(total - busy.get()));
             }
 
-            recordStatsFor(Thread.currentThread(), busy.get(), total - busy.get());
+            recordStatsFor(Thread.currentThread(), busy.get(), total - busy.get() - wait.get(), wait.get());
         }
 
         /**
@@ -179,9 +182,11 @@ public class DefaultPlanExecutor implements PlanExecutor {
          *
          * @return {@code true} if there are more nodes waiting to execute, {@code false} if all nodes have been executed.
          */
-        private boolean executeNextNode(final WorkerLease workerLease, final Action<Node> nodeExecutor) {
+        private boolean executeNextNode(final WorkerLease workerLease, final AtomicLong wait, final Action<Node> nodeExecutor) {
             final MutableReference<Node> selected = MutableReference.empty();
             final MutableBoolean nodesRemaining = new MutableBoolean();
+            final Timer waitTimer = Time.startTimer();
+
             coordinationService.withStateLock(new Transformer<ResourceLockState.Disposition, ResourceLockState>() {
                 @Override
                 public ResourceLockState.Disposition transform(ResourceLockState resourceLockState) {
@@ -195,7 +200,9 @@ public class DefaultPlanExecutor implements PlanExecutor {
                     }
 
                     try {
+                        waitTimer.reset();
                         selected.set(executionPlan.selectNext(workerLease, resourceLockState));
+                        wait.addAndGet(waitTimer.getElapsedMillis());
                     } catch (Throwable t) {
                         resourceLockState.releaseLocks();
                         executionPlan.abortAllAndFail(t);
@@ -238,9 +245,9 @@ public class DefaultPlanExecutor implements PlanExecutor {
         }
     }
 
-    private void recordStatsFor(Thread executorThread, long busy, long idle) {
+    private void recordStatsFor(Thread executorThread, long busy, long idle, long waitTime) {
         synchronized (stats) {
-            stats.add(new Stats(executorThread.getName(), busy, idle));
+            stats.add(new Stats(executorThread.getName(), busy, idle, waitTime));
         }
     }
 }
