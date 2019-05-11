@@ -23,7 +23,6 @@ import org.gradle.concurrent.ParallelismConfiguration;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.internal.MutableBoolean;
 import org.gradle.internal.MutableReference;
-import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.ManagedExecutor;
 import org.gradle.internal.resources.ResourceLockCoordinationService;
@@ -41,9 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.gradle.internal.resources.DefaultResourceLockCoordinationService.unlock;
 import static org.gradle.internal.resources.ResourceLockState.Disposition.FINISHED;
@@ -97,7 +93,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
         try {
             WorkerLease parentWorkerLease = workerLeaseService.getCurrentWorkerLease();
             ExecutorQueuer queuer = new ExecutorQueuer(executionPlan, cancellationToken, coordinationService);
-            startWorkers(queuer, executionPlan, nodeExecutor, executor, parentWorkerLease);
+            startWorkers(executionPlan, nodeExecutor, executor, parentWorkerLease);
             queuer.run();
             awaitCompletion(executionPlan, failures);
         } finally {
@@ -122,28 +118,20 @@ public class DefaultPlanExecutor implements PlanExecutor {
         });
     }
 
-    private void startWorkers(ExecutorQueuer queuer, ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, Executor executor, WorkerLease parentWorkerLease) {
+    private void startWorkers(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, Executor executor, WorkerLease parentWorkerLease) {
         LOGGER.debug("Using {} parallel executor threads", executorCount);
         for (int i = 0; i < executorCount; i++) {
-            executor.execute(new ExecutorWorker(executionPlan, nodeExecutor, parentWorkerLease, queuer, cancellationToken, coordinationService));
+            executor.execute(new ExecutorWorker(executionPlan, nodeExecutor, parentWorkerLease, cancellationToken, coordinationService));
         }
     }
 
-    private interface Queuer {
-        void checkForMoreWork();
-    }
-
-    private class ExecutorQueuer implements Runnable, Queuer {
+    private class ExecutorQueuer implements Runnable {
         private final ExecutionPlan executionPlan;
-        private final Lock lock;
-        private final Condition nodeCompleted;
         private final BuildCancellationToken cancellationToken;
         private final ResourceLockCoordinationService coordinationService;
 
         private ExecutorQueuer(ExecutionPlan executionPlan, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
             this.executionPlan = executionPlan;
-            this.lock = new ReentrantLock();
-            this.nodeCompleted = lock.newCondition();
             this.cancellationToken = cancellationToken;
             this.coordinationService = coordinationService;
         }
@@ -153,28 +141,9 @@ public class DefaultPlanExecutor implements PlanExecutor {
             final AtomicLong wait = new AtomicLong(0);
             Timer totalTimer = Time.startTimer();
             while (!queueNodes(wait)) {
-                lock.lock();
-                try {
-                    nodeCompleted.await();
-                } catch (InterruptedException e) {
-                    throw UncheckedException.throwAsUncheckedException(e);
-                } finally {
-                    lock.unlock();
-                }
             }
-
             long total = totalTimer.getElapsedMillis();
-
             recordStatsFor(Thread.currentThread(), 0, total - wait.get(), wait.get());
-        }
-
-        public void checkForMoreWork() {
-            lock.lock();
-            try {
-                nodeCompleted.signal();
-            } finally {
-                lock.unlock();
-            }
         }
 
         private boolean queueNodes(final AtomicLong wait) {
@@ -201,7 +170,9 @@ public class DefaultPlanExecutor implements PlanExecutor {
                         allNodesQueued.set(true);
                     }
 
-                    return FINISHED;
+                    return allNodesQueued.get()
+                        ? FINISHED
+                        : RETRY;
                 }
             });
 
@@ -213,15 +184,13 @@ public class DefaultPlanExecutor implements PlanExecutor {
         private final ExecutionPlan executionPlan;
         private final Action<? super Node> nodeExecutor;
         private final WorkerLease parentWorkerLease;
-        private final Queuer queuer;
         private final BuildCancellationToken cancellationToken;
         private final ResourceLockCoordinationService coordinationService;
 
-        private ExecutorWorker(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, WorkerLease parentWorkerLease, Queuer queuer, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
+        private ExecutorWorker(ExecutionPlan executionPlan, Action<? super Node> nodeExecutor, WorkerLease parentWorkerLease, BuildCancellationToken cancellationToken, ResourceLockCoordinationService coordinationService) {
             this.executionPlan = executionPlan;
             this.nodeExecutor = nodeExecutor;
             this.parentWorkerLease = parentWorkerLease;
-            this.queuer = queuer;
             this.cancellationToken = cancellationToken;
             this.coordinationService = coordinationService;
         }
@@ -327,7 +296,6 @@ public class DefaultPlanExecutor implements PlanExecutor {
                         return unlock(workerLease).transform(state);
                     }
                 });
-                queuer.checkForMoreWork();
             }
         }
     }
