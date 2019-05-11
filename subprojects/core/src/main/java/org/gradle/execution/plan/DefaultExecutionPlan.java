@@ -587,6 +587,7 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             Node node = iterator.next();
             if (node.isReady() && node.allDependenciesComplete()) {
                 readyQueue.add(node);
+                iterator.remove();
             }
         }
     }
