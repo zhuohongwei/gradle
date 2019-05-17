@@ -31,7 +31,7 @@ class AsyncProfilerFlameGraphGenerator {
     private FlameGraphGenerator flameGraphGenerator = new FlameGraphGenerator()
 
     void generateGraphs(File outputFolder) {
-        def stackText = outputFolder.listFiles().collect { it.text }.join("\n")
+        def stackText = outputFolder.listFiles().collect { it.text }.join("\n").replace('/', '.')
         DetailLevel.values().each { DetailLevel level ->
             File stacks = generateStacks(outputFolder.parentFile, stackText, EventType.CPU, level)
             generateFlameGraph(stacks, EventType.CPU, level)
