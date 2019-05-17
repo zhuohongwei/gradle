@@ -98,6 +98,7 @@ class AsyncProfiler extends Profiler implements Stoppable {
                 getProfilerScript().getAbsolutePath(),
                 "start",
                 "-e", "cpu",
+                "--all-user",
                 pid.pid
             ].execute().waitForProcessOutput(System.out, System.err)
         }
