@@ -33,6 +33,7 @@ class DefaultNamedDomainObjectListTest extends AbstractNamedDomainObjectCollecti
     final StringBuffer b = new StringBuffer("b")
     final StringBuffer c = new StringBuffer("c")
     final StringBuilder d = new StringBuilder("d")
+    final StringBuilder e = new StringBuilder("e")
     final boolean externalProviderAllowed = true
     final boolean supportsBuildOperations = true
 

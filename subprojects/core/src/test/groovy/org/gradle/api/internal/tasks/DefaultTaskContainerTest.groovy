@@ -1498,6 +1498,7 @@ class DefaultTaskContainerTest extends AbstractPolymorphicDomainObjectContainerS
     final SomeTask b = factory.create("b", SomeTask)
     final SomeTask c = factory.create("c", SomeTask)
     final SomeOtherTask d = factory.create("d", SomeOtherTask)
+    final SomeOtherTask e = factory.create("e", SomeOtherTask)
 
     static class SomeTask extends DefaultTask {}
 
@@ -1510,7 +1511,7 @@ class DefaultTaskContainerTest extends AbstractPolymorphicDomainObjectContainerS
     void setupContainerDefaults() {
         taskFactory.create(_ as TaskIdentity) >> { args ->
             def taskIdentity = args[0]
-            task(taskIdentity.name)
+            task(taskIdentity.name, taskIdentity.type)
         }
     }
 
@@ -1947,7 +1948,7 @@ class DefaultTaskContainerTest extends AbstractPolymorphicDomainObjectContainerS
     }
 
     private <U extends TaskInternal> U task(final String name, Class<U> type) {
-        Mock(type, name: "[task" + taskCount++ + "]") {
+        Mock(type, name: "[task" + taskCount++ + " with name $name]") {
             getName() >> name
             getTaskDependency() >> Mock(TaskDependency)
             getTaskIdentity() >> TaskIdentity.create(name, type, project)

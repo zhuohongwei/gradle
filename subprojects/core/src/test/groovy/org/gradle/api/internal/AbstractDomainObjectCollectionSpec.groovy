@@ -56,6 +56,8 @@ abstract class AbstractDomainObjectCollectionSpec<T> extends Specification {
 
     abstract <S extends T> S getD()
 
+    abstract <S extends T> S getE()
+
     Class<T> getType() {
         return a.class
     }
@@ -1806,6 +1808,18 @@ abstract class AbstractDomainObjectCollectionSpec<T> extends Specification {
         ops[1].details.applicationId == id2.longValue()
         ops[2].details.applicationId == id1.longValue()
         ops[3].details.applicationId == id2.longValue()
+    }
+
+    def "can change the matching and withType filter applying order"() {
+        container.add(c)
+        container.add(a)
+        container.add(e)
+        container.add(d)
+        def matchingSpec = { it == a || it == d }
+
+        expect:
+        toList(container.matching(matchingSpec).withType(otherType)) == [d]
+        toList(container.matching(matchingSpec).withType(otherType)) == toList(container.withType(otherType).matching(matchingSpec))
     }
 
     protected Map<String, Closure> getQueryMethods() {

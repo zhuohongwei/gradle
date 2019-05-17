@@ -26,6 +26,7 @@ class DefaultDomainObjectSetTest extends AbstractDomainObjectCollectionSpec<Char
     StringBuffer b = new StringBuffer("b")
     StringBuffer c = new StringBuffer("c")
     StringBuilder d = new StringBuilder("d")
+    StringBuilder e = new StringBuilder("e")
     boolean externalProviderAllowed = true
     final boolean supportsBuildOperations = true
 

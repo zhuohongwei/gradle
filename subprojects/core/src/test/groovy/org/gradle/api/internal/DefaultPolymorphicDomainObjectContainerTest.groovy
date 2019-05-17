@@ -43,11 +43,16 @@ class DefaultPolymorphicDomainObjectContainerTest extends AbstractPolymorphicDom
     Person b = new DefaultPerson(name: "b")
     Person c = new DefaultPerson(name: "c")
     Person d = new DefaultCtorNamedPerson("d")
+    Person e = new DefaultCtorNamedPerson("e")
     boolean externalProviderAllowed = true
+
+    final Class<Person> type = Person
+    final Class<AgeAwarePerson> otherType = AgeAwarePerson
 
     @Override
     void setupContainerDefaults() {
         container.registerDefaultFactory({ new DefaultPerson(name: it) } as NamedDomainObjectFactory )
+        container.registerFactory(AgeAwarePerson, { new DefaultCtorNamedPerson(it) } as NamedDomainObjectFactory)
     }
 
     @Override

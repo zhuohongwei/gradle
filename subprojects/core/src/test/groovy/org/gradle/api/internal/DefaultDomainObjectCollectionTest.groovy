@@ -29,6 +29,7 @@ class DefaultDomainObjectCollectionTest extends AbstractDomainObjectCollectionSp
     StringBuffer b = new StringBuffer("b")
     StringBuffer c = new StringBuffer("c")
     StringBuilder d = new StringBuilder("d")
+    StringBuilder e = new StringBuilder("e")
     boolean externalProviderAllowed = true
     boolean supportsBuildOperations = true
     def canGetAllMatchingDomainObjectsOrderedByOrderAdded() {

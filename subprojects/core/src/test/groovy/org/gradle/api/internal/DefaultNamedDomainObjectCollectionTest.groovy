@@ -37,6 +37,7 @@ class DefaultNamedDomainObjectCollectionTest extends AbstractNamedDomainObjectCo
     final Bean b = new BeanSub1("b")
     final Bean c = new BeanSub1("c")
     final Bean d = new BeanSub2("d")
+    final Bean e = new BeanSub2("e")
     final boolean externalProviderAllowed = true
     final boolean supportsBuildOperations = true
 

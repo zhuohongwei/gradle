@@ -21,6 +21,10 @@ import org.gradle.api.PolymorphicDomainObjectContainer
 import org.gradle.internal.Actions
 import spock.lang.Unroll
 
+import static org.gradle.util.WrapUtil.toList
+import static org.gradle.util.WrapUtil.toList
+import static org.gradle.util.WrapUtil.toList
+
 abstract class AbstractPolymorphicDomainObjectContainerSpec<T> extends AbstractNamedDomainObjectContainerSpec<T> {
     abstract PolymorphicDomainObjectContainer<T> getContainer()
 
@@ -77,5 +81,36 @@ abstract class AbstractPolymorphicDomainObjectContainerSpec<T> extends AbstractN
 
         where:
         queryMethods << getQueryMethods()
+    }
+
+    def "can change the matching and withType filter applying order on created element"() {
+        setupContainerDefaults()
+        def c = container.create("c", type)
+        def a = container.create("a", type)
+        def e = container.create("e", otherType)
+        def d = container.create("d", otherType)
+        def matchingSpec = { it == a || it == d }
+
+        expect:
+        toList(container.matching(matchingSpec)) == [a, d]
+        toList(container.withType(otherType)) == [e, d]
+        toList(container.matching(matchingSpec).withType(otherType)) == [d]
+        toList(container.matching(matchingSpec).withType(otherType)) == toList(container.withType(otherType).matching(matchingSpec))
+    }
+
+    def "can change the matching and withType filter applying order on registered element"() {
+        setupContainerDefaults()
+        def c = container.register("c", type)
+        def a = container.register("a", type)
+        def e = container.register("e", otherType)
+        def d = container.register("d", otherType)
+        def matchingSpec = { it == a || it == d.get() }
+
+        expect:
+        println(container.matching(matchingSpec))
+        toList(container.matching(matchingSpec)) == [a.get(), d.get()]
+        toList(container.withType(otherType)) == [e.get(), d.get()]
+        toList(container.matching(matchingSpec).withType(otherType)) == [d.get()]
+        toList(container.matching(matchingSpec).withType(otherType)) == toList(container.withType(otherType).matching(matchingSpec))
     }
 }
