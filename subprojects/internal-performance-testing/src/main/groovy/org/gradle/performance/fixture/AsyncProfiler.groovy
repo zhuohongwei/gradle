@@ -51,7 +51,7 @@ class AsyncProfiler extends Profiler implements Stoppable {
     private List<String> getJvmOpts(boolean startRecordingImmediately, File outputFolder) {
         String opts = "-agentpath:${getAsyncProfilerHome()}/build/libasyncProfiler.so"
         if (startRecordingImmediately) {
-            opts += "=start,file=${new File(outputFolder, "stacks${sequence++}.txt")},event=itimer,collapsed"
+            opts += "=start,file=${new File(outputFolder, "stacks${sequence++}.txt")},event=cpu,collapsed"
         }
         [opts]
     }
@@ -97,7 +97,7 @@ class AsyncProfiler extends Profiler implements Stoppable {
             [
                 getProfilerScript().getAbsolutePath(),
                 "start",
-                "-e", "itimer",
+                "-e", "cpu",
                 pid.pid
             ].execute().waitForProcessOutput(System.out, System.err)
         }
