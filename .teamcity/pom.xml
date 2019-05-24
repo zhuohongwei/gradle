@@ -38,7 +38,7 @@
 
     <build>
         <sourceDirectory>settings</sourceDirectory>
-        <testSourceDirectory>../.teamcityTest/Gradle_Check_Tests</testSourceDirectory>
+        <testSourceDirectory>test</testSourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
