@@ -37,7 +37,7 @@
     </pluginRepositories>
 
     <build>
-        <sourceDirectory>.</sourceDirectory>
+        <sourceDirectory>settings</sourceDirectory>
         <testSourceDirectory>../.teamcityTest/Gradle_Check_Tests</testSourceDirectory>
         <plugins>
             <plugin>
