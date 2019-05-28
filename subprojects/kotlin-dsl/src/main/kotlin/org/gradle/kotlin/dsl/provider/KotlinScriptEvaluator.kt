@@ -223,13 +223,14 @@ class StandardKotlinScriptEvaluator(
             )
         }
 
-        override fun cachedDirFor(
+        override fun <T> cachedDirFor(
             scriptHost: KotlinScriptHost<*>,
             templateId: String,
             sourceHash: HashCode,
             parentClassLoader: ClassLoader,
             accessorsClassPath: ClassPath?,
-            initializer: (File) -> Unit
+            initializerInput: () -> T,
+            initializer: (T, File) -> Unit
         ): File = try {
 
             val baseCacheKey =
@@ -239,21 +240,23 @@ class StandardKotlinScriptEvaluator(
                 accessorsClassPath?.let { baseCacheKey + it }
                     ?: baseCacheKey
 
-            cacheDirFor(scriptHost, effectiveCacheKey, initializer)
+            cacheDirFor(scriptHost, effectiveCacheKey, initializerInput, initializer)
         } catch (e: CacheOpenException) {
             throw e.cause as? ScriptCompilationException ?: e
         }
 
         private
-        fun cacheDirFor(
+        fun <T> cacheDirFor(
             scriptHost: KotlinScriptHost<*>,
             cacheKeySpec: CacheKeyBuilder.CacheKeySpec,
-            initializer: (File) -> Unit
+            initializerInput: () -> T,
+            initializer: (T, File) -> Unit
         ): File =
             scriptCache.cacheDirFor(
                 cacheKeySpec,
                 scriptTarget = scriptHost.target,
                 displayName = scriptHost.scriptSource.displayName,
+                initializerInput = initializerInput,
                 initializer = initializer
             )
 

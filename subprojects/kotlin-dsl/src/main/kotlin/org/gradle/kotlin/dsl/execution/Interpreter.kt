@@ -84,13 +84,14 @@ class Interpreter(val host: Host) {
             programId: ProgramId
         )
 
-        fun cachedDirFor(
+        fun <T> cachedDirFor(
             scriptHost: KotlinScriptHost<*>,
             templateId: String,
             sourceHash: HashCode,
             parentClassLoader: ClassLoader,
             accessorsClassPath: ClassPath?,
-            initializer: (File) -> Unit
+            initializerInput: () -> T,
+            initializer: (T, File) -> Unit
         ): File
 
         fun startCompilerOperation(
@@ -264,8 +265,12 @@ class Interpreter(val host: Host) {
                 templateId,
                 sourceHash,
                 parentClassLoader,
-                null
-            ) { cachedDir ->
+                null,
+                {
+                    pluginAccessorsClassPath.hashCode() // TODO artificial
+                    Pair(pluginAccessorsClassPath, host.compilationClassPathOf(targetScope.parent))
+                }
+            ) { input, cachedDir ->
 
                 startCompilerOperationFor(scriptSource, templateId).use {
 
@@ -287,14 +292,14 @@ class Interpreter(val host: Host) {
                     scriptSource.withLocationAwareExceptionHandling {
                         ResidualProgramCompiler(
                             outputDir = outputDir,
-                            classPath = host.compilationClassPathOf(targetScope.parent),
+                            classPath = input.second,
                             originalSourceHash = sourceHash,
                             programKind = programKind,
                             programTarget = programTarget,
                             implicitImports = host.implicitImports,
                             logger = interpreterLogger,
                             compileBuildOperationRunner = host::runCompileBuildOperation,
-                            pluginAccessorsClassPath = pluginAccessorsClassPath ?: ClassPath.EMPTY
+                            pluginAccessorsClassPath = input.first ?: ClassPath.EMPTY
                         ).compile(residualProgram)
                     }
                 }
@@ -456,18 +461,15 @@ class Interpreter(val host: Host) {
                     scriptTemplateId,
                     sourceHash,
                     parentClassLoader,
-                    accessorsClassPath
-                ) { outputDir ->
+                    accessorsClassPath,
+                    {
+                        val targetScopeClassPath = host.compilationClassPathOf(targetScope)
+                        accessorsClassPath?.let { targetScopeClassPath + it } ?: targetScopeClassPath
+                    }
+                ) { input, outputDir ->
 
                     startCompilerOperationFor(scriptSource, scriptTemplateId).use {
 
-                        val targetScopeClassPath =
-                            host.compilationClassPathOf(targetScope)
-
-                        val compilationClassPath =
-                            accessorsClassPath?.let {
-                                targetScopeClassPath + it
-                            } ?: targetScopeClassPath
 
                         scriptSource.withLocationAwareExceptionHandling {
 
@@ -475,7 +477,7 @@ class Interpreter(val host: Host) {
 
                                 ResidualProgramCompiler(
                                     outputDir,
-                                    compilationClassPath,
+                                    input,
                                     sourceHash,
                                     programKind,
                                     programTarget,

@@ -19,8 +19,10 @@ package org.gradle.kotlin.dsl.cache
 import org.gradle.api.Project
 
 import org.gradle.cache.CacheRepository
+import org.gradle.cache.FileLockManager
 import org.gradle.cache.internal.CacheKeyBuilder
 import org.gradle.cache.internal.CacheKeyBuilder.CacheKeySpec
+import org.gradle.cache.internal.filelock.LockOptionsBuilder
 
 import org.gradle.caching.internal.controller.BuildCacheController
 
@@ -46,6 +48,55 @@ class ScriptCache(
     val hasBuildCacheIntegration: Boolean
 ) {
 
+    fun <T> cacheDirFor(
+        cacheKeySpec: CacheKeySpec,
+        scriptTarget: Any? = null,
+        displayName: String = "",
+        initializerInput: () -> T,
+        initializer: (T, File) -> Unit
+    ): File {
+
+        val cacheKey = cacheKeyFor(cacheKeySpec)
+
+        var exists = true
+        cacheRepository.cache(cacheKey)
+            .withDisplayName("Kotlin DSL script cache")
+            .withProperties(cacheProperties)
+            .withLockOptions(LockOptionsBuilder.mode(FileLockManager.LockMode.Exclusive))
+            .withInitializer {
+                exists = false
+            }
+            .open()
+            .close()
+
+        var input: T? = null
+        val getInput: () -> T = {
+            if (input == null) input = initializerInput()
+            input!!
+        }
+        if (!exists) {
+            getInput()
+        }
+
+        return cacheRepository.cache(cacheKey)
+            .withDisplayName("Kotlin DSL script cache")
+            .withLockOptions(LockOptionsBuilder.mode(FileLockManager.LockMode.Exclusive))
+            .withProperties(cacheProperties)
+            .open().use {
+                it.useCache {
+                    initializeCacheDir(
+                        cacheDirOf(it.baseDir).apply { mkdir() },
+                        cacheKey,
+                        scriptTarget,
+                        displayName
+                    ) {
+                        initializer(getInput(), it)
+                    }
+                }
+                cacheDirOf(it.baseDir)
+            }
+    }
+
     fun cacheDirFor(
         cacheKeySpec: CacheKeySpec,
         scriptTarget: Any? = null,
@@ -55,7 +106,9 @@ class ScriptCache(
         val cacheKey = cacheKeyFor(cacheKeySpec)
 
         return cacheRepository.cache(cacheKey)
+            .withDisplayName("Kotlin DSL script cache")
             .withProperties(cacheProperties)
+            .withLockOptions(LockOptionsBuilder.mode(FileLockManager.LockMode.Exclusive))
             .withInitializer {
                 initializeCacheDir(
                     cacheDirOf(it.baseDir).apply { mkdir() },

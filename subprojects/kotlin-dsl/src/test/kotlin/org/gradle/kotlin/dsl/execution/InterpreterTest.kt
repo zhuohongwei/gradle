@@ -29,6 +29,7 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.internal.initialization.ClassLoaderScope
 
 import org.gradle.groovy.scripts.ScriptSource
+import org.gradle.internal.classpath.ClassPath
 
 import org.gradle.internal.hash.HashCode
 import org.gradle.internal.resource.TextResource
@@ -113,9 +114,13 @@ class InterpreterTest : TestWithTempFiles() {
                     eq(sourceHash),
                     same(parentClassLoader),
                     isNull(),
+                    any<() -> Pair<ClassPath?, ClassPath>>(),
                     any())
             } doAnswer {
-                it.getArgument<(File) -> Unit>(5).invoke(stage1CacheDir)
+                it.getArgument<(Pair<ClassPath?, ClassPath>, File) -> Unit>(6).invoke(
+                    it.getArgument<() -> Pair<ClassPath?, ClassPath>>(5).invoke(),
+                    stage1CacheDir
+                )
                 stage1CacheDir
             }
 
@@ -126,9 +131,13 @@ class InterpreterTest : TestWithTempFiles() {
                     eq(sourceHash),
                     same(targetScopeExportClassLoader),
                     isNull(),
+                    any<() -> ClassPath>(),
                     any())
             } doAnswer {
-                it.getArgument<(File) -> Unit>(5).invoke(stage2CacheDir)
+                it.getArgument<(ClassPath, File) -> Unit>(6).invoke(
+                    it.getArgument<() -> ClassPath>(5).invoke(),
+                    stage2CacheDir
+                )
                 stage2CacheDir
             }
 
@@ -175,9 +184,9 @@ class InterpreterTest : TestWithTempFiles() {
 
                 verify(host).cachedClassFor(stage1ProgramId)
 
-                verify(host).startCompilerOperation(scriptSourceDisplayName)
-
                 verify(host).compilationClassPathOf(parentScope)
+
+                verify(host).startCompilerOperation(scriptSourceDisplayName)
 
                 verify(compilerOperation).close()
 
@@ -197,9 +206,9 @@ class InterpreterTest : TestWithTempFiles() {
 
                 verify(host).cachedClassFor(stage2ProgramId)
 
-                verify(host).startCompilerOperation(scriptSourceDisplayName)
-
                 verify(host).compilationClassPathOf(targetScope)
+
+                verify(host).startCompilerOperation(scriptSourceDisplayName)
 
                 verify(compilerOperation).close()
 
