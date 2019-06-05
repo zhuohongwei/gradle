@@ -144,6 +144,8 @@ public class Main {
     }
 
     private static Experiment runExperiment(String version) {
+        nonABIChange(version);
+
         doWarmUp(version);
 
 //        String pid = readFile(getPidFile(version));
@@ -153,6 +155,14 @@ public class Main {
         stopDaemon(version);
 
         return new Experiment(version, results);
+    }
+
+    private static void nonABIChange(String version) {
+        File projectDir = getExpProject(version);
+        File fileToChange = new File(projectDir, "src/main/java/org/gradle/test/performance/largemonolithicjavaproject/p0/Production0.java");
+        String srcCode = readFile(fileToChange);
+        srcCode = srcCode.replaceAll("property9;", "property9;System.out.println(\"" + java.util.UUID.randomUUID() + "\";");
+        writeFile(fileToChange, srcCode);
     }
 
     private static List<ExecutionResult> doRun(String version, List<String> args) {
