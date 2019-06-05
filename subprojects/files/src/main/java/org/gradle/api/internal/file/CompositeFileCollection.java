@@ -21,6 +21,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.file.collections.BuildDependenciesOnlyFileCollectionResolveContext;
 import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext;
+import org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContextRecursive;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.FileCollectionContainer;
 import org.gradle.api.internal.file.collections.FileCollectionResolveContext;
@@ -37,7 +38,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link org.gradle.api.file.FileCollection} that contains the union of zero or more file collections. Maintains file ordering.
@@ -189,7 +193,31 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
     protected List<? extends FileCollectionInternal> getSourceCollections() {
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(new IdentityFileResolver());
         visitContents(context);
-        return context.resolveAsFileCollections();
+        List<FileCollectionInternal> old = context.resolveAsFileCollections();
+
+        validateAgainstRecursive(old);
+
+        return old;
+    }
+
+    // TODO experiment to make sure the recursive version always produces the same output
+    private void validateAgainstRecursive(List<FileCollectionInternal> old) {
+        DefaultFileCollectionResolveContextRecursive recursiveContext = new DefaultFileCollectionResolveContextRecursive(new IdentityFileResolver());
+        visitContents(recursiveContext);
+        List<FileCollectionInternal> recursive = recursiveContext.resolveAsFileCollections();
+        if (!Objects.equals(old, recursive) && !Objects.equals(asStrings(old), asStrings(recursive))) {
+            throw new IllegalStateException("DefaultFileCollectionResolveContext != DefaultFileCollectionResolveContextRecursive: " + old + ", " + recursive);
+        }
+    }
+
+    private <T> List<String> asStrings(Collection<T> old) {
+        return old.stream().map(x -> {
+            try {
+                return x.toString();
+            } catch (Exception e) {
+                return "";
+            }
+        }).collect(toList());
     }
 
     @Override
