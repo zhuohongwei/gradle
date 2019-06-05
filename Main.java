@@ -161,7 +161,7 @@ public class Main {
         File projectDir = getExpProject(version);
         File fileToChange = new File(projectDir, "src/main/java/org/gradle/test/performance/largemonolithicjavaproject/p0/Production0.java");
         String srcCode = readFile(fileToChange);
-        srcCode = srcCode.replaceAll("property9;", "property9;System.out.println(\"" + java.util.UUID.randomUUID() + "\";");
+        srcCode = srcCode.replaceAll("return property9;", "return property9;System.out.println(\"" + java.util.UUID.randomUUID() + "\");");
         writeFile(fileToChange, srcCode);
     }
 
