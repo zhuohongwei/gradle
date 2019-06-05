@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 the original author or authors.
+ * Copyright 2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,22 +29,27 @@ import org.gradle.internal.Factory;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.internal.nativeintegration.services.FileSystems;
 import org.gradle.util.DeferredUtil;
-import org.gradle.util.GUtil;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
+import java.util.Spliterator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 public class DefaultFileCollectionResolveContext implements ResolvableFileCollectionResolveContext {
     protected final PathToFileResolver fileResolver;
-    private final List<Object> queue = new LinkedList<Object>();
-    private List<Object> addTo = queue;
     private final Converter<? extends FileCollectionInternal> fileCollectionConverter;
     private final Converter<? extends FileTreeInternal> fileTreeConverter;
+    private final Queue<Object> queue = new ArrayDeque<>();
 
     public DefaultFileCollectionResolveContext(FileResolver fileResolver) {
         this(fileResolver, new FileCollectionConverter(fileResolver.getPatternSetFactory()), new FileTreeConverter(fileResolver.getPatternSetFactory()));
@@ -58,7 +63,9 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
 
     @Override
     public FileCollectionResolveContext add(Object element) {
-        addTo.add(element);
+        if (element != null) {
+            queue.add(element);
+        }
         return this;
     }
 
@@ -69,12 +76,12 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
         return nestedContext;
     }
 
-    protected ResolvableFileCollectionResolveContext newContext(PathToFileResolver fileResolver) {
+    protected DefaultFileCollectionResolveContext newContext(PathToFileResolver fileResolver) {
         return new DefaultFileCollectionResolveContext(fileResolver, fileCollectionConverter, fileTreeConverter);
     }
 
     @Override
-    public final ResolvableFileCollectionResolveContext newContext() {
+    public final DefaultFileCollectionResolveContext newContext() {
         return newContext(fileResolver);
     }
 
@@ -83,7 +90,8 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
      */
     @Override
     public List<FileTreeInternal> resolveAsFileTrees() {
-        return doResolve(fileTreeConverter);
+        return doResolve(fileTreeConverter)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -91,66 +99,99 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
      */
     @Override
     public List<FileCollectionInternal> resolveAsFileCollections() {
+        return resolveAsFileStream()
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Resolves the contents of this context as a Stream of atomic {@link FileCollection} instances.
+     */
+    @Override
+    public Stream<? extends FileCollectionInternal> resolveAsFileStream() {
         return doResolve(fileCollectionConverter);
     }
 
     /**
      * Resolves the contents of this context as a list of atomic {@link MinimalFileCollection} instances.
      */
-    public List<MinimalFileCollection> resolveAsMinimalFileCollections() {
+    public Stream<MinimalFileCollection> resolveAsMinimalFileCollections() {
         return doResolve(new MinimalFileCollectionConverter());
     }
 
-    private <T> List<T> doResolve(Converter<? extends T> converter) {
-        List<T> result = new ArrayList<T>();
-        while (!queue.isEmpty()) {
-            Object element = queue.remove(0);
-            // TODO - need to sync with BuildDependenciesOnlyFileCollectionResolveContext
-            if (element instanceof DefaultFileCollectionResolveContext) {
-                DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
-                converter.convertInto(nestedContext, result, fileResolver);
-            } else if (element instanceof FileCollectionContainer) {
-                FileCollectionContainer fileCollection = (FileCollectionContainer) element;
-                resolveNested(fileCollection, result, converter);
-            } else if (element instanceof FileCollection || element instanceof MinimalFileCollection) {
-                converter.convertInto(element, result, fileResolver);
-            } else if (element instanceof Task) {
-                Task task = (Task) element;
-                queue.add(0, task.getOutputs().getFiles());
-            } else if (element instanceof TaskOutputs) {
-                TaskOutputs outputs = (TaskOutputs) element;
-                queue.add(0, outputs.getFiles());
-            } else if (DeferredUtil.isDeferred(element)) {
-                Object deferredResult = DeferredUtil.unpack(element);
-                if (deferredResult != null) {
-                    queue.add(0, deferredResult);
-                }
-            } else if (element instanceof Path) {
-                queue.add(0, ((Path) element).toFile());
-            } else if (element instanceof Iterable) {
-                Iterable<?> iterable = (Iterable) element;
-                GUtil.addToCollection(queue.subList(0, 0), iterable);
-            } else if (element instanceof Object[]) {
-                Object[] array = (Object[]) element;
-                GUtil.addToCollection(queue.subList(0, 0), Arrays.asList(array));
+    private <T> Stream<T> doResolve(Converter<T> converter) {
+        Iterator<T> queueConsumer = new Iterator<T>() {
+            private Iterator<? extends T> next = Collections.emptyIterator();
+
+            @Override
+            public boolean hasNext() {
+                return next.hasNext()
+                    || (!queue.isEmpty() && hasNextBatch());
+            }
+
+            private boolean hasNextBatch() {
+                next = nextBatch(converter, queue.remove()).iterator();
+                return hasNext();
+            }
+
+            @Override
+            public T next() {
+                return next.next();
+            }
+        };
+
+        return asStream(queueConsumer);
+    }
+
+    // TODO - need to sync with BuildDependenciesOnlyFileCollectionResolveContext
+    private <T> Stream<? extends T> nextBatch(Converter<T> converter, Object element) {
+        if (element instanceof DefaultFileCollectionResolveContext) {
+            return converter.convertInto(element, fileResolver);
+        } else if (element instanceof FileCollectionContainer) {
+            return resolveNested(converter, (FileCollectionContainer) element);
+        } else if (element instanceof FileCollection || element instanceof MinimalFileCollection) {
+            return converter.convertInto(element, fileResolver);
+        } else if (element instanceof Task) {
+            return nextBatch(converter, ((Task) element).getOutputs().getFiles());
+        } else if (element instanceof TaskOutputs) {
+            return nextBatch(converter, ((TaskOutputs) element).getFiles());
+        } else if (DeferredUtil.isDeferred(element)) {
+            return nextBatch(converter, DeferredUtil.unpack(element));
+        } else if (element instanceof Path) {
+            return nextBatch(converter, ((Path) element).toFile());
+        } else {
+            if (element instanceof Object[]) {
+                element = Arrays.asList((Object[]) element);
+            }
+
+            if (element instanceof Iterable) {
+                return resolveElements(converter, (Iterable<?>) element);
+            } else if (element != null) {
+                return converter.convertInto(element, fileResolver);
             } else {
-                converter.convertInto(element, result, fileResolver);
+                return Stream.empty();
             }
         }
-        return result;
     }
 
-    protected <T> void resolveNested(FileCollectionContainer fileCollection, List<T> result, Converter<? extends T> converter) {
-        addTo = queue.subList(0, 0);
-        try {
-            fileCollection.visitContents(this);
-        } finally {
-            addTo = queue;
-        }
+    private <T> Stream<T> resolveElements(Converter<T> converter, Iterable<?> element) {
+        return asStream(element.iterator())
+            .flatMap(e -> nextBatch(converter, e));
     }
 
-    protected interface Converter<T> {
-        void convertInto(Object element, Collection<? super T> result, PathToFileResolver resolver);
+    // TODO move out
+    public static <T> Stream<T> asStream(Iterator<T> iterator) {
+        Spliterator<T> spliterator = spliteratorUnknownSize(iterator, Spliterator.ORDERED);
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    private <T> Stream<T> resolveNested(Converter<T> converter, FileCollectionContainer element) {
+        DefaultFileCollectionResolveContext context = newContext();
+        element.visitContents(context);
+        return resolveElements(converter, context.queue);
+    }
+
+    public interface Converter<T> {
+        Stream<? extends T> convertInto(Object element, PathToFileResolver resolver);
     }
 
     public static class FileCollectionConverter implements Converter<FileCollectionInternal> {
@@ -161,26 +202,22 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
         }
 
         @Override
-        public void convertInto(Object element, Collection<? super FileCollectionInternal> result, PathToFileResolver fileResolver) {
+        public Stream<? extends FileCollectionInternal> convertInto(Object element, PathToFileResolver fileResolver) {
             if (element instanceof DefaultFileCollectionResolveContext) {
-                DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
-                result.addAll(nestedContext.resolveAsFileCollections());
+                return ((DefaultFileCollectionResolveContext) element).resolveAsFileStream();
             } else if (element instanceof FileCollection) {
-                FileCollection fileCollection = (FileCollection) element;
-                result.add(Cast.cast(FileCollectionInternal.class, fileCollection));
+                return Stream.of(Cast.cast(FileCollectionInternal.class, element));
             } else if (element instanceof MinimalFileTree) {
-                MinimalFileTree fileTree = (MinimalFileTree) element;
-                result.add(new FileTreeAdapter(fileTree, patternSetFactory));
+                return Stream.of(new FileTreeAdapter((MinimalFileTree) element, patternSetFactory));
             } else if (element instanceof MinimalFileSet) {
-                MinimalFileSet fileSet = (MinimalFileSet) element;
-                result.add(new FileCollectionAdapter(fileSet));
+                return Stream.of(new FileCollectionAdapter((MinimalFileSet) element));
             } else if (element instanceof MinimalFileCollection) {
                 throw new UnsupportedOperationException(String.format("Cannot convert instance of %s to FileTree", element.getClass().getSimpleName()));
             } else if (element instanceof TaskDependency) {
                 // Ignore
-                return;
+                return Stream.empty();
             } else {
-                result.add(new FileCollectionAdapter(new ListBackedFileSet(fileResolver.resolve(element))));
+                return Stream.of(new FileCollectionAdapter(new ListBackedFileSet(fileResolver.resolve(element))));
             }
         }
     }
@@ -193,61 +230,54 @@ public class DefaultFileCollectionResolveContext implements ResolvableFileCollec
         }
 
         @Override
-        public void convertInto(Object element, Collection<? super FileTreeInternal> result, PathToFileResolver fileResolver) {
+        public Stream<FileTreeInternal> convertInto(Object element, PathToFileResolver fileResolver) {
             if (element instanceof DefaultFileCollectionResolveContext) {
-                DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
-                result.addAll(nestedContext.resolveAsFileTrees());
+                return ((DefaultFileCollectionResolveContext) element).resolveAsFileTrees().stream();
             } else if (element instanceof FileTree) {
-                FileTree fileTree = (FileTree) element;
-                result.add(Cast.cast(FileTreeInternal.class, fileTree));
+                return Stream.of(Cast.cast(FileTreeInternal.class, element));
             } else if (element instanceof MinimalFileTree) {
-                MinimalFileTree fileTree = (MinimalFileTree) element;
-                result.add(new FileTreeAdapter(fileTree, patternSetFactory));
+                return Stream.of(new FileTreeAdapter((MinimalFileTree) element, patternSetFactory));
             } else if (element instanceof MinimalFileSet) {
-                MinimalFileSet fileSet = (MinimalFileSet) element;
-                for (File file : fileSet.getFiles()) {
-                    convertFileToFileTree(file, result);
-                }
+                return ((MinimalFileSet) element).getFiles().stream()
+                    .flatMap(f -> convertFileToFileTree(f));
             } else if (element instanceof FileCollection) {
-                FileCollection fileCollection = (FileCollection) element;
-                for (File file : fileCollection) {
-                    convertFileToFileTree(file, result);
-                }
+                return StreamSupport.stream(((FileCollection) element).spliterator(), false)
+                    .flatMap(f -> convertFileToFileTree(f));
             } else if (element instanceof MinimalFileCollection) {
                 throw new UnsupportedOperationException(String.format("Cannot convert instance of %s to FileTree", element.getClass().getSimpleName()));
             } else if (element instanceof TaskDependency) {
                 // Ignore
-                return;
+                return Stream.empty();
             } else {
-                convertFileToFileTree(fileResolver.resolve(element), result);
+                return convertFileToFileTree(fileResolver.resolve(element));
             }
         }
 
-        private void convertFileToFileTree(File file, Collection<? super FileTreeInternal> result) {
+        private Stream<FileTreeInternal> convertFileToFileTree(File file) {
             if (file.isDirectory()) {
-                result.add(new FileTreeAdapter(new DirectoryFileTree(file, patternSetFactory.create(), FileSystems.getDefault()), patternSetFactory));
+                return Stream.of(new FileTreeAdapter(new DirectoryFileTree(file, patternSetFactory.create(), FileSystems.getDefault()), patternSetFactory));
             } else if (file.isFile()) {
-                result.add(new FileTreeAdapter(new DefaultSingletonFileTree(file), patternSetFactory));
+                return Stream.of(new FileTreeAdapter(new DefaultSingletonFileTree(file), patternSetFactory));
+            } else {
+                return Stream.empty();
             }
         }
     }
 
     public static class MinimalFileCollectionConverter implements Converter<MinimalFileCollection> {
         @Override
-        public void convertInto(Object element, Collection<? super MinimalFileCollection> result, PathToFileResolver resolver) {
+        public Stream<MinimalFileCollection> convertInto(Object element, PathToFileResolver resolver) {
             if (element instanceof DefaultFileCollectionResolveContext) {
-                DefaultFileCollectionResolveContext nestedContext = (DefaultFileCollectionResolveContext) element;
-                result.addAll(nestedContext.resolveAsMinimalFileCollections());
+                return ((DefaultFileCollectionResolveContext) element).resolveAsMinimalFileCollections();
             } else if (element instanceof MinimalFileCollection) {
-                MinimalFileCollection collection = (MinimalFileCollection) element;
-                result.add(collection);
+                return Stream.of((MinimalFileCollection) element);
             } else if (element instanceof FileCollection) {
                 throw new UnsupportedOperationException(String.format("Cannot convert instance of %s to MinimalFileCollection", element.getClass().getSimpleName()));
             } else if (element instanceof TaskDependency) {
                 // Ignore
-                return;
+                return Stream.empty();
             } else {
-                result.add(new ListBackedFileSet(resolver.resolve(element)));
+                return Stream.of(new ListBackedFileSet(resolver.resolve(element)));
             }
         }
     }

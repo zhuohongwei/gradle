@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.file;
 
-import com.google.common.collect.ImmutableSet;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.file.collections.BuildDependenciesOnlyFileCollectionResolveContext;
@@ -32,12 +31,13 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskDependency;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.gradle.api.internal.file.collections.DefaultFileCollectionResolveContext.asStream;
 
 /**
  * A {@link org.gradle.api.file.FileCollection} that contains the union of zero or more file collections. Maintains file ordering.
@@ -51,73 +51,40 @@ import java.util.Set;
 public abstract class CompositeFileCollection extends AbstractFileCollection implements FileCollectionContainer, TaskDependencyContainer {
     @Override
     public Set<File> getFiles() {
-        return getFiles(getSourceCollections());
+        return getFileStream()
+            .collect(Collectors.toSet());
     }
 
     @Override
-    public Iterator<File> iterator() {
-        List<? extends FileCollectionInternal> sourceCollections = getSourceCollections();
-        switch (sourceCollections.size()) {
-            case 0:
-                return Collections.emptyIterator();
-            case 1:
-                return sourceCollections.get(0).iterator();
-            default:
-                // Need to make sure we remove duplicates, so we can't just compose iterators from source collections
-                return getFiles(sourceCollections).iterator();
-        }
-    }
-
-    private static Set<File> getFiles(List<? extends FileCollectionInternal> sourceCollections) {
-        switch (sourceCollections.size()) {
-            case 0:
-                return Collections.emptySet();
-            case 1:
-                return sourceCollections.get(0).getFiles();
-            default:
-                ImmutableSet.Builder<File> builder = ImmutableSet.builder();
-                for (FileCollection collection : sourceCollections) {
-                    builder.addAll(collection);
-                }
-                return builder.build();
-        }
+    public Stream<File> getFileStream() {
+        return getSourceStream()
+            .flatMap(collection -> asStream(collection.iterator()))
+            .distinct();
     }
 
     @Override
     public boolean contains(File file) {
-        for (FileCollection collection : getSourceCollections()) {
-            if (collection.contains(file)) {
-                return true;
-            }
-        }
-        return false;
+        return getSourceStream()
+            .anyMatch(collection -> collection.contains(file));
     }
 
     @Override
     public boolean isEmpty() {
-        for (FileCollection collection : getSourceCollections()) {
-            if (!collection.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
+        return getSourceStream()
+            .allMatch(collection -> collection.isEmpty());
     }
 
     @Override
     protected void addAsResourceCollection(Object builder, String nodeName) {
-        for (FileCollection fileCollection : getSourceCollections()) {
-            fileCollection.addToAntBuilder(builder, nodeName, AntType.ResourceCollection);
-        }
+        getSourceStream()
+            .forEach(fileCollection -> fileCollection.addToAntBuilder(builder, nodeName, AntType.ResourceCollection));
     }
 
     @Override
     protected Collection<DirectoryFileTree> getAsFileTrees() {
-        List<DirectoryFileTree> fileTree = new ArrayList<DirectoryFileTree>();
-        for (FileCollection source : getSourceCollections()) {
-            AbstractFileCollection collection = (AbstractFileCollection) source;
-            fileTree.addAll(collection.getAsFileTrees());
-        }
-        return fileTree;
+        return getSourceStream()
+            .flatMap(source -> ((AbstractFileCollection) source).getAsFileTrees().stream())
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -147,9 +114,8 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
         return new CompositeFileCollection() {
             @Override
             public void visitContents(FileCollectionResolveContext context) {
-                for (FileCollection collection : CompositeFileCollection.this.getSourceCollections()) {
-                    context.add(collection.filter(filterSpec));
-                }
+                CompositeFileCollection.this.getSourceStream()
+                    .forEach(collection -> context.add(collection.filter(filterSpec)));
             }
 
             @Override
@@ -186,23 +152,32 @@ public abstract class CompositeFileCollection extends AbstractFileCollection imp
         visitContents(fileContext);
     }
 
-    protected List<? extends FileCollectionInternal> getSourceCollections() {
+    protected Iterable<? extends FileCollectionInternal> getSourceCollections() {
+        return new Iterable<FileCollectionInternal>() {
+            @Override
+            public Iterator<FileCollectionInternal> iterator() {
+                return (Iterator<FileCollectionInternal>) // TODO eliminate cast
+                    getSourceStream()
+                        .iterator();
+            }
+        };
+    }
+
+    protected Stream<? extends FileCollectionInternal> getSourceStream() {
         DefaultFileCollectionResolveContext context = new DefaultFileCollectionResolveContext(new IdentityFileResolver());
         visitContents(context);
-        return context.resolveAsFileCollections();
+        return context.resolveAsFileStream();
     }
 
     @Override
     public void registerWatchPoints(FileSystemSubset.Builder builder) {
-        for (FileCollectionInternal files : getSourceCollections()) {
-            files.registerWatchPoints(builder);
-        }
+        getSourceStream()
+            .forEach(files -> files.registerWatchPoints(builder));
     }
 
     @Override
     public void visitLeafCollections(FileCollectionLeafVisitor visitor) {
-        for (FileCollectionInternal element : getSourceCollections()) {
-            element.visitLeafCollections(visitor);
-        }
+        getSourceStream()
+            .forEach(element -> element.visitLeafCollections(visitor));
     }
 }

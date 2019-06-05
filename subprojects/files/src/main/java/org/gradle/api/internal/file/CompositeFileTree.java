@@ -26,7 +26,7 @@ import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.internal.Cast;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 import static org.gradle.api.internal.file.AbstractFileTree.fileVisitorFrom;
 
@@ -35,8 +35,13 @@ import static org.gradle.api.internal.file.AbstractFileTree.fileVisitorFrom;
  */
 public abstract class CompositeFileTree extends CompositeFileCollection implements FileTreeInternal {
     @Override
-    protected List<? extends FileTreeInternal> getSourceCollections() {
+    protected Iterable<? extends FileTreeInternal> getSourceCollections() {
         return Cast.uncheckedCast(super.getSourceCollections());
+    }
+
+    @Override
+    protected Stream<? extends FileTreeInternal> getSourceStream() {
+        return Cast.uncheckedCast(super.getSourceStream());
     }
 
     @Override
@@ -81,17 +86,15 @@ public abstract class CompositeFileTree extends CompositeFileCollection implemen
 
     @Override
     public FileTree visit(Action<? super FileVisitDetails> visitor) {
-        for (FileTree tree : getSourceCollections()) {
-            tree.visit(visitor);
-        }
+        getSourceStream()
+            .forEach(tree -> tree.visit(visitor));
         return this;
     }
 
     @Override
     public FileTree visit(FileVisitor visitor) {
-        for (FileTree tree : getSourceCollections()) {
-            tree.visit(visitor);
-        }
+        getSourceStream()
+            .forEach(tree -> tree.visit(visitor));
         return this;
     }
 

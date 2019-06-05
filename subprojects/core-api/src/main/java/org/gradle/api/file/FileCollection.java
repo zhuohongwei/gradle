@@ -23,6 +23,7 @@ import org.gradle.internal.HasInternalProtocol;
 
 import java.io.File;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>A {@code FileCollection} represents a collection of files which you can query in certain ways. A file collection
@@ -46,6 +47,15 @@ public interface FileCollection extends Iterable<File>, AntBuilderAware, Buildab
      * @return The files. Returns an empty set if this collection is empty.
      */
     Set<File> getFiles();
+
+    /**
+     * Returns the contents of this collection as a Set.
+     *
+     * @return The files. Returns an empty set if this collection is empty.
+     */
+    default Stream<File> getFileStream() {
+        return getFiles().stream();
+    }
 
     /**
      * Determines whether this collection contains the given file. Generally, this method is more efficient than calling
