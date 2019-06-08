@@ -73,15 +73,20 @@ abstract class CodeNarcInvoker {
                 if (e.message.matches('Exceeded maximum number of priority \\d* violations.*')) {
                     def message = "CodeNarc rule violations were found."
                     def report = reports.firstEnabled
+                    File reportFile = null
                     if (report && report.name != 'console') {
-                        def reportUrl = new ConsoleRenderer().asClickableFileUrl(report.destination)
-                        message += " See the report at: $reportUrl"
+                        reportFile = report.destination
                     }
                     if (ignoreFailures) {
-                        logger.warn(message)
+                        if (reportFile == null) {
+                            logger.warn(message)
+                        } else {
+                            logger.warn(message + " See the report at: ${new ConsoleRenderer().asClickableFileUrl(reportFile)}")
+                        }
                         return
                     }
-                    throw new GradleException(message, e)
+
+                    throw new CodeQualityFailureException(message, reportFile, e)
                 }
                 if (e.message == /codenarc doesn't support the nested "classpath" element./) {
                     def message = "The compilationClasspath property of CodeNarc task can only be non-empty when using CodeNarc 0.27.0 or newer."

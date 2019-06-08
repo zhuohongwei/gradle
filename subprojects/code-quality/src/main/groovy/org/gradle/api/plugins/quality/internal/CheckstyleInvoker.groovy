@@ -16,7 +16,7 @@
 
 package org.gradle.api.plugins.quality.internal
 
-import org.gradle.api.GradleException
+
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.quality.Checkstyle
 import org.gradle.api.plugins.quality.CheckstyleReports
@@ -98,12 +98,20 @@ abstract class CheckstyleInvoker {
                 GFileUtils.deleteQuietly(xmlDestination)
             }
 
+            File reportFile = getMostUsefulReport(reports)
             if (ant.project.properties[FAILURE_PROPERTY_NAME] && !ignoreFailures) {
-                throw new GradleException(getMessage(reports, parseCheckstyleXml(reports)))
+                throw new CodeQualityFailureException("Checkstyle rule violations were found. ", reportFile)
             } else {
                 def reportXml = parseCheckstyleXml(reports)
-                if(violationsExist(reportXml)) {
-                    logger.warn(getMessage(reports, reportXml))
+
+                if (violationsExist(reportXml)) {
+                    if (reportFile == null) {
+                        logger.warn("Checkstyle rule violations were found. " + getViolationMessage(reportXml))
+                    } else {
+                        logger.warn("Checkstyle rule violations were found. " +
+                                " See the report at: ${new ConsoleRenderer().asClickableFileUrl(reportFile)} " +
+                                getViolationMessage(reportXml))
+                    }
                 }
             }
         }
@@ -113,21 +121,16 @@ abstract class CheckstyleInvoker {
         return reportXml != null && getErrorFileCount(reportXml) > 0
     }
 
+    private static File getMostUsefulReport(CheckstyleReports reports) {
+        return reports.html.enabled ? reports.html.destination : reports.xml.enabled ? reports.xml.destination : null
+    }
+
     private static parseCheckstyleXml(CheckstyleReports reports) {
         return reports.xml.enabled ? new XmlParser().parse(reports.xml.destination) : null
     }
 
-    private static String getMessage(CheckstyleReports reports, Node reportXml) {
-        return "Checkstyle rule violations were found.${getReportUrlMessage(reports)}${getViolationMessage(reportXml)}"
-    }
-
     private static int getErrorFileCount(Node reportXml) {
         return reportXml.file.error.groupBy { it.parent().@name }.keySet().size()
-    }
-
-    private static String getReportUrlMessage(CheckstyleReports reports) {
-        def report = reports.html.enabled ? reports.html : reports.xml.enabled ? reports.xml : null
-        return report ? " See the report at: ${new ConsoleRenderer().asClickableFileUrl(report.destination)}" : "\n"
     }
 
     private static String getViolationMessage(Node reportXml) {

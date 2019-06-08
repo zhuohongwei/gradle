@@ -16,19 +16,11 @@
 
 package org.gradle.api.tasks.testing;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
-import org.gradle.api.GradleException;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
@@ -85,6 +77,12 @@ import org.gradle.internal.remote.internal.inet.InetAddressFactory;
 import org.gradle.listener.ClosureBackedMethodInvocationDispatch;
 import org.gradle.util.ClosureBackedAction;
 import org.gradle.util.ConfigureUtil;
+
+import javax.inject.Inject;
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract class for all test task.
@@ -612,25 +610,33 @@ public abstract class AbstractTestTask extends ConventionTask implements Verific
     }
 
     private void handleTestFailures() {
-        String message = "There were failing tests";
+        final File reportFile = getMostUsefulReportFile();
+        String message = "There were failing tests. ";
+        if (getIgnoreFailures()) {
+            // just emit a warning
+            if (reportFile != null) {
+                String reportUrl = new ConsoleRenderer().asClickableFileUrl(reportFile);
+                getLogger().warn(message + "See the report at: " + reportUrl);
+            } else {
+                getLogger().warn(message);
+            }
+        } else {
+            throw new TestFailureException(message, reportFile);
+        }
+    }
 
+    private File getMostUsefulReportFile() {
         DirectoryReport htmlReport = getReports().getHtml();
         if (htmlReport.isEnabled()) {
-            String reportUrl = new ConsoleRenderer().asClickableFileUrl(htmlReport.getEntryPoint());
-            message = message.concat(". See the report at: " + reportUrl);
+            return htmlReport.getEntryPoint();
         } else {
             DirectoryReport junitXmlReport = getReports().getJunitXml();
             if (junitXmlReport.isEnabled()) {
-                String resultsUrl = new ConsoleRenderer().asClickableFileUrl(junitXmlReport.getEntryPoint());
-                message = message.concat(". See the results at: " + resultsUrl);
+                return junitXmlReport.getEntryPoint();
             }
         }
-
-        if (getIgnoreFailures()) {
-            getLogger().warn(message);
-        } else {
-            throw new GradleException(message);
-        }
+        // No report file was generated
+        return null;
     }
 
     /**

@@ -18,7 +18,9 @@ package org.gradle.internal.logging.text;
 
 import org.gradle.api.logging.StandardOutputListener;
 import org.gradle.internal.SystemProperties;
+import org.gradle.internal.logging.ConsoleRenderer;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -80,6 +82,12 @@ public abstract class AbstractStyledTextOutput implements StyledTextOutput, Stan
     @Override
     public StyledTextOutput text(Object text) {
         doAppend(text == null ? "null" : text.toString());
+        return this;
+    }
+
+    @Override
+    public StyledTextOutput file(File file) {
+        doAppend(file == null ? "null" : new ConsoleRenderer().asClickableFileUrl(file));
         return this;
     }
 
@@ -158,6 +166,13 @@ public abstract class AbstractStyledTextOutput implements StyledTextOutput, Stan
         public StyledTextOutput text(Object text) {
             Style original = textOutput.getStyle();
             textOutput.style(style).text(text).style(original);
+            return this;
+        }
+
+        @Override
+        public StyledTextOutput file(File file) {
+            Style original = textOutput.getStyle();
+            textOutput.style(style).file(file).style(original);
             return this;
         }
 

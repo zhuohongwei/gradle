@@ -18,6 +18,8 @@ package org.gradle.internal.logging.text;
 
 import org.gradle.internal.scan.UsedByScanPlugin;
 
+import java.io.File;
+
 /**
  * Provides streaming of styled text, that is, a stream of text with inline styling information. Implementations are not
  * required to be thread-safe.
@@ -132,6 +134,16 @@ public interface StyledTextOutput extends Appendable {
      * @return this
      */
     StyledTextOutput text(Object text);
+
+    /**
+     * Appends the path to a file using the current style.
+     *
+     * This may be rendered in a clickable URL style path or as just a plain file path.
+     *
+     * @param file The file
+     * @return this
+     */
+    StyledTextOutput file(File file);
 
     /**
      * Appends text using the current style and starts a new line.

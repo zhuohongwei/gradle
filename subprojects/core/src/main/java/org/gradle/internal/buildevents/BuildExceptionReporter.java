@@ -25,6 +25,7 @@ import org.gradle.initialization.BuildClientMetaData;
 import org.gradle.initialization.StartParameterBuildOptions;
 import org.gradle.internal.exceptions.FailureResolutionAware;
 import org.gradle.internal.exceptions.LocationAwareException;
+import org.gradle.internal.exceptions.ReportGenerated;
 import org.gradle.internal.logging.LoggingConfigurationBuildOptions;
 import org.gradle.internal.logging.text.BufferingStyledTextOutput;
 import org.gradle.internal.logging.text.LinePrefixingStyledTextOutput;
@@ -134,6 +135,8 @@ public class BuildExceptionReporter implements Action<Throwable> {
 
         fillInFailureResolution(details);
 
+        collectGeneratedReports(failure, details);
+
         if (failure instanceof LocationAwareException) {
             final LocationAwareException scriptException = (LocationAwareException) failure;
             details.failure = scriptException.getCause();
@@ -145,6 +148,7 @@ public class BuildExceptionReporter implements Action<Throwable> {
 
                 @Override
                 public void node(final Throwable node) {
+                    collectGeneratedReports(node, details);
                     if (node == scriptException) {
                         details.details.text(getMessage(scriptException.getCause()));
                     } else {
@@ -178,6 +182,14 @@ public class BuildExceptionReporter implements Action<Throwable> {
             });
         } else {
             details.details.text(getMessage(failure));
+        }
+    }
+
+    private void collectGeneratedReports(Throwable failure, FailureDetails details) {
+        if (failure instanceof ReportGenerated) {
+            details.reports.style(Info).text("> ").style(Normal);
+            details.reports.file(((ReportGenerated) failure).getReportFile());
+            details.reports.format("%n");
         }
     }
 
@@ -243,6 +255,13 @@ public class BuildExceptionReporter implements Action<Throwable> {
             output.println();
         }
 
+        if (details.reports.getHasContent()) {
+            output.println();
+            output.println("* Report(s):");
+            details.reports.writeTo(output);
+            output.println();
+        }
+
         if (details.resolution.getHasContent()) {
             output.println();
             output.println("* Try:");
@@ -273,6 +292,7 @@ public class BuildExceptionReporter implements Action<Throwable> {
         final BufferingStyledTextOutput details = new BufferingStyledTextOutput();
         final BufferingStyledTextOutput location = new BufferingStyledTextOutput();
         final BufferingStyledTextOutput resolution = new BufferingStyledTextOutput();
+        final BufferingStyledTextOutput reports = new BufferingStyledTextOutput();
 
         ExceptionStyle exceptionStyle = ExceptionStyle.NONE;
 

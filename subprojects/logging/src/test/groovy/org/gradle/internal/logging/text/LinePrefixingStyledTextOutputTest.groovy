@@ -101,6 +101,12 @@ class LinePrefixingStyledTextOutputTest extends Specification {
             }
 
             @Override
+            StyledTextOutput file(File file) {
+                result.append(file.toString());
+                return this
+            }
+
+            @Override
             StyledTextOutput println(Object text) {
                 result.append(text.toString()).append(SystemProperties.instance.lineSeparator)
                 return this
