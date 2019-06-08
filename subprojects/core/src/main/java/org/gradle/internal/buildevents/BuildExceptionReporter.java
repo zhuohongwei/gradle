@@ -34,9 +34,12 @@ import org.gradle.internal.logging.text.StyledTextOutputFactory;
 import org.gradle.util.GUtil;
 import org.gradle.util.TreeVisitor;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.Failure;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.FailureHeader;
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.Info;
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.Normal;
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.UserInput;
@@ -70,87 +73,97 @@ public class BuildExceptionReporter implements Action<Throwable> {
 
     @Override
     public void execute(Throwable failure) {
+        StyledTextOutput output = textOutputFactory.create(BuildExceptionReporter.class, LogLevel.ERROR);
+        FailureDetails details = extractFailureDetails(failure);
+        renderFailureHeader(output, failure);
+        renderFailureDetails(output, details);
+        renderSuggestions(output);
+    }
+
+    private FailureDetails extractFailureDetails(Throwable failure) {
+        FailureDetails details = new FailureDetails();
+
         if (failure instanceof MultipleBuildFailures) {
-            List<? extends Throwable> flattenedFailures = ((MultipleBuildFailures) failure).getCauses();
-            renderMultipleBuildExceptions(failure.getMessage(), flattenedFailures);
-            return;
+            List<? extends Throwable> causes = ((MultipleBuildFailures) failure).getCauses();
+            for (Throwable cause : causes) {
+                formatGenericFailure(cause, details);
+            }
+        } else {
+            formatGenericFailure(failure, details);
         }
 
-        renderSingleBuildException(failure);
-    }
-
-    private void renderMultipleBuildExceptions(String message, List<? extends Throwable> flattenedFailures) {
-        StyledTextOutput output = textOutputFactory.create(BuildExceptionReporter.class, LogLevel.ERROR);
-        output.println();
-        output.withStyle(Failure).format("FAILURE: %s", message);
-        output.println();
-
-        for (int i = 0; i < flattenedFailures.size(); i++) {
-            Throwable cause = flattenedFailures.get(i);
-            FailureDetails details = constructFailureDetails("Task", cause);
-
-            output.println();
-            output.withStyle(Failure).format("%s: ", i + 1);
-            details.summary.writeTo(output.withStyle(Failure));
-            output.println();
-            output.text("-----------");
-
-            writeFailureDetails(output, details);
-
-            output.println("==============================================================================");
-        }
-        writeGeneralTips(output);
-    }
-
-    private void renderSingleBuildException(Throwable failure) {
-        StyledTextOutput output = textOutputFactory.create(BuildExceptionReporter.class, LogLevel.ERROR);
-        FailureDetails details = constructFailureDetails("Build", failure);
-
-        output.println();
-        output.withStyle(Failure).text("FAILURE: ");
-        details.summary.writeTo(output.withStyle(Failure));
-        output.println();
-
-        writeFailureDetails(output, details);
-
-        writeGeneralTips(output);
-    }
-
-    private FailureDetails constructFailureDetails(String granularity, Throwable failure) {
-        FailureDetails details = new FailureDetails(failure);
-        reportBuildFailure(granularity, failure, details);
         return details;
     }
 
-    private void reportBuildFailure(String granularity, Throwable failure, FailureDetails details) {
-        if (loggingConfiguration.getShowStacktrace() != ShowStacktrace.INTERNAL_EXCEPTIONS) {
-            details.exceptionStyle = ExceptionStyle.FULL;
+    private void renderFailureHeader(StyledTextOutput output, Throwable failure) {
+        output.println();
+        if (failure instanceof MultipleBuildFailures) {
+            output.withStyle(FailureHeader).format("FAILURE: %s", failure.getMessage());
+        } else {
+            output.withStyle(FailureHeader).text("FAILURE: Build completed with an exception.");
         }
-
-        formatGenericFailure(granularity, failure, details);
+        output.println();
+        output.println();
     }
 
-    private void formatGenericFailure(String granularity, Throwable failure, final FailureDetails details) {
-        details.summary.format("%s failed with an exception.", granularity);
+    private void renderFailureDetails(StyledTextOutput output, FailureDetails details) {
+        if (details.summary.getHasContent()) {
+            details.summary.writeTo(output);
+        }
 
-        fillInFailureResolution(details);
+        if (details.exceptions.getHasContent()) {
+            details.exceptions.writeTo(output);
+            output.println();
+        }
+    }
 
-        collectGeneratedReports(failure, details);
+    private void renderSuggestions(StyledTextOutput output) {
+        output.text("Try again:");
+        output.println();
+
+        if (loggingConfiguration.getShowStacktrace() == ShowStacktrace.INTERNAL_EXCEPTIONS) {
+            output.text("   with ");
+            output.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.StacktraceOption.STACKTRACE_LONG_OPTION);
+            output.text(" to get the stack trace.");
+            output.println();
+        }
+
+        if (loggingConfiguration.getLogLevel() != LogLevel.DEBUG) {
+            output.text("   with ");
+            if (loggingConfiguration.getLogLevel() != LogLevel.INFO) {
+                output.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.LogLevelOption.INFO_LONG_OPTION);
+                output.text(" or ");
+            }
+            output.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.LogLevelOption.DEBUG_LONG_OPTION);
+            output.text(" to get more log output.");
+            output.println();
+        }
+
+        output.text("   with ");
+        output.withStyle(UserInput).format("--%s", StartParameterBuildOptions.BuildScanOption.LONG_OPTION);
+        output.text(" to get deeper insights.");
+        output.println();
+
+        output.println();
+        output.withStyle(UserInput).text("https://help.gradle.org");
+        output.println();
+    }
+
+    private void formatGenericFailure(Throwable failure, final FailureDetails details) {
+        List<File> reports = new ArrayList<File>();
 
         if (failure instanceof LocationAwareException) {
             final LocationAwareException scriptException = (LocationAwareException) failure;
-            details.failure = scriptException.getCause();
-            if (scriptException.getLocation() != null) {
-                details.location.text(scriptException.getLocation());
-            }
             scriptException.visitReportableCauses(new TreeVisitor<Throwable>() {
                 int depth;
 
                 @Override
                 public void node(final Throwable node) {
-                    collectGeneratedReports(node, details);
+                    if (node instanceof ReportGenerated) {
+                        reports.add(((ReportGenerated) node).getReportFile());
+                    }
                     if (node == scriptException) {
-                        details.details.text(getMessage(scriptException.getCause()));
+                        details.summary.withStyle(Failure).text(getMessage(scriptException.getCause()));
                     } else {
                         final LinePrefixingStyledTextOutput output = getLinePrefixingStyledTextOutput();
                         output.text(getMessage(node));
@@ -168,68 +181,43 @@ public class BuildExceptionReporter implements Action<Throwable> {
                 }
 
                 private LinePrefixingStyledTextOutput getLinePrefixingStyledTextOutput() {
-                    details.details.format("%n");
+                    details.summary.format("%n");
                     StringBuilder prefix = new StringBuilder();
                     for (int i = 1; i < depth; i++) {
                         prefix.append("   ");
                     }
-                    details.details.text(prefix);
-                    prefix.append("  ");
-                    details.details.style(Info).text("> ").style(Normal);
+                    details.summary.text(prefix);
+                    prefix.append("   ");
+                    details.summary.style(Info).text("   ").style(Normal);
 
-                    return new LinePrefixingStyledTextOutput(details.details, prefix, false);
+                    return new LinePrefixingStyledTextOutput(details.summary, prefix, false);
                 }
             });
+            String location = scriptException.getLocation();
+            if (location != null) {
+                details.summary.println();
+                details.summary.text("   " + location);
+            }
         } else {
-            details.details.text(getMessage(failure));
+            details.summary.text(getMessage(failure));
         }
-    }
+        details.summary.println();
 
-    private void collectGeneratedReports(Throwable failure, FailureDetails details) {
-        if (failure instanceof ReportGenerated) {
-            details.reports.style(Info).text("> ").style(Normal);
-            details.reports.file(((ReportGenerated) failure).getReportFile());
-            details.reports.format("%n");
-        }
-    }
-
-    private void fillInFailureResolution(FailureDetails details) {
-        BufferingStyledTextOutput resolution = details.resolution;
-        if (details.failure instanceof FailureResolutionAware) {
-            ((FailureResolutionAware) details.failure).appendResolution(resolution, clientMetaData);
-            if (resolution.getHasContent()) {
-                resolution.append(' ');
-            }
-        }
-        if (details.exceptionStyle == ExceptionStyle.NONE) {
-            resolution.text("Run with ");
-            resolution.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.StacktraceOption.STACKTRACE_LONG_OPTION);
-            resolution.text(" option to get the stack trace. ");
-        }
-        if (loggingConfiguration.getLogLevel() != LogLevel.DEBUG) {
-            resolution.text("Run with ");
-            if (loggingConfiguration.getLogLevel() != LogLevel.INFO) {
-                resolution.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.LogLevelOption.INFO_LONG_OPTION);
-                resolution.text(" or ");
-            }
-            resolution.withStyle(UserInput).format("--%s", LoggingConfigurationBuildOptions.LogLevelOption.DEBUG_LONG_OPTION);
-            resolution.text(" option to get more log output.");
+        for (File report : reports) {
+            details.summary.style(Info).text("   See report at: ").style(Normal);
+            details.summary.file(report);
+            details.summary.println();
         }
 
-        addBuildScanMessage(resolution);
-    }
+        if (failure instanceof FailureResolutionAware) {
+            ((FailureResolutionAware) failure).appendResolution(new LinePrefixingStyledTextOutput(details.summary, "   ", true), clientMetaData);
+            details.summary.println();
+            details.summary.println();
+        }
 
-    private void addBuildScanMessage(BufferingStyledTextOutput resolution) {
-        resolution.text(" Run with ");
-        resolution.withStyle(UserInput).format("--%s", StartParameterBuildOptions.BuildScanOption.LONG_OPTION);
-        resolution.text(" to get full insights.");
-    }
-
-    private void writeGeneralTips(StyledTextOutput resolution) {
-        resolution.println();
-        resolution.text("* Get more help at ");
-        resolution.withStyle(UserInput).text("https://help.gradle.org");
-        resolution.println();
+        if (loggingConfiguration.getShowStacktrace() != ShowStacktrace.INTERNAL_EXCEPTIONS) {
+            details.exceptions.exception(failure);
+        }
     }
 
     private String getMessage(Throwable throwable) {
@@ -240,64 +228,8 @@ public class BuildExceptionReporter implements Action<Throwable> {
         return String.format("%s (no error message)", throwable.getClass().getName());
     }
 
-    private void writeFailureDetails(StyledTextOutput output, FailureDetails details) {
-        if (details.location.getHasContent()) {
-            output.println();
-            output.println("* Where:");
-            details.location.writeTo(output);
-            output.println();
-        }
-
-        if (details.details.getHasContent()) {
-            output.println();
-            output.println("* What went wrong:");
-            details.details.writeTo(output);
-            output.println();
-        }
-
-        if (details.reports.getHasContent()) {
-            output.println();
-            output.println("* Report(s):");
-            details.reports.writeTo(output);
-            output.println();
-        }
-
-        if (details.resolution.getHasContent()) {
-            output.println();
-            output.println("* Try:");
-            details.resolution.writeTo(output);
-            output.println();
-        }
-
-        Throwable exception = null;
-        switch (details.exceptionStyle) {
-            case NONE:
-                break;
-            case FULL:
-                exception = details.failure;
-                break;
-        }
-
-        if (exception != null) {
-            output.println();
-            output.println("* Exception is:");
-            output.exception(exception);
-            output.println();
-        }
-    }
-
     private static class FailureDetails {
-        Throwable failure;
         final BufferingStyledTextOutput summary = new BufferingStyledTextOutput();
-        final BufferingStyledTextOutput details = new BufferingStyledTextOutput();
-        final BufferingStyledTextOutput location = new BufferingStyledTextOutput();
-        final BufferingStyledTextOutput resolution = new BufferingStyledTextOutput();
-        final BufferingStyledTextOutput reports = new BufferingStyledTextOutput();
-
-        ExceptionStyle exceptionStyle = ExceptionStyle.NONE;
-
-        public FailureDetails(Throwable failure) {
-            this.failure = failure;
-        }
+        final BufferingStyledTextOutput exceptions = new BufferingStyledTextOutput();
     }
 }
