@@ -16,13 +16,8 @@
 
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 
-import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
-import java.util.concurrent.*;
-import java.text.*;
-import java.util.stream.*;
 
 public class Main {
     private static String projectDirPath = "/home/tcagent1/agent/work/668602365d1521fc";
@@ -36,6 +31,7 @@ public class Main {
     private static String cpuTempCmd = "/root/msr-cloud-tools/cputemp";
     private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private static String template = "largeMonolithicJavaProject";
+    private static boolean perfEnabled = Boolean.parseBoolean("perfEnabled");
 
     static {
         gradleBinary.put("baseline1",
@@ -146,11 +142,9 @@ public class Main {
     private static Experiment runExperiment(String version) {
         nonABIChange(version);
 
-        doWarmUp(version);
+        int daemonPid = doWarmUp(version);
 
-//        String pid = readFile(getPidFile(version));
-
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble"));
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble"), daemonPid);
 
         stopDaemon(version);
 
@@ -169,7 +163,7 @@ public class Main {
         return IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args, int daemonPid) {
         File workingDir = getExpProject(version);
 
         long t0 = System.currentTimeMillis();
@@ -206,11 +200,14 @@ public class Main {
         );
     }
 
-    private static List<String> getExpArgs(String version, String task) {
-//        List<String> args = new ArrayList<>(Arrays.asList("perf", "stat", "-p", pid, "--"));
-//        args.addAll(getWarmupExpArgs(version, task));
-//        return args;
-        return getWarmupExpArgs(version, task);
+    private static List<String> getExpArgs(String version, String task, int pid) {
+        if (perfEnabled) {
+            List<String> args = new ArrayList<>(Arrays.asList("perf", "stat", "-p", "" + pid, "--"));
+            args.addAll(getWarmupExpArgs(version, task));
+            return args;
+        } else {
+            return getWarmupExpArgs(version, task);
+        }
     }
 
     private static File getGradleUserHome(String version) {
@@ -225,22 +222,36 @@ public class Main {
         return new File(getExpProject(version), "pid");
     }
 
-    private static void doWarmUp(String version) {
+    /**
+     * Do warmups and return the daemon pid
+     *
+     * @return the daemon pid if instrumentation exists, -1 otherwise
+     */
+    private static int doWarmUp(String version) {
         File workingDir = getExpProject(version);
         int warmups = Integer.parseInt(System.getProperty("warmUp"));
 
         List<String> args = new ArrayList<>(getWarmupExpArgs(version, "assemble"));
-//        args.add("--init-script");
-//        args.add(projectDirPath + "/pid-instrumentation.gradle");
 
         Map<String, String> env = new HashMap<>();
-//        env.put("PID_FILE_PATH", getPidFile(version).getAbsolutePath());
+
+        if (perfEnabled) {
+            args.add("--init-script");
+            args.add(projectDirPath + "/pid-instrumentation.gradle");
+            env.put("PID_FILE_PATH", getPidFile(version).getAbsolutePath());
+        }
 
         run(workingDir, env, args);
 
         IntStream.range(1, warmups).forEach(i -> {
             run(workingDir, getWarmupExpArgs(version, "assemble"));
         });
+
+        if (perfEnabled) {
+            return Integer.parseInt(readFile(getPidFile(version)));
+        } else {
+            return -1;
+        }
     }
 
     private static void deleteDirectory(File dir) {
