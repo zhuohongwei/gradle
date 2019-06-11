@@ -35,6 +35,11 @@ public class MerkleDirectorySnapshotBuilder implements FileSystemSnapshotVisitor
     private final Deque<String> directoryAbsolutePaths = new ArrayDeque<String>();
     private final boolean sortingRequired;
     private FileSystemLocationSnapshot result;
+    private int counter;
+
+    public int getCounter() {
+        return counter;
+    }
 
     public static MerkleDirectorySnapshotBuilder sortingRequired() {
         return new MerkleDirectorySnapshotBuilder(true);
@@ -62,6 +67,7 @@ public class MerkleDirectorySnapshotBuilder implements FileSystemSnapshotVisitor
 
     @Override
     public void visit(FileSystemLocationSnapshot fileSnapshot) {
+        counter++;
         if (relativePathSegmentsTracker.isRoot()) {
             result = fileSnapshot;
         } else {

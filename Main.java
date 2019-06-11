@@ -150,7 +150,13 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), daemonPid);
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-walklog.txt";
+        run(projectDir, "touch", fileName);
+
+        List<String> args = new ArrayList<>(getExpArgs(version, "assemble", daemonPid));
+        args.add("-DWalkLogFile=" + new File(projectDir, fileName).getAbsolutePath());
+
+        List<ExecutionResult> results = doRun(version, args, daemonPid);
 
         stopDaemon(version);
 
