@@ -70,7 +70,7 @@ public class LoggingCachingStateBuilder extends DefaultCachingStateBuilder {
 
     @Override
     public void markNotCacheable(CachingDisabledReason reason) {
-        LOGGER.warn("Non-cacheable because {} [{}]", reason.getMessage(), reason.getCategory());
+        LOGGER.warn("Non-cacheable because {} [{}].", reason.getMessage(), reason.getCategory());
         super.markNotCacheable(reason);
     }
 }

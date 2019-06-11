@@ -59,7 +59,7 @@ public class DefaultTaskCacheabilityResolver implements TaskCacheabilityResolver
         if (overlappingOutputs != null) {
             String relativePath = relativeFilePathResolver.resolveAsRelativePath(overlappingOutputs.getOverlappedFilePath());
             return Optional.of(new CachingDisabledReason(CachingDisabledReasonCategory.OVERLAPPING_OUTPUTS,
-                "Gradle does not know how file '" + relativePath + "' was created (output property '" + overlappingOutputs.getPropertyName() + "'). Task output caching requires exclusive access to output paths to guarantee correctness."));
+                "Gradle does not know how file '" + relativePath + "' was created (output property '" + overlappingOutputs.getPropertyName() + "'). Task output caching requires exclusive access to output paths to guarantee correctness"));
         }
 
         for (OutputFilePropertySpec spec : outputFileProperties) {

@@ -180,7 +180,7 @@ public class ResolveCachingStateStep implements Step<IncrementalContext, Caching
             Formatter formatter = new Formatter();
             formatter.format("Caching disabled for %s because:", work.getDisplayName());
             for (CachingDisabledReason reason : reasons) {
-                formatter.format("%n  %s", reason.getMessage());
+                formatter.format("%n  %s.", reason.getMessage());
             }
             LOGGER.info(formatter.toString());
         }
