@@ -150,13 +150,7 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-walklog.txt";
-        run(projectDir, "touch", fileName);
-
-        List<String> args = new ArrayList<>(getExpArgs(version, "assemble", daemonPid));
-        args.add("-DWalkLogFile=" + new File(projectDir, fileName).getAbsolutePath());
-
-        List<ExecutionResult> results = doRun(version, args, daemonPid);
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), daemonPid);
 
         stopDaemon(version);
 
@@ -175,7 +169,11 @@ public class Main {
         if (asyncEnabled) {
             asyncStart(daemonPid);
         }
-        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
+
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-walklog.txt";
+        run(projectDir, "touch", fileName);
+
+        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args, new File(projectDir, fileName).getAbsolutePath())).collect(Collectors.toList());
         if (asyncEnabled) {
             asyncStop(daemonPid);
         }
@@ -191,11 +189,14 @@ public class Main {
         run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args, String walkLogFile) {
         File workingDir = getExpProject(version);
 
+        Map<String, String> envs = new HashMap<>();
+        envs.put("WALK_LOG_FILE", walkLogFile);
+
         long t0 = System.currentTimeMillis();
-        String output = runGetStderr(workingDir, args);
+        String output = runGetStderr(workingDir, args, envs);
         long time = System.currentTimeMillis() - t0;
 
         String cpuTemp = "";//runGetStdout(workingDir, Arrays.asList(cpuTempCmd));
@@ -324,16 +325,24 @@ public class Main {
     }
 
     private static String runGetStdout(File workingDir, List<String> args) {
-        return runGetOutput(workingDir, args, true);
+        return runGetOutput(workingDir, args, null, true);
     }
 
     private static String runGetStderr(File workingDir, List<String> args) {
-        return runGetOutput(workingDir, args, false);
+        return runGetOutput(workingDir, args, null, false);
     }
 
-    private static String runGetOutput(File workingDir, List<String> args, boolean stdout) {
+    private static String runGetStderr(File workingDir, List<String> args, Map<String, String> envs) {
+        return runGetOutput(workingDir, args, envs, false);
+    }
+
+    private static String runGetOutput(File workingDir, List<String> args, Map<String, String> envs, boolean stdout) {
         try {
-            Process p = new ProcessBuilder(args).directory(workingDir).start();
+            ProcessBuilder pb = new ProcessBuilder(args).directory(workingDir);
+            if (envs != null) {
+                pb.environment().putAll(envs);
+            }
+            Process p = pb.start();
             BufferedReader br = new BufferedReader(new InputStreamReader(stdout ? p.getInputStream() : p.getErrorStream()));
             String line;
             StringBuilder sb = new StringBuilder();

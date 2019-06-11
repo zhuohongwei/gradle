@@ -82,8 +82,8 @@ public class DirectorySnapshotter {
             Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new PathVisitor(builder, spec, hasBeenFiltered));
             long time = System.currentTimeMillis() - t0;
 
-            if (System.getProperty("WalkLogFile") != null) {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(System.getProperty("WalkLogFile"), true));
+            if (System.getenv("WALK_LOG_FILE") != null) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("WALK_LOG_FILE"), true));
                 writer.write("Walking " + absolutePath + " costs " + time + " ms over " + builder.getCounter() + " files\n");
             }
         } catch (IOException e) {
