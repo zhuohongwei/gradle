@@ -18,6 +18,10 @@ import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.stream.*;
+import java.io.*;
+import java.util.*;
+import java.text.*;
 
 public class Main {
     private static String projectDirPath = "/home/tcagent1/agent/work/668602365d1521fc";
@@ -29,7 +33,7 @@ public class Main {
     private static int runCount = Integer.parseInt(System.getProperty("runCount"));
     private static String flameGraphDir = "/root/FlameGraph";
     private static String cpuTempCmd = "/root/msr-cloud-tools/cputemp";
-    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
+//    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private static String template = "largeMonolithicJavaProject";
     private static boolean perfEnabled = Boolean.parseBoolean("perfEnabled");
 
@@ -105,7 +109,7 @@ public class Main {
             allResults.forEach(ExperimentSet::printResultsAndConfidence);
         }
 
-        threadPool.shutdown();
+//        threadPool.shutdown();
     }
 
     private static ExperimentSet runASetOfExperiments() {
@@ -144,7 +148,7 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble"), daemonPid);
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid));
 
         stopDaemon(version);
 
@@ -163,7 +167,7 @@ public class Main {
         return IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args, int daemonPid) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
         File workingDir = getExpProject(version);
 
         long t0 = System.currentTimeMillis();
