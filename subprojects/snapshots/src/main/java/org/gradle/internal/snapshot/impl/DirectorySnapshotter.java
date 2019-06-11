@@ -82,8 +82,10 @@ public class DirectorySnapshotter {
             Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new PathVisitor(builder, spec, hasBeenFiltered));
             long time = System.currentTimeMillis() - t0;
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter(System.getProperty("WalkLogFile"), true));
-            writer.write("Walking " + absolutePath + " costs " + time + " ms over " + builder.getCounter() + " files\n");
+            if (System.getProperty("WalkLogFile") != null) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(System.getProperty("WalkLogFile"), true));
+                writer.write("Walking " + absolutePath + " costs " + time + " ms over " + builder.getCounter() + " files\n");
+            }
         } catch (IOException e) {
             throw new GradleException(String.format("Could not list contents of directory '%s'.", rootPath), e);
         }
