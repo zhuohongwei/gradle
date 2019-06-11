@@ -35,7 +35,7 @@ public class Main {
     private static String cpuTempCmd = "/root/msr-cloud-tools/cputemp";
 //    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private static String template = "largeMonolithicJavaProject";
-    private static boolean perfEnabled = Boolean.parseBoolean("perfEnabled");
+    private static boolean perfEnabled = Boolean.getBoolean("perfEnabled");
 
     static {
         gradleBinary.put("baseline1",
