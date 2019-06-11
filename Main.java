@@ -25,6 +25,7 @@ import java.text.*;
 
 public class Main {
     private static String projectDirPath = "/home/tcagent1/agent/work/668602365d1521fc";
+    private static String asyncProfiler = "/home/tcagent1/agent/work/async-profiler/profiler.sh";
     private static File projectDir = new File(projectDirPath);
     private static Map<String, String> gradleBinary = new HashMap<>();
     private static String javaHome = System.getenv("JAVA_HOME");
@@ -33,9 +34,10 @@ public class Main {
     private static int runCount = Integer.parseInt(System.getProperty("runCount"));
     private static String flameGraphDir = "/root/FlameGraph";
     private static String cpuTempCmd = "/root/msr-cloud-tools/cputemp";
-//    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    //    private static ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private static String template = "largeMonolithicJavaProject";
     private static boolean perfEnabled = Boolean.getBoolean("perfEnabled");
+    private static boolean asyncEnabled = Boolean.getBoolean("asyncEnabled");
 
     static {
         gradleBinary.put("baseline1",
@@ -148,7 +150,7 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid));
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), daemonPid);
 
         stopDaemon(version);
 
@@ -163,8 +165,24 @@ public class Main {
         writeFile(fileToChange, srcCode);
     }
 
-    private static List<ExecutionResult> doRun(String version, List<String> args) {
-        return IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
+    private static List<ExecutionResult> doRun(String version, List<String> args, int daemonPid) {
+        if (asyncEnabled) {
+            asyncStart(daemonPid);
+        }
+        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
+        if (asyncEnabled) {
+            asyncStop(daemonPid);
+        }
+        return ret;
+    }
+
+    private static void asyncStart(int daemonPid) {
+        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "start");
+    }
+
+    private static void asyncStop(int daemonPid) {
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-flamegraph.svg";
+        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
     private static ExecutionResult measureOnce(int index, String version, List<String> args) {
@@ -239,7 +257,7 @@ public class Main {
 
         Map<String, String> env = new HashMap<>();
 
-        if (perfEnabled) {
+        if (perfEnabled || asyncEnabled) {
             args.add("--init-script");
             args.add(projectDirPath + "/pid-instrumentation.gradle");
             env.put("PID_FILE_PATH", getPidFile(version).getAbsolutePath());
@@ -251,7 +269,7 @@ public class Main {
             run(workingDir, getWarmupExpArgs(version, "assemble"));
         });
 
-        if (perfEnabled) {
+        if (perfEnabled || asyncEnabled) {
             return Integer.parseInt(readFile(getPidFile(version)));
         } else {
             return -1;
