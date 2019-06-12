@@ -150,7 +150,14 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), daemonPid);
+
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-executelog.txt";
+        run(projectDir, "touch", fileName);
+
+        List<String> args = new ArrayList<>(getExpArgs(version, "assemble", daemonPid));
+        args.add("-DEXECUTE_LOG_FILE=" + new File(projectDir, fileName).getAbsolutePath());
+
+        List<ExecutionResult> results = doRun(version, args, daemonPid);
 
         stopDaemon(version);
 
@@ -170,10 +177,7 @@ public class Main {
             asyncStart(daemonPid);
         }
 
-        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-walklog.txt";
-        run(projectDir, "touch", fileName);
-
-        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args, new File(projectDir, fileName).getAbsolutePath())).collect(Collectors.toList());
+        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
         if (asyncEnabled) {
             asyncStop(daemonPid);
         }
@@ -189,11 +193,10 @@ public class Main {
         run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args, String walkLogFile) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
         File workingDir = getExpProject(version);
 
         Map<String, String> envs = new HashMap<>();
-        envs.put("WALK_LOG_FILE", walkLogFile);
 
         long t0 = System.currentTimeMillis();
         String output = runGetStderr(workingDir, args, envs);
