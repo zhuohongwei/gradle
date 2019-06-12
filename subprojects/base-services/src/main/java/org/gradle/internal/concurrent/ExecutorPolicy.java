@@ -60,8 +60,6 @@ public interface ExecutorPolicy {
     class CatchAndRecordFailures implements ExecutorPolicy {
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultExecutorFactory.class);
         private final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
-        private static final AtomicInteger counter = new AtomicInteger(0);
-        private static final AtomicInteger timeCounter = new AtomicInteger(0);
 
         @Override
         public void onExecute(Runnable command) {
@@ -70,12 +68,9 @@ public interface ExecutorPolicy {
                 command.run();
                 long time = System.currentTimeMillis() - t0;
 
-                timeCounter.addAndGet((int) time);
-                counter.incrementAndGet();
-
                 if (System.getenv("EXECUTE_LOG_FILE") != null) {
                     BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXECUTE_LOG_FILE"), true));
-                    writer.write("CatchAndRecordFailures.onExecute iteration " + counter.get() + " costs " + timeCounter.get() + " ms\n");
+                    writer.write("CatchAndRecordFailures.onExecute iteration " + System.getenv("ITERATION") + " costs " + time + " ms\n");
                     writer.close();
                 }
             } catch (Throwable throwable) {

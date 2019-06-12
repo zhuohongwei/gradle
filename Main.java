@@ -196,6 +196,8 @@ public class Main {
     private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
         File workingDir = getExpProject(version);
 
+        envs.put("ITERATION", "" + index);
+
         long t0 = System.currentTimeMillis();
         String output = runGetStderr(workingDir, args, envs);
         long time = System.currentTimeMillis() - t0;
