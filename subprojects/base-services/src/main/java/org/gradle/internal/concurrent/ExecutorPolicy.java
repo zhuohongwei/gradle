@@ -76,8 +76,8 @@ public interface ExecutorPolicy {
                 T result = command.call();
                 long time = System.currentTimeMillis() - t0;
 
-                if (System.getProperty("EXECUTE_LOG_FILE") != null) {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getProperty("EXECUTE_LOG_FILE"), true));
+                if (System.getenv("EXECUTE_LOG_FILE") != null) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXECUTE_LOG_FILE"), true));
                     writer.write("CatchAndRecordFailures.onExecute costs " + time + " ms\n");
                     writer.close();
                 }
