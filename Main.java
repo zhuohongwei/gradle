@@ -154,10 +154,10 @@ public class Main {
         String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-executelog.txt";
         run(projectDir, "touch", fileName);
 
-        List<String> args = new ArrayList<>(getExpArgs(version, "assemble", daemonPid));
-        args.add("-DEXECUTE_LOG_FILE=" + new File(projectDir, fileName).getAbsolutePath());
+        Map<String, String> envs = new HashMap<>();
+        envs.put("EXECUTE_LOG_FILE", new File(projectDir, fileName).getAbsolutePath());
 
-        List<ExecutionResult> results = doRun(version, args, daemonPid);
+        List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), envs, daemonPid);
 
         stopDaemon(version);
 
@@ -172,12 +172,12 @@ public class Main {
         writeFile(fileToChange, srcCode);
     }
 
-    private static List<ExecutionResult> doRun(String version, List<String> args, int daemonPid) {
+    private static List<ExecutionResult> doRun(String version, List<String> args, Map<String, String> envs, int daemonPid) {
         if (asyncEnabled) {
             asyncStart(daemonPid);
         }
 
-        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args)).collect(Collectors.toList());
+        List<ExecutionResult> ret = IntStream.range(0, runCount).mapToObj(i -> measureOnce(i, version, args, envs)).collect(Collectors.toList());
         if (asyncEnabled) {
             asyncStop(daemonPid);
         }
@@ -193,10 +193,8 @@ public class Main {
         run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
-    private static ExecutionResult measureOnce(int index, String version, List<String> args) {
+    private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
         File workingDir = getExpProject(version);
-
-        Map<String, String> envs = new HashMap<>();
 
         long t0 = System.currentTimeMillis();
         String output = runGetStderr(workingDir, args, envs);
