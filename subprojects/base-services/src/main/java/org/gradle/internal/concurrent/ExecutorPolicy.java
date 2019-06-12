@@ -63,7 +63,15 @@ public interface ExecutorPolicy {
         @Override
         public void onExecute(Runnable command) {
             try {
+                long t0 = System.currentTimeMillis();
                 command.run();
+                long time = System.currentTimeMillis() - t0;
+
+                if (System.getenv("EXECUTE_LOG_FILE") != null) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXECUTE_LOG_FILE"), true));
+                    writer.write("CatchAndRecordFailures.onExecute costs " + time + " ms\n");
+                    writer.close();
+                }
             } catch (Throwable throwable) {
                 onFailure(String.format("Failed to execute %s.", command), throwable);
             }
@@ -72,16 +80,7 @@ public interface ExecutorPolicy {
         @Override
         public <T> T onExecute(Callable<T> command) throws Exception {
             try {
-                long t0 = System.currentTimeMillis();
-                T result = command.call();
-                long time = System.currentTimeMillis() - t0;
-
-                if (System.getenv("EXECUTE_LOG_FILE") != null) {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXECUTE_LOG_FILE"), true));
-                    writer.write("CatchAndRecordFailures.onExecute costs " + time + " ms\n");
-                    writer.close();
-                }
-                return result;
+                return command.call();
             } catch (Exception exception) {
                 onFailure(String.format("Failed to execute %s.", command), exception);
                 throw exception;
