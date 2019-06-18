@@ -162,7 +162,7 @@ public class Main {
     private static String createLogFile(String env) {
         String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-" + env + ".txt";
         run(projectDir, "touch", fileName);
-        return fileName;
+        return new File(projectDir, fileName).getAbsolutePath();
     }
 
     private static Map<String, String> getEnvs() {
