@@ -150,18 +150,24 @@ public class Main {
 
         int daemonPid = doWarmUp(version);
 
-
-        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-executelog.txt";
-        run(projectDir, "touch", fileName);
-
-        Map<String, String> envs = new HashMap<>();
-        envs.put("EXECUTE_LOG_FILE", new File(projectDir, fileName).getAbsolutePath());
+        Map<String, String> envs = getEnvs();
 
         List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), envs, daemonPid);
 
         stopDaemon(version);
 
         return new Experiment(version, results);
+    }
+
+    private static String createLogFile(String env) {
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-" + env + ".txt";
+        run(projectDir, "touch", fileName);
+        return fileName;
+    }
+
+    private static Map<String, String> getEnvs() {
+        List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG");
+        return candidates.stream().filter(System.getProperties()::containsKey).collect(Collectors.toMap(i->i, Main::createLogFile));
     }
 
     private static void nonABIChange(String version) {

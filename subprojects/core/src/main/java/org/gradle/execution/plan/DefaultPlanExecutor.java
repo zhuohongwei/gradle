@@ -35,6 +35,8 @@ import org.gradle.internal.work.WorkerLeaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.Collection;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
@@ -145,6 +147,16 @@ public class DefaultPlanExecutor implements PlanExecutor {
             }
 
             long total = totalTimer.getElapsedMillis();
+
+            try {
+                if (System.getenv("EXEC_WORKER_LOG") != null) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXEC_WORKER_LOG"), true));
+                    writer.write("DefaultPlanExecutor$Worker.run iteration " + System.getenv("ITERATION") + " costs " + total + " ms\n");
+                    writer.close();
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Execution worker [{}] finished, busy: {}, idle: {}", Thread.currentThread(), TimeFormatting.formatDurationVerbose(busy.get()), TimeFormatting.formatDurationVerbose(total - busy.get()));
