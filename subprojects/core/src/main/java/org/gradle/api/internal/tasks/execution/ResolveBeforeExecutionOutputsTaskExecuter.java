@@ -73,7 +73,7 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
         try {
             if (System.getenv("TASK_EXEC_LOG") != null) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("TASK_EXEC_LOG"), true));
-                writer.write("DaemonStateCoordinator$1.run iteration " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
+                writer.write("Task executer in thread " + Thread.currentThread().getId() + " " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
                 writer.close();
             }
         } catch (Exception e) {

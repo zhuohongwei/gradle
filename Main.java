@@ -167,7 +167,7 @@ public class Main {
 
     private static Map<String, String> getEnvs() {
         List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG", "TASK_EXEC_LOG");
-        return candidates.stream().filter(System.getProperties()::containsKey).collect(Collectors.toMap(i->i, Main::createLogFile));
+        return candidates.stream().filter(System.getProperties()::containsKey).collect(Collectors.toMap(i -> i, Main::createLogFile));
     }
 
     private static void nonABIChange(String version) {
@@ -196,7 +196,7 @@ public class Main {
 
     private static void asyncStop(int daemonPid) {
         String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-flamegraph.svg";
-        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
+        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "-e", "wall", "-t", "-i", "5ms", "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
     private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
