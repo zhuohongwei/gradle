@@ -166,7 +166,7 @@ public class Main {
     }
 
     private static Map<String, String> getEnvs() {
-        List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG");
+        List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG", "TASK_EXEC_LOG");
         return candidates.stream().filter(System.getProperties()::containsKey).collect(Collectors.toMap(i->i, Main::createLogFile));
     }
 

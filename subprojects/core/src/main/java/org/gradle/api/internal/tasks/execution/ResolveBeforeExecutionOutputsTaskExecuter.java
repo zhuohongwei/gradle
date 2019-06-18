@@ -29,6 +29,8 @@ import org.gradle.internal.execution.history.AfterPreviousExecutionState;
 import org.gradle.internal.fingerprint.CurrentFileCollectionFingerprint;
 import org.gradle.internal.fingerprint.FileCollectionFingerprint;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.function.Consumer;
 
 /**
@@ -47,6 +49,8 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
 
     @Override
     public TaskExecuterResult execute(TaskInternal task, TaskStateInternal state, final TaskExecutionContext context) {
+        long t0 = System.currentTimeMillis();
+
         ImmutableSortedSet<OutputFilePropertySpec> outputFilePropertySpecs = context.getTaskProperties().getOutputFileProperties();
         ImmutableSortedMap<String, CurrentFileCollectionFingerprint> outputsBeforeExecution = taskFingerprinter.fingerprintTaskFiles(task, outputFilePropertySpecs);
         context.setOutputFilesBeforeExecution(outputsBeforeExecution);
@@ -64,6 +68,17 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
                 }
             });
 
-        return delegate.execute(task, state, context);
+        TaskExecuterResult result = delegate.execute(task, state, context);
+
+        try {
+            if (System.getenv("TASK_EXEC_LOG") != null) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("TASK_EXEC_LOG"), true));
+                writer.write("DaemonStateCoordinator$1.run iteration " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
+                writer.close();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        return result;
     }
 }
