@@ -20,6 +20,8 @@ import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.process.ExecResult;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.concurrent.Executor;
 
 /**
@@ -33,7 +35,17 @@ public class DefaultExecAction extends DefaultExecHandleBuilder implements ExecA
     @Override
     public ExecResult execute() {
         ExecHandle execHandle = build();
+        long t0 = System.currentTimeMillis();
         ExecResult execResult = execHandle.start().waitForFinish();
+        try {
+            if (System.getenv("EXEC_ACTION_LOG") != null) {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXEC_ACTION_LOG"), true));
+                writer.write("Exec action in thread " + Thread.currentThread().getId() + " " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
+                writer.close();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
         if (!isIgnoreExitValue()) {
             execResult.assertNormalExitValue();
         }
