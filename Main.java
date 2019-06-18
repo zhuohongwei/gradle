@@ -191,7 +191,7 @@ public class Main {
     }
 
     private static void asyncStart(int daemonPid) {
-        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "start", "-e", "wall", "-t", "-i", "5ms");
+        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "start", "-e", "lock", "-t", "-i", "5ms");
     }
 
     private static void asyncStop(int daemonPid) {
