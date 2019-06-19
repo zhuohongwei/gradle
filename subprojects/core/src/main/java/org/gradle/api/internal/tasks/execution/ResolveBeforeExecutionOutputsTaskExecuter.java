@@ -55,6 +55,8 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
         ImmutableSortedMap<String, CurrentFileCollectionFingerprint> outputsBeforeExecution = taskFingerprinter.fingerprintTaskFiles(task, outputFilePropertySpecs);
         context.setOutputFilesBeforeExecution(outputsBeforeExecution);
 
+        long t1 = System.currentTimeMillis();
+
         AfterPreviousExecutionState afterPreviousExecutionState = context.getAfterPreviousExecution();
         @SuppressWarnings("RedundantTypeArguments")
         ImmutableSortedMap<String, FileCollectionFingerprint> outputsAfterPreviousExecution = afterPreviousExecutionState != null
@@ -73,7 +75,7 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
         try {
             if (System.getenv("TASK_EXEC_LOG") != null) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("TASK_EXEC_LOG"), true));
-                writer.write("Task executer in thread " + Thread.currentThread().getId() + " " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
+                writer.write("Iteration " + System.getenv("ITERATION") + " fingerprint " + (t1 - t0) + " ms, execute " + (System.currentTimeMillis() - t1) + " ms\n");
                 writer.close();
             }
         } catch (Exception e) {
