@@ -23,7 +23,7 @@ import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.artifacts.ivyservice.projectmodule.ProjectPublicationRegistry
 import org.gradle.api.internal.plugins.PluginDescriptor
 import org.gradle.api.plugins.JavaLibraryPlugin
-import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.internal.logging.ConfigureLogging
 import org.gradle.internal.logging.events.LogEvent
 import org.gradle.internal.logging.events.OutputEvent
@@ -151,10 +151,10 @@ class JavaGradlePluginPluginTest extends AbstractProjectBuilderSpec {
         expectedMessage == null || outputEventListener.toString().contains(expectedMessage)
 
         where:
-        id      | impl      | expectedMessage
-        'x.y.z' | 'a.b.c'   | DECLARED_PLUGIN_MISSING_PREFIX
-        'x.y.z' | 'x.y.z'   | null
-        null    | 'x.y.z'   | null
+        id      | impl    | expectedMessage
+        'x.y.z' | 'a.b.c' | DECLARED_PLUGIN_MISSING_PREFIX
+        'x.y.z' | 'x.y.z' | null
+        null    | 'x.y.z' | null
     }
 
     def "apply adds java-library plugin"() {
@@ -171,8 +171,8 @@ class JavaGradlePluginPluginTest extends AbstractProjectBuilderSpec {
 
         then:
         project.configurations
-            .getByName(JavaGradlePluginPlugin.API_CONFIGURATION)
-            .dependencies.find {
+                .getByName(JavaGradlePluginPlugin.API_CONFIGURATION)
+                .dependencies.find {
             it.files == project.dependencies.gradleApi().files
         }
     }
@@ -203,7 +203,7 @@ class JavaGradlePluginPluginTest extends AbstractProjectBuilderSpec {
                 a { id = "a.plugin" }
                 b { id = "b.plugin" }
             }
-
+        }
         then:
         def publications = project.services.get(ProjectPublicationRegistry).getPublications(PluginPublication, project.identityPath)
         publications.size() == 2
