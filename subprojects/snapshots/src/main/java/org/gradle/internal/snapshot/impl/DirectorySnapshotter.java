@@ -84,7 +84,7 @@ public class DirectorySnapshotter {
 
             if (System.getenv("WALK_LOG_FILE") != null) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("WALK_LOG_FILE"), true));
-                writer.write("Walking " + absolutePath + " costs " + time + " ms over " + builder.getCounter() + " files\n");
+                writer.write("Iteration " + System.getenv("ITERATION") + " walk " + time + " ms over " + builder.getCounter() + " files\n");
                 writer.close();
             }
         } catch (IOException e) {
