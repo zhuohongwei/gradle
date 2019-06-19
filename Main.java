@@ -166,7 +166,7 @@ public class Main {
     }
 
     private static Map<String, String> getEnvs() {
-        List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG", "TASK_EXEC_LOG", "EXEC_ACTION_LOG");
+        List<String> candidates = Arrays.asList("EXECUTE_LOG_FILE", "EXEC_WORKER_LOG", "DAEMON_STATE_LOG", "TASK_EXEC_LOG", "EXEC_ACTION_LOG", "STATE_LOCK_LOG");
         return candidates.stream().filter(System.getProperties()::containsKey).collect(Collectors.toMap(i -> i, Main::createLogFile));
     }
 
@@ -191,7 +191,7 @@ public class Main {
     }
 
     private static void asyncStart(int daemonPid) {
-        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "start", "-e", "lock", "-t", "-i", "5ms");
+        run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "start", "-e", "wall", "-t", "-i", "1ms");
     }
 
     private static void asyncStop(int daemonPid) {

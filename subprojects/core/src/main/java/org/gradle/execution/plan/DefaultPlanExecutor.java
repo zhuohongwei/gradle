@@ -172,6 +172,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
         private boolean executeNextNode(final WorkerLease workerLease, final Action<Node> nodeExecutor) {
             final MutableReference<Node> selected = MutableReference.empty();
             final MutableBoolean nodesRemaining = new MutableBoolean();
+            long t0 = System.currentTimeMillis();
             coordinationService.withStateLock(new Transformer<ResourceLockState.Disposition, ResourceLockState>() {
                 @Override
                 public ResourceLockState.Disposition transform(ResourceLockState resourceLockState) {
@@ -200,10 +201,25 @@ public class DefaultPlanExecutor implements PlanExecutor {
                 }
             });
 
+            long t1 = System.currentTimeMillis();
+
             Node selectedNode = selected.get();
             if (selectedNode != null) {
                 execute(selectedNode, workerLease, nodeExecutor);
             }
+
+            try {
+                if (System.getenv("STATE_LOCK_LOG") != null) {
+                    Thread current = Thread.currentThread();
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("STATE_LOCK_LOG"), true));
+                    writer.write("State lock in thread " + current.getName() + " " + current.getId() + " " + System.getenv("ITERATION") + " costs " + (t1 - t0) + " ms\n");
+                    writer.write("Execution in thread " + current.getName() + " " + current.getId() + " " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t1) + " ms\n");
+                    writer.close();
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+
             return nodesRemaining.get();
         }
 
