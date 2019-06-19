@@ -145,6 +145,7 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
     private PatternFilterable patternSet;
     private FileCollection classpath;
     private TestFramework testFramework;
+    private boolean listTests;
     private boolean scanForTestClasses = true;
     private long forkEvery;
     private int maxParallelForks = 1;
@@ -455,6 +456,16 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
     }
 
     /**
+     * Indicates if this task will fail on the first failed test
+     *
+     * @return whether this task will fail on the first failed test
+     */
+    @Override
+    public boolean getFailFast() {
+        return super.getFailFast();
+    }
+
+    /**
      * Enables fail fast behavior causing the task to fail on the first failed test.
      */
     @Option(option = "fail-fast", description = "Stops test execution after the first failed test.")
@@ -464,13 +475,24 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
     }
 
     /**
-     * Indicates if this task will fail on the first failed test
+     * Instead of executing tests, the tests are listed respecting any filters.
      *
-     * @return whether this task will fail on the first failed test
+     * @return whether or not tests will be listed
+     *
+     * @since 5.6
      */
-    @Override
-    public boolean getFailFast() {
-        return super.getFailFast();
+    public boolean isListTests() {
+        return listTests;
+    }
+
+    /**
+     * Instead of executing tests, the tests are listed respecting any filters.
+     *
+     * @since 5.6
+     */
+    @Option(option = "list-tests", description = "Lists available tests.")
+    public void setListTests(boolean listTests) {
+        this.listTests = listTests;
     }
 
     /**
@@ -607,7 +629,7 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
                 getServices().get(StartParameter.class).getMaxWorkerCount(),
                 getServices().get(Clock.class),
                 getServices().get(DocumentationRegistry.class),
-                (DefaultTestFilter) getFilter());
+                (DefaultTestFilter) getFilter(), listTests);
         } else {
             return testExecuter;
         }
