@@ -86,7 +86,7 @@ public class DirectorySnapshotter {
             if (System.getenv("WALK_LOG_FILE") != null) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("WALK_LOG_FILE"), true));
                 writer.write("Iteration " + System.getenv("ITERATION") + " walk " + time + " ms over " + builder.getCounter() + " files\n");
-                writer.write("Iteration " + System.getenv("ITERATION") + " visit " + visitor.previsitTime + " " + visitor.visitFileTime + " " + visitor.postvisitTime + "\n");
+                writer.write("Iteration " + System.getenv("ITERATION") + " visit " + visitor.previsitTime + " " + visitor.allowTime + " " + visitor.addFileSnapshotTime + " " + visitor.postvisitTime + "\n");
                 writer.close();
             }
         } catch (IOException e) {
@@ -258,7 +258,8 @@ public class DirectorySnapshotter {
         private final MutableBoolean hasBeenFiltered;
         private long previsitTime;
         private long postvisitTime;
-        private long visitFileTime;
+        private long allowTime;
+        private long addFileSnapshotTime;
 
 
         public PathVisitor(MerkleDirectorySnapshotBuilder builder, @Nullable Spec<FileTreeElement> spec, MutableBoolean hasBeenFiltered) {
@@ -293,22 +294,25 @@ public class DirectorySnapshotter {
         @Override
         public FileVisitResult visitFile(Path file, @Nullable BasicFileAttributes attrs) {
             long t0 = System.nanoTime();
-            try {
-                String name = stringInterner.intern(file.getFileName().toString());
-                if (isAllowed(file, name, false, attrs, builder.getRelativePath())) {
-                    if (attrs == null) {
-                        throw new GradleException(String.format("Cannot read file '%s': not authorized.", file));
-                    }
-                    if (attrs.isSymbolicLink()) {
-                        // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
-                        throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
-                    }
-                    addFileSnapshot(file, name, attrs);
+//            try {
+            String name = stringInterner.intern(file.getFileName().toString());
+            if (isAllowed(file, name, false, attrs, builder.getRelativePath())) {
+                long t1 = System.nanoTime();
+                allowTime += (t1 - t0);
+                if (attrs == null) {
+                    throw new GradleException(String.format("Cannot read file '%s': not authorized.", file));
                 }
-                return FileVisitResult.CONTINUE;
-            } finally {
-                visitFileTime += (System.nanoTime() - t0);
+                if (attrs.isSymbolicLink()) {
+                    // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
+                    throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
+                }
+                addFileSnapshot(file, name, attrs);
+                addFileSnapshotTime += (System.nanoTime() - t1);
             }
+            return FileVisitResult.CONTINUE;
+//            } finally {
+//                visitFileTime += (System.nanoTime() - t0);
+//            }
         }
 
         @Override
