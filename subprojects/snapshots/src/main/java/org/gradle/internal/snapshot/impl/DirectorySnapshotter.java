@@ -79,12 +79,14 @@ public class DirectorySnapshotter {
 
         try {
             long t0 = System.currentTimeMillis();
-            Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new PathVisitor(builder, spec, hasBeenFiltered));
+            PathVisitor visitor = new PathVisitor(builder, spec, hasBeenFiltered);
+            Files.walkFileTree(rootPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, visitor);
             long time = System.currentTimeMillis() - t0;
 
             if (System.getenv("WALK_LOG_FILE") != null) {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("WALK_LOG_FILE"), true));
                 writer.write("Iteration " + System.getenv("ITERATION") + " walk " + time + " ms over " + builder.getCounter() + " files\n");
+                writer.write("Iteration " + System.getenv("ITERATION") + " visit " + visitor.previsitTime + " " + visitor.visitFileTime + " " + visitor.postvisitTime + "\n");
                 writer.close();
             }
         } catch (IOException e) {
@@ -254,6 +256,10 @@ public class DirectorySnapshotter {
         private final MerkleDirectorySnapshotBuilder builder;
         private final Spec<FileTreeElement> spec;
         private final MutableBoolean hasBeenFiltered;
+        private long previsitTime;
+        private long postvisitTime;
+        private long visitFileTime;
+
 
         public PathVisitor(MerkleDirectorySnapshotBuilder builder, @Nullable Spec<FileTreeElement> spec, MutableBoolean hasBeenFiltered) {
             this.builder = builder;
@@ -263,13 +269,18 @@ public class DirectorySnapshotter {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-            String fileName = getFilename(dir);
-            String name = stringInterner.intern(fileName);
-            if (builder.isRoot() || isAllowed(dir, name, true, attrs, builder.getRelativePath())) {
-                builder.preVisitDirectory(internedAbsolutePath(dir), name);
-                return FileVisitResult.CONTINUE;
-            } else {
-                return FileVisitResult.SKIP_SUBTREE;
+            long t0 = System.nanoTime();
+            try {
+                String fileName = getFilename(dir);
+                String name = stringInterner.intern(fileName);
+                if (builder.isRoot() || isAllowed(dir, name, true, attrs, builder.getRelativePath())) {
+                    builder.preVisitDirectory(internedAbsolutePath(dir), name);
+                    return FileVisitResult.CONTINUE;
+                } else {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+            } finally {
+                previsitTime += (System.nanoTime() - t0);
             }
         }
 
@@ -281,18 +292,23 @@ public class DirectorySnapshotter {
 
         @Override
         public FileVisitResult visitFile(Path file, @Nullable BasicFileAttributes attrs) {
-            String name = stringInterner.intern(file.getFileName().toString());
-            if (isAllowed(file, name, false, attrs, builder.getRelativePath())) {
-                if (attrs == null) {
-                    throw new GradleException(String.format("Cannot read file '%s': not authorized.", file));
+            long t0 = System.nanoTime();
+            try {
+                String name = stringInterner.intern(file.getFileName().toString());
+                if (isAllowed(file, name, false, attrs, builder.getRelativePath())) {
+                    if (attrs == null) {
+                        throw new GradleException(String.format("Cannot read file '%s': not authorized.", file));
+                    }
+                    if (attrs.isSymbolicLink()) {
+                        // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
+                        throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
+                    }
+                    addFileSnapshot(file, name, attrs);
                 }
-                if (attrs.isSymbolicLink()) {
-                    // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
-                    throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
-                }
-                addFileSnapshot(file, name, attrs);
+                return FileVisitResult.CONTINUE;
+            } finally {
+                visitFileTime += (System.nanoTime() - t0);
             }
-            return FileVisitResult.CONTINUE;
         }
 
         @Override
@@ -308,14 +324,19 @@ public class DirectorySnapshotter {
 
         @Override
         public FileVisitResult postVisitDirectory(Path dir, @Nullable IOException exc) {
-            // File loop exceptions are ignored. When we encounter a loop (via symbolic links), we continue
-            // so we include all the other files apart from the loop.
-            // This way, we include each file only once.
-            if (isNotFileSystemLoopException(exc)) {
-                throw new GradleException(String.format("Could not read directory path '%s'.", dir), exc);
+            long t0 = System.nanoTime();
+            try {
+                // File loop exceptions are ignored. When we encounter a loop (via symbolic links), we continue
+                // so we include all the other files apart from the loop.
+                // This way, we include each file only once.
+                if (isNotFileSystemLoopException(exc)) {
+                    throw new GradleException(String.format("Could not read directory path '%s'.", dir), exc);
+                }
+                builder.postVisitDirectory();
+                return FileVisitResult.CONTINUE;
+            } finally {
+                postvisitTime += (System.nanoTime() - t0);
             }
-            builder.postVisitDirectory();
-            return FileVisitResult.CONTINUE;
         }
 
         private boolean isNotFileSystemLoopException(@Nullable IOException e) {
