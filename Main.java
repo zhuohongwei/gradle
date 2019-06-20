@@ -233,7 +233,7 @@ public class Main {
             "--gradle-user-home",
             getGradleUserHome(version).getAbsolutePath(),
             "--stacktrace",
-            "-Dorg.gradle.jvmargs=-Xms4g -Xmx4g",
+            "-Dorg.gradle.jvmargs=-Xms4g -Xmx4g -Xint",
             task
         );
     }
