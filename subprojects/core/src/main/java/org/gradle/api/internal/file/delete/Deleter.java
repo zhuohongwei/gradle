@@ -16,6 +16,7 @@
 package org.gradle.api.internal.file.delete;
 
 import org.gradle.api.Action;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.DeleteSpec;
 import org.gradle.api.file.UnableToDeleteFileException;
 import org.gradle.api.internal.file.FileResolver;
@@ -28,11 +29,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Deleter {
     private static final Logger LOGGER = LoggerFactory.getLogger(Deleter.class);
@@ -65,60 +76,69 @@ public class Deleter {
     }
 
     public WorkResult delete(Action<? super DeleteSpec> action) {
-        boolean didWork = false;
+        final AtomicBoolean didWork = new AtomicBoolean();
+
         DeleteSpecInternal deleteSpec = new DefaultDeleteSpec();
         action.execute(deleteSpec);
+
         Object[] paths = deleteSpec.getPaths();
-        for (File file : fileResolver.resolveFiles(paths)) {
-            if (!file.exists()) {
-                continue;
-            }
-            LOGGER.debug("Deleting {}", file);
-            didWork = true;
-            doDeleteInternal(file, deleteSpec);
-        }
-        return WorkResults.didWork(didWork);
-    }
-
-    private void doDeleteInternal(File file, DeleteSpecInternal deleteSpec) {
-        long startTime = clock.getCurrentTime();
         Collection<String> failedPaths = new ArrayList<String>();
-        deleteRecursively(startTime, file, file, deleteSpec, failedPaths);
-        if (!failedPaths.isEmpty()) {
-            throwWithHelpMessage(startTime, file, deleteSpec, failedPaths, false);
-        }
-    }
+        Set<FileVisitOption> options = deleteSpec.isFollowSymlinks() ? Collections.singleton(FileVisitOption.FOLLOW_LINKS) : Collections.emptySet();
+        for (File baseDir : fileResolver.resolveFiles(paths)) {
+            long startTime = clock.getCurrentTime();
+            try {
+                Files.walkFileTree(baseDir.toPath(), options, Integer.MAX_VALUE, new FileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                        LOGGER.debug("Deleting directory {}", dir);
+                        return FileVisitResult.CONTINUE;
+                    }
 
-    private void deleteRecursively(long startTime, File baseDir, File file, DeleteSpecInternal deleteSpec, Collection<String> failedPaths) {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        LOGGER.debug("Deleting file {}", file);
+                        didWork.set(true);
+                        try {
+                            Files.delete(file);
+                        } catch (IOException e) {
+                            try {
+                                handleFailedDelete(file);
+                            } catch (IOException e2) {
+                                failedPaths.add(file.toString());
+                            }
+                        }
 
-        if (file.isDirectory() && (deleteSpec.isFollowSymlinks() || !fileSystem.isSymlink(file))) {
-            File[] contents = file.listFiles();
+                        // Fail fast
+                        if (failedPaths.size() >= MAX_REPORTED_PATHS) {
+                            return FileVisitResult.TERMINATE;
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
 
-            // Something else may have removed it
-            if (contents == null) {
-                return;
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                        failedPaths.add(file.toString());
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        LOGGER.debug("Deleted directory {}", dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not delete " + baseDir, e);
             }
 
-            for (File item : contents) {
-                deleteRecursively(startTime, baseDir, item, deleteSpec, failedPaths);
-            }
-        }
-
-        if (!deleteFile(file)) {
-            handleFailedDelete(file, failedPaths);
-
-            // Fail fast
-            if (failedPaths.size() == MAX_REPORTED_PATHS) {
+            if (failedPaths.size() > 0) {
                 throwWithHelpMessage(startTime, baseDir, deleteSpec, failedPaths, true);
             }
         }
+        return WorkResults.didWork(didWork.get());
     }
 
-    protected boolean deleteFile(File file) {
-        return file.delete() && !file.exists();
-    }
-
-    private void handleFailedDelete(File file, Collection<String> failedPaths) {
+    private void handleFailedDelete(Path file) throws IOException {
         // This is copied from Ant (see org.apache.tools.ant.util.FileUtils.tryHardToDelete).
         // It mentions that there is a bug in the Windows JDK impls that this is a valid
         // workaround for. I've been unable to find a definitive reference to this bug.
@@ -132,9 +152,7 @@ public class Deleter {
             Thread.currentThread().interrupt();
         }
 
-        if (!deleteFile(file)) {
-            failedPaths.add(file.getAbsolutePath());
-        }
+        Files.delete(file);
     }
 
     private boolean isRunGcOnFailedDelete() {
