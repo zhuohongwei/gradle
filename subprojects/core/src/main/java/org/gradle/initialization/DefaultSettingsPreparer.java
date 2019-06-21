@@ -19,19 +19,19 @@ package org.gradle.initialization;
 import org.gradle.api.internal.GradleInternal;
 
 public class DefaultSettingsPreparer implements SettingsPreparer {
-    private final InitScriptHandler initScriptHandler;
     private final SettingsLoaderFactory settingsLoaderFactory;
 
-    public DefaultSettingsPreparer(InitScriptHandler initScriptHandler, SettingsLoaderFactory settingsLoaderFactory) {
-        this.initScriptHandler = initScriptHandler;
+    public DefaultSettingsPreparer(SettingsLoaderFactory settingsLoaderFactory) {
         this.settingsLoaderFactory = settingsLoaderFactory;
     }
 
     @Override
     public void prepareSettings(GradleInternal gradle) {
+        // Load gradle.properties
         // Evaluate init scripts
-        initScriptHandler.executeScripts(gradle);
-        // Build `buildSrc`, load settings.gradle, and construct composite (if appropriate)
+        // Build `buildSrc`
+        // Load settings.gradle
+        // and construct composite (if appropriate)
         SettingsLoader settingsLoader = gradle.getParent() != null ? settingsLoaderFactory.forNestedBuild() : settingsLoaderFactory.forTopLevelBuild();
         settingsLoader.findAndLoadSettings(gradle);
     }

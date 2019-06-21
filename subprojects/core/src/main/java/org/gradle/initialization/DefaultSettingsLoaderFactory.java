@@ -31,14 +31,18 @@ public class DefaultSettingsLoaderFactory implements SettingsLoaderFactory {
     private final BuildStateRegistry buildRegistry;
     private final ProjectStateRegistry projectRegistry;
     private final PublicBuildPath publicBuildPath;
+    private final IGradlePropertiesLoader gradlePropertiesLoader;
+    private final InitScriptHandler initScriptHandler;
 
-    public DefaultSettingsLoaderFactory(ISettingsFinder settingsFinder, SettingsProcessor settingsProcessor, BuildSourceBuilder buildSourceBuilder, BuildStateRegistry buildRegistry, ProjectStateRegistry projectRegistry, PublicBuildPath publicBuildPath) {
+    public DefaultSettingsLoaderFactory(ISettingsFinder settingsFinder, SettingsProcessor settingsProcessor, BuildSourceBuilder buildSourceBuilder, BuildStateRegistry buildRegistry, ProjectStateRegistry projectRegistry, PublicBuildPath publicBuildPath, IGradlePropertiesLoader gradlePropertiesLoader, InitScriptHandler initScriptHandler) {
         this.settingsFinder = settingsFinder;
         this.settingsProcessor = settingsProcessor;
         this.buildSourceBuilder = buildSourceBuilder;
         this.buildRegistry = buildRegistry;
         this.projectRegistry = projectRegistry;
         this.publicBuildPath = publicBuildPath;
+        this.gradlePropertiesLoader = gradlePropertiesLoader;
+        this.initScriptHandler = initScriptHandler;
     }
 
     @Override
@@ -64,11 +68,13 @@ public class DefaultSettingsLoaderFactory implements SettingsLoaderFactory {
 
     private SettingsLoader defaultSettingsLoader() {
         return new SettingsAttachingSettingsLoader(
-            new DefaultSettingsLoader(
-                settingsFinder,
-                settingsProcessor,
-                buildSourceBuilder
-            ),
-            projectRegistry);
+                new DefaultSettingsLoader(
+                        settingsFinder,
+                        settingsProcessor,
+                        buildSourceBuilder,
+                        gradlePropertiesLoader,
+                        initScriptHandler
+                ),
+                projectRegistry);
     }
 }

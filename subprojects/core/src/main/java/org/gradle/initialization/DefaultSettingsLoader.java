@@ -28,53 +28,58 @@ import org.gradle.initialization.buildsrc.BuildSourceBuilder;
  * found after settings is located, but needs to be built before settings is processed.
  */
 public class DefaultSettingsLoader implements SettingsLoader {
-    private ISettingsFinder settingsFinder;
-    private SettingsProcessor settingsProcessor;
-    private BuildSourceBuilder buildSourceBuilder;
+    private final ISettingsFinder settingsFinder;
+    private final SettingsProcessor settingsProcessor;
+    private final BuildSourceBuilder buildSourceBuilder;
+    private final IGradlePropertiesLoader propertiesLoader;
+    private final InitScriptHandler initScriptHandler;
 
-    public DefaultSettingsLoader(ISettingsFinder settingsFinder, SettingsProcessor settingsProcessor,
-                                 BuildSourceBuilder buildSourceBuilder) {
+    public DefaultSettingsLoader(ISettingsFinder settingsFinder,
+                                 SettingsProcessor settingsProcessor,
+                                 BuildSourceBuilder buildSourceBuilder,
+                                 IGradlePropertiesLoader propertiesLoader, InitScriptHandler initScriptHandler) {
         this.settingsFinder = settingsFinder;
         this.settingsProcessor = settingsProcessor;
         this.buildSourceBuilder = buildSourceBuilder;
+        this.propertiesLoader = propertiesLoader;
+        this.initScriptHandler = initScriptHandler;
     }
 
     @Override
     public SettingsInternal findAndLoadSettings(GradleInternal gradle) {
         StartParameter startParameter = gradle.getStartParameter();
-        SettingsInternal settings = findSettingsAndLoadIfAppropriate(gradle, startParameter);
+        SettingsLocation settingsLocation = findSettings(startParameter);
 
-        ProjectSpec spec = ProjectSpecs.forStartParameter(startParameter, settings);
-        if (useEmptySettings(spec, settings, startParameter)) {
-            settings = createEmptySettings(gradle, startParameter);
+        ProjectSpec spec = ProjectSpecs.forStartParameter(startParameter, settingsLocation);
+        final SettingsInternal settings;
+        if (useEmptySettings(spec, settingsLocation, startParameter)) {
+            settings = createEmptySettings(gradle, settingsLocation, startParameter);
+        } else {
+            settings = findSettingsAndLoadIfAppropriate(gradle, settingsLocation, startParameter);
         }
 
         setDefaultProject(spec, settings);
         return settings;
     }
 
-    private boolean useEmptySettings(ProjectSpec spec, SettingsInternal loadedSettings, StartParameter startParameter) {
+    private boolean useEmptySettings(ProjectSpec spec, SettingsLocation settingsLocation, StartParameter startParameter) {
         // Never use empty settings when the settings were explicitly set
         if (startParameter.getSettingsFile() != null) {
             return false;
         }
-        // Use the loaded settings if it includes the target project (based on build file, project dir or current dir)
-        if (spec.containsProject(loadedSettings.getProjectRegistry())) {
-            return false;
-        }
 
         // Use an empty settings for a target build file located in the same directory as the settings file.
-        if (startParameter.getProjectDir() != null && loadedSettings.getSettingsDir().equals(startParameter.getProjectDir())) {
+        if (startParameter.getProjectDir() != null && settingsLocation.getSettingsDir().equals(startParameter.getProjectDir())) {
             return true;
         }
 
         return false;
     }
 
-    private SettingsInternal createEmptySettings(GradleInternal gradle, StartParameter startParameter) {
+    private SettingsInternal createEmptySettings(GradleInternal gradle, SettingsLocation settingsLocation, StartParameter startParameter) {
         StartParameter noSearchParameter = startParameter.newInstance();
         noSearchParameter.useEmptySettings();
-        SettingsInternal settings = findSettingsAndLoadIfAppropriate(gradle, noSearchParameter);
+        SettingsInternal settings = findSettingsAndLoadIfAppropriate(gradle, settingsLocation, noSearchParameter);
 
         // Set explicit build file, if required
         if (noSearchParameter.getBuildFile() != null) {
@@ -94,12 +99,14 @@ public class DefaultSettingsLoader implements SettingsLoader {
      * loaded (executed), then a null is returned.
      */
     private SettingsInternal findSettingsAndLoadIfAppropriate(GradleInternal gradle,
+                                                              SettingsLocation settingsLocation,
                                                               StartParameter startParameter) {
-        SettingsLocation settingsLocation = findSettings(startParameter);
-
         // We found the desired settings file, now build the associated buildSrc before loading settings.  This allows
         // the settings script to reference classes in the buildSrc.
         ClassLoaderScope buildSourceClassLoaderScope = buildSourceBuilder.buildAndCreateClassLoader(settingsLocation.getSettingsDir(), startParameter);
+
+        propertiesLoader.loadProperties(settingsLocation.getSettingsDir());
+        initScriptHandler.executeScripts(gradle);
 
         return settingsProcessor.process(gradle, settingsLocation, buildSourceClassLoaderScope, startParameter);
     }

@@ -45,6 +45,32 @@ class InitScriptIntegrationTest extends AbstractIntegrationSpec {
         """
     }
 
+    def "init scripts can see gradle.properties"() {
+        file("gradle.properties") << """
+            systemProp.example.property = true
+        """
+        file("init.gradle") << """
+            assert System.properties['example.property']
+            rootProject {
+                ext.initScriptRan = true
+            }
+        """
+        file("buildSrc/settings.gradle") << """
+            assert !System.properties['example.property']
+        """
+        buildFile << """
+            assert System.properties['example.property']
+            
+            task assertInitScriptRan {
+                doLast {
+                    assert project.initScriptRan
+                }
+            } 
+        """
+        expect:
+        succeeds("assertInitScriptRan")
+    }
+
     @NotYetImplemented
     @Issue(['GRADLE-1457', 'GRADLE-3197'])
     def 'init scripts passed on the command line are applied to buildSrc'() {

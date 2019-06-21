@@ -17,13 +17,12 @@
 package org.gradle.initialization;
 
 import org.gradle.StartParameter;
-import org.gradle.api.internal.SettingsInternal;
 
 import java.io.File;
 
 class ProjectSpecs {
 
-    static ProjectSpec forStartParameter(StartParameter startParameter, SettingsInternal settings) {
+    static ProjectSpec forStartParameter(StartParameter startParameter, SettingsLocation settingsLocation) {
         File explicitProjectDir = startParameter.getProjectDir();
         File explicitBuildFile = startParameter.getBuildFile();
         if (explicitBuildFile != null) {
@@ -32,6 +31,6 @@ class ProjectSpecs {
         if (explicitProjectDir != null) {
             return new ProjectDirectoryProjectSpec(explicitProjectDir);
         }
-        return new CurrentDirectoryProjectSpec(startParameter.getCurrentDir(), settings);
+        return new CurrentDirectoryProjectSpec(startParameter.getCurrentDir(), settingsLocation);
     }
 }

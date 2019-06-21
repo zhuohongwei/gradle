@@ -122,7 +122,6 @@ import org.gradle.initialization.ModelConfigurationListener;
 import org.gradle.initialization.NotifyingBuildLoader;
 import org.gradle.initialization.ProjectAccessListener;
 import org.gradle.initialization.ProjectPropertySettingBuildLoader;
-import org.gradle.initialization.PropertiesLoadingSettingsProcessor;
 import org.gradle.initialization.RootBuildCacheControllerSettingsProcessor;
 import org.gradle.initialization.ScriptEvaluatingSettingsProcessor;
 import org.gradle.initialization.SettingsEvaluatedCallbackFiringSettingsProcessor;
@@ -324,26 +323,30 @@ public class BuildScopeServices extends DefaultServiceRegistry {
             get(Clock.class));
     }
 
-    protected SettingsLoaderFactory createSettingsLoaderFactory(SettingsProcessor settingsProcessor, BuildLayoutFactory buildLayoutFactory, BuildState currentBuild, ClassLoaderScopeRegistry classLoaderScopeRegistry, FileLockManager fileLockManager, BuildOperationExecutor buildOperationExecutor, CachedClasspathTransformer cachedClasspathTransformer, CachingServiceLocator cachingServiceLocator, BuildStateRegistry buildRegistry, ProjectStateRegistry projectRegistry, PublicBuildPath publicBuildPath) {
+    protected SettingsLoaderFactory createSettingsLoaderFactory(SettingsProcessor settingsProcessor, BuildLayoutFactory buildLayoutFactory, BuildState currentBuild,
+                                                                ClassLoaderScopeRegistry classLoaderScopeRegistry, FileLockManager fileLockManager, BuildOperationExecutor buildOperationExecutor,
+                                                                CachedClasspathTransformer cachedClasspathTransformer, CachingServiceLocator cachingServiceLocator, BuildStateRegistry buildRegistry,
+                                                                ProjectStateRegistry projectRegistry, PublicBuildPath publicBuildPath, InitScriptHandler initScriptHandler, IGradlePropertiesLoader gradlePropertiesLoader) {
         return new DefaultSettingsLoaderFactory(
-            new DefaultSettingsFinder(buildLayoutFactory),
-            settingsProcessor,
-            new BuildSourceBuilder(
-                currentBuild,
-                classLoaderScopeRegistry.getCoreAndPluginsScope(),
-                fileLockManager,
-                buildOperationExecutor,
-                cachedClasspathTransformer,
-                new BuildSrcBuildListenerFactory(
-                    PluginsProjectConfigureActions.of(
-                        BuildSrcProjectConfigurationAction.class,
-                        cachingServiceLocator)),
+                new DefaultSettingsFinder(buildLayoutFactory),
+                settingsProcessor,
+                new BuildSourceBuilder(
+                        currentBuild,
+                        classLoaderScopeRegistry.getCoreAndPluginsScope(),
+                        fileLockManager,
+                        buildOperationExecutor,
+                        cachedClasspathTransformer,
+                        new BuildSrcBuildListenerFactory(
+                                PluginsProjectConfigureActions.of(
+                                        BuildSrcProjectConfigurationAction.class,
+                                        cachingServiceLocator)),
+                        buildRegistry,
+                        publicBuildPath),
                 buildRegistry,
-                publicBuildPath),
-            buildRegistry,
-            projectRegistry,
-            publicBuildPath
-        );
+                projectRegistry,
+                publicBuildPath,
+                gradlePropertiesLoader,
+                initScriptHandler);
     }
 
     protected InitScriptHandler createInitScriptHandler(ScriptPluginFactory scriptPluginFactory, ScriptHandlerFactory scriptHandlerFactory, BuildOperationExecutor buildOperationExecutor) {
@@ -359,30 +362,25 @@ public class BuildScopeServices extends DefaultServiceRegistry {
     protected SettingsProcessor createSettingsProcessor(ScriptPluginFactory scriptPluginFactory, ScriptHandlerFactory scriptHandlerFactory, Instantiator instantiator,
                                                         ServiceRegistryFactory serviceRegistryFactory, IGradlePropertiesLoader propertiesLoader, BuildOperationExecutor buildOperationExecutor, TextResourceLoader textResourceLoader) {
         return new BuildOperationSettingsProcessor(
-            new RootBuildCacheControllerSettingsProcessor(
-                new SettingsEvaluatedCallbackFiringSettingsProcessor(
-                    new PropertiesLoadingSettingsProcessor(
-                        new ScriptEvaluatingSettingsProcessor(
-                            scriptPluginFactory,
-                            new SettingsFactory(
-                                instantiator,
-                                serviceRegistryFactory,
-                                scriptHandlerFactory
-                            ),
-                            propertiesLoader,
-                            textResourceLoader),
-                        propertiesLoader
-                    )
-                )
-            ),
-            buildOperationExecutor);
+                new RootBuildCacheControllerSettingsProcessor(
+                        new SettingsEvaluatedCallbackFiringSettingsProcessor(
+                                new ScriptEvaluatingSettingsProcessor(
+                                        scriptPluginFactory,
+                                        new SettingsFactory(
+                                                instantiator,
+                                                serviceRegistryFactory,
+                                                scriptHandlerFactory
+                                        ),
+                                        propertiesLoader,
+                                        textResourceLoader)
+                        )
+                ),
+                buildOperationExecutor);
     }
 
-    protected SettingsPreparer createSettingsPreparer(InitScriptHandler initScriptHandler, SettingsLoaderFactory settingsLoaderFactory, BuildOperationExecutor buildOperationExecutor, BuildDefinition buildDefinition) {
+    protected SettingsPreparer createSettingsPreparer(SettingsLoaderFactory settingsLoaderFactory, BuildOperationExecutor buildOperationExecutor, BuildDefinition buildDefinition) {
         return new BuildOperatingFiringSettingsPreparer(
-            new DefaultSettingsPreparer(
-                initScriptHandler,
-                settingsLoaderFactory),
+            new DefaultSettingsPreparer(settingsLoaderFactory),
             buildOperationExecutor,
             buildDefinition.getFromBuild());
     }

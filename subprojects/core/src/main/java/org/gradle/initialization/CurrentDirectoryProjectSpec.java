@@ -15,7 +15,6 @@
  */
 package org.gradle.initialization;
 
-import org.gradle.api.internal.SettingsInternal;
 import org.gradle.api.internal.project.ProjectIdentifier;
 import org.gradle.api.internal.project.ProjectRegistry;
 
@@ -26,9 +25,9 @@ public class CurrentDirectoryProjectSpec extends AbstractProjectSpec {
     private final boolean useRootWhenNoMatch;
     private final File currentDir;
 
-    public CurrentDirectoryProjectSpec(File currentDir, SettingsInternal settings) {
+    public CurrentDirectoryProjectSpec(File currentDir, SettingsLocation settingsLocation) {
         this.currentDir = currentDir;
-        this.useRootWhenNoMatch = currentDir.equals(settings.getSettingsDir());
+        this.useRootWhenNoMatch = currentDir.equals(settingsLocation.getSettingsDir());
     }
 
     @Override
