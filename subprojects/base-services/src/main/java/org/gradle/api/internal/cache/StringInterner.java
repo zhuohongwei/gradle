@@ -30,6 +30,9 @@ public class StringInterner implements Interner<String> {
 
     @Override
     public String intern(@Nullable String sample) {
-        return sample;
+        if (sample == null) {
+            return null;
+        }
+        return interner.intern(sample);
     }
 }
