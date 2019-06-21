@@ -134,8 +134,7 @@ class CustomWindowsStartScriptGenerator implements ScriptGenerator {
         windowsStartScript.text == 'myApp start up script for Windows'
     }
 
-    @Requires(TestPrecondition.UNIX_DERIVATIVE)
-    def "can execute generated Unix start script"() {
+    def "can execute generated start script"() {
         when:
         succeeds('installDist')
 
@@ -147,6 +146,20 @@ class CustomWindowsStartScriptGenerator implements ScriptGenerator {
 
         then:
         outputContains('Hello World!')
+    }
+
+    def "can execute generated start script that fails"() {
+        generateMainClass """
+            System.exit(42);
+        """
+
+        when:
+        succeeds('installDist')
+
+        then:
+        file('build/install/sample').exists()
+
+        failsViaStartScript()
     }
 
     @Requires(TestPrecondition.UNIX_DERIVATIVE)
@@ -190,29 +203,13 @@ $binFile.text
         assert pids[0] == pids[1]
     }
 
-    @Requires(TestPrecondition.WINDOWS)
-    def "can execute generated Windows start script"() {
-        when:
-        succeeds('installDist')
-
-        then:
-        file('build/install/sample').exists()
-
-        when:
-        runViaStartScript()
-
-        then:
-        outputContains('Hello World!')
-    }
-
-    ExecutionResult runViaUnixStartScript(TestFile startScriptDir) {
+    void runViaUnixStartScript(TestFile startScriptDir) {
         buildFile << """
 task execStartScript(type: Exec) {
     workingDir '$startScriptDir.canonicalPath'
     commandLine './sample'
 }
 """
-        return succeeds('execStartScript')
     }
 
     ExecutionResult runViaUnixStartScriptWithJavaHome(String javaHome) {
@@ -228,7 +225,7 @@ task execStartScript(type: Exec) {
         return succeeds('execStartScript')
     }
 
-    ExecutionResult runViaWindowsStartScript(TestFile startScriptDir) {
+    void runViaWindowsStartScript(TestFile startScriptDir) {
         String escapedStartScriptDir = startScriptDir.canonicalPath.replaceAll('\\\\', '\\\\\\\\')
         buildFile << """
 task execStartScript(type: Exec) {
@@ -236,7 +233,6 @@ task execStartScript(type: Exec) {
     commandLine 'cmd', '/c', 'sample.bat'
 }
 """
-        return succeeds('execStartScript')
     }
 
     def "compile only dependencies are not included in distribution"() {
@@ -484,6 +480,12 @@ startScripts {
 
     ExecutionResult runViaStartScript(TestFile startScriptDir = file('build/install/sample/bin')) {
         OperatingSystem.current().isWindows() ? runViaWindowsStartScript(startScriptDir) : runViaUnixStartScript(startScriptDir)
+        return succeeds('execStartScript')
+    }
+
+    ExecutionResult failsViaStartScript(TestFile startScriptDir = file('build/install/sample/bin')) {
+        OperatingSystem.current().isWindows() ? runViaWindowsStartScript(startScriptDir) : runViaUnixStartScript(startScriptDir)
+        return fails('execStartScript')
     }
 
     private void createSampleProjectSetup() {
