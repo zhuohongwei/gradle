@@ -146,8 +146,6 @@ public class Main {
     }
 
     private static Experiment runExperiment(String version) {
-        nonABIChange(version);
-
         int daemonPid = doWarmUp(version);
 
         Map<String, String> envs = getEnvs();
@@ -178,6 +176,14 @@ public class Main {
         writeFile(fileToChange, srcCode);
     }
 
+    private static void revertNonABIChange(String version) {
+        File projectDir = getExpProject(version);
+        File fileToChange = new File(projectDir, "src/main/java/org/gradle/test/performance/largemonolithicjavaproject/p0/Production0.java");
+        String srcCode = readFile(fileToChange);
+        srcCode = srcCode.replaceAll("System\\.out\\.println.*\"\\);return property9;", "return property9;");
+        writeFile(fileToChange, srcCode);
+    }
+
     private static List<ExecutionResult> doRun(String version, List<String> args, Map<String, String> envs, int daemonPid) {
         if (asyncEnabled) {
             asyncStart(daemonPid);
@@ -202,6 +208,8 @@ public class Main {
     private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
         File workingDir = getExpProject(version);
 
+        nonABIChange(version);
+
         envs.put("ITERATION", "" + index);
 
         long t0 = System.currentTimeMillis();
@@ -209,6 +217,8 @@ public class Main {
         long time = System.currentTimeMillis() - t0;
 
         String cpuTemp = "";//runGetStdout(workingDir, Arrays.asList(cpuTempCmd));
+
+        revertNonABIChange(version);
 
         return new ExecutionResult(output + "\n" + cpuTemp, time);
     }
@@ -233,7 +243,7 @@ public class Main {
             "--gradle-user-home",
             getGradleUserHome(version).getAbsolutePath(),
             "--stacktrace",
-            "-Dorg.gradle.jvmargs=-Xms4g -Xmx4g -Xint",
+            "-Dorg.gradle.jvmargs=-Xms4g -Xmx4g",
             task
         );
     }
@@ -282,7 +292,9 @@ public class Main {
         run(workingDir, env, args);
 
         IntStream.range(1, warmups).forEach(i -> {
+            nonABIChange(version);
             run(workingDir, getWarmupExpArgs(version, "assemble"));
+            revertNonABIChange(version);
         });
 
         if (perfEnabled || asyncEnabled) {
