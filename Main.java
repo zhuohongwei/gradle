@@ -322,7 +322,7 @@ public class Main {
 
     private static void writeFile(File file, String text) {
         try {
-            Files.write(file.toPath(), text.getBytes(), StandardOpenOption.WRITE);
+            Files.write(file.toPath(), text.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
         } catch (Exception e) {
             handleException(e);
         }
