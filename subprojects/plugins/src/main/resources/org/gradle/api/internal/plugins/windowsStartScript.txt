@@ -87,17 +87,15 @@ set CLASSPATH=$classpath
 
 :end
 @rem End local scope for the variables with windows NT shell
-if not "%ERRORLEVEL%"=="0" goto fail
-
-if "%OS%"=="Windows_NT" endlocal
-exit /b 0
+if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail
 rem Set variable ${exitEnvironmentVar} if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
-if not "" == "%${exitEnvironmentVar}%" exit 1
+if  not "" == "%${exitEnvironmentVar}%" exit 1
+exit /b 1
 
-@rem exit /b will not properly signal a failure, instead cause a real failure to signal a failure of this script
-@%COMSPEC% /C exit 1 >nul
+:mainEnd
+if "%OS%"=="Windows_NT" endlocal
 
 :omega
