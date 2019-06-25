@@ -160,6 +160,10 @@ allprojects {
             url = uri("https://dl.bintray.com/kotlin/kotlin-eap")
         }
         maven {
+            name = "kotlin-dev"
+            url = uri("https://dl.bintray.com/kotlin/kotlin-dev")
+        }
+        maven {
             name = "sonatype-snapshots"
             url = uri("https://oss.sonatype.org/content/repositories/snapshots")
             content {

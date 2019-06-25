@@ -64,7 +64,8 @@ class RepoScriptBlockUtil {
         GRADLE_LIB_SNAPSHOTS('https://repo.gradle.org/gradle/libs-snapshots', System.getProperty('org.gradle.integtest.mirrors.gradle'), 'maven'),
         GRADLE_JAVASCRIPT('https://repo.gradle.org/gradle/javascript-public', System.getProperty('org.gradle.integtest.mirrors.gradlejavascript'), 'maven'),
         KOTLINX('https://kotlin.bintray.com/kotlinx/', System.getProperty('https://kotlin.bintray.com/kotlinx/'), 'maven'),
-        KOTLIN_EAP('https://dl.bintray.com/kotlin/kotlin-eap/', System.getProperty('org.gradle.integtest.mirrors.kotlineap'), 'maven')
+        KOTLIN_EAP('https://dl.bintray.com/kotlin/kotlin-eap/', System.getProperty('org.gradle.integtest.mirrors.kotlineap'), 'maven'),
+        KOTLIN_DEV('https://dl.bintray.com/kotlin/kotlin-dev/', System.getProperty('org.gradle.integtest.mirrors.kotlindev'), 'maven')
 
         String originalUrl
         String mirrorUrl
@@ -136,6 +137,10 @@ class RepoScriptBlockUtil {
 
     static String kotlinEapRepositoryDefinition(GradleDsl dsl = GROOVY) {
         MirroredRepository.KOTLIN_EAP.getRepositoryDefinition(dsl)
+    }
+
+    static String kotlinDevRepositoryDefinition(GradleDsl dsl = GROOVY) {
+        MirroredRepository.KOTLIN_DEV.getRepositoryDefinition(dsl)
     }
 
     static String jcenterRepositoryDefinition(GradleDsl dsl = GROOVY) {
