@@ -52,7 +52,7 @@ dependencies {
     jmhImplementation("org.kamranzafar:jtar:2.3")
 
     testImplementation(project(":modelCore"))
-    testImplementation(project(":files"))
+    testImplementation(project(":fileCollections"))
     testImplementation(testFixtures(project(":core")))
     testImplementation(testFixtures(project(":baseServices")))
     testRuntimeOnly(project(":workers"))
