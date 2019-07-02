@@ -23,6 +23,7 @@ import org.gradle.performance.results.MeasuredOperationList;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +49,7 @@ public class BuildExperimentRunner {
 
     public void run(BuildExperimentSpec experiment, MeasuredOperationList results) {
         System.out.println();
+        System.out.println("Iteration start: " + ZonedDateTime.now());
         System.out.println(String.format("%s ...", experiment.getDisplayName()));
         System.out.println();
 
@@ -74,6 +76,7 @@ public class BuildExperimentRunner {
             } finally {
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
+                System.out.println("Iteration end: " + ZonedDateTime.now());
             }
         }
     }
