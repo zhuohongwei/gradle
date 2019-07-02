@@ -148,6 +148,13 @@ class TaskOutputCachingJavaPerformanceTest extends AbstractTaskOutputCachingPerf
         if (parallel) {
             runner.args += "--parallel"
         }
+
+        File logDir = new File(temporaryFolder.testDirectory, "${System.currentTimeMillis()}")
+        logDir.mkdirs()
+        File log = new File(logDir, "log.txt")
+
+        runner.gradleOpts = ["-Xloggc:${log.absolutePath}", '-XX:+PrintGCDateStamps', '-XX:+UnlockDiagnosticVMOptions', '-XX:+PrintFlagsFinal']
+
         pushToRemote = false
         runner.addBuildExperimentListener(touchCacheArtifacts())
 
@@ -156,6 +163,9 @@ class TaskOutputCachingJavaPerformanceTest extends AbstractTaskOutputCachingPerf
 
         then:
         result.assertCurrentVersionHasNotRegressed()
+
+        cleanup:
+        println log.text
 
         where:
         testScenario << [scenarios, [true, false]].combinations()
