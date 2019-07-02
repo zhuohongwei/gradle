@@ -49,6 +49,9 @@ public class BuildExperimentRunner {
     }
 
     public void run(BuildExperimentSpec experiment, MeasuredOperationList results) {
+        System.gc();
+        System.runFinalization();
+
         System.out.println();
         System.out.println("Iteration start: " + ZonedDateTime.now());
         System.out.println(String.format("%s ...", experiment.getDisplayName()));
