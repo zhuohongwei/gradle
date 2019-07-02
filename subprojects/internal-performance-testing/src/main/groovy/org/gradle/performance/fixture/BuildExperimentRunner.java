@@ -26,6 +26,7 @@ import java.io.File;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BuildExperimentRunner {
@@ -77,6 +78,11 @@ public class BuildExperimentRunner {
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
                 System.out.println("Iteration end: " + ZonedDateTime.now());
+                try {
+                    TimeUnit.SECONDS.sleep(30); // cool down
+                } catch (InterruptedException e) {
+                    System.out.println(e);
+                }
             }
         }
     }
