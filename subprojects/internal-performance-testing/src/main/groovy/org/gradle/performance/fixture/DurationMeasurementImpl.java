@@ -21,9 +21,12 @@ import org.gradle.performance.measure.Duration;
 import org.gradle.performance.measure.MeasuredOperation;
 import org.joda.time.DateTime;
 
+import java.lang.management.ManagementFactory;
+
 public class DurationMeasurementImpl implements DurationMeasurement {
     private DateTime start;
     private long startNanos;
+    private long startGcMillis;
     private final MeasuredOperation measuredOperation;
 
     public DurationMeasurementImpl(MeasuredOperation measuredOperation) {
@@ -34,15 +37,25 @@ public class DurationMeasurementImpl implements DurationMeasurement {
     public void start() {
         start = DateTime.now();
         startNanos = System.nanoTime();
+        startGcMillis = gcMillis();
     }
 
     @Override
     public void stop() {
+        long duration = System.nanoTime() - startNanos;
         DateTime end = DateTime.now();
-        long endNanos = System.nanoTime();
+        long gcMillis = gcMillis() - startGcMillis;
+
         measuredOperation.setStart(start);
         measuredOperation.setEnd(end);
-        measuredOperation.setTotalTime(Duration.millis((endNanos - startNanos) / 1000000L));
+        measuredOperation.setTotalTime(Duration.millis(duration / 1000000L));
+        measuredOperation.setGcTime(Duration.millis(gcMillis));
+    }
+
+    private static long gcMillis() {
+        return ManagementFactory.getGarbageCollectorMXBeans().stream()
+            .mapToLong(gc -> Math.max(0, gc.getCollectionTime()))
+            .sum();
     }
 
     public static void measure(MeasuredOperation measuredOperation, Runnable runnable) {

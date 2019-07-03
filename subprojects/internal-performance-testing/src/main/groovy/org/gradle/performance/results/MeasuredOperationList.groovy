@@ -25,18 +25,17 @@ import org.gradle.performance.measure.MeasuredOperation
 public class MeasuredOperationList extends LinkedList<MeasuredOperation> {
     String name
 
-    DataSeries<Duration> getTotalTime() {
-        return new DataSeries<Duration>(this.collect { it.totalTime })
-    }
+    DataSeries<Duration> getTotalTime() { new DataSeries<Duration>(collect { it.totalTime }) }
 
     String getSpeedStats() {
-        format(totalTime)
-    }
-
-    private String format(DataSeries<?> measurement) {
-        """  ${name} median: ${measurement.median.format()} min: ${measurement.min.format()}, max: ${measurement.max.format()}, se: ${measurement.standardError.format()}}
-  > ${measurement.collect { it.format() }}
+        """
+  ${name}
+   median: ${totalTime.median.format()}, 
+   min: ${totalTime.min.format()}, 
+   max: ${totalTime.max.format()}, 
+   se: ${totalTime.standardError.format()}
+   >run: ${totalTime.collect { it.format() }}
+   >gc:  ${this*.gcTime}
 """
-
     }
 }

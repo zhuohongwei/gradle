@@ -26,12 +26,14 @@ public class MeasuredOperation {
     DateTime start
     DateTime end
     Amount<Duration> totalTime
+    Amount<Duration> gcTime
     Exception exception
 
     boolean isValid() {
         exception == null &&
             start!=null &&
             end != null &&
-            totalTime != null
+            totalTime != null &&
+            gcTime != null
     }
 }

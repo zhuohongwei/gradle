@@ -152,7 +152,7 @@ class TaskOutputCachingJavaPerformanceTest extends AbstractTaskOutputCachingPerf
         File logDir = new File(temporaryFolder.testDirectory, "${System.currentTimeMillis()}")
         logDir.mkdirs()
         File log = new File(logDir, "log.txt")
-
+        log.createNewFile()
         runner.gradleOpts = ["-Xloggc:${log.absolutePath}", '-XX:+PrintGCDateStamps', '-XX:+UnlockDiagnosticVMOptions', '-XX:+PrintFlagsFinal']
 
         pushToRemote = false

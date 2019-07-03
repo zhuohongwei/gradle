@@ -49,7 +49,6 @@ public class BuildExperimentRunner {
 
     public void run(BuildExperimentSpec experiment, MeasuredOperationList results) {
         System.out.println();
-        System.out.println("Iteration start: " + ZonedDateTime.now());
         System.out.println(String.format("%s ...", experiment.getDisplayName()));
         System.out.println();
 
@@ -76,7 +75,6 @@ public class BuildExperimentRunner {
             } finally {
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
-                System.out.println("Iteration end: " + ZonedDateTime.now());
             }
         }
     }
@@ -99,8 +97,12 @@ public class BuildExperimentRunner {
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
+            System.out.println("Iteration start: " + ZonedDateTime.now());
+
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
+
+            System.out.println("Iteration end: " + ZonedDateTime.now());
         }
     }
 
