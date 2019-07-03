@@ -102,6 +102,20 @@ class ThrottlingOutputEventListenerTest extends OutputSpecification {
         0 * _
     }
 
+    def "flushes when a critical number of events are queued"() {
+        when:
+        ThrottlingOutputEventListener.CRITICAL_FLUSH_SIZE.times { index ->
+            renderer.onOutput(event(String.valueOf(index)))
+        }
+        then:
+        0 * _
+
+        when:
+        renderer.onOutput(event("over limit"))
+        then:
+        (ThrottlingOutputEventListener.CRITICAL_FLUSH_SIZE+1) * listener.onOutput(_)
+    }
+
     def "background flush does nothing when events already flushed"() {
         def event1 = event('1')
         def event2 = event('2')

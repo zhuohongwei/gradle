@@ -33,6 +33,13 @@ import java.util.concurrent.TimeUnit;
  * Queue output events to be forwarded and schedule flush when time passed or if end of build is signalled.
  */
 public class ThrottlingOutputEventListener implements OutputEventListener {
+    // This is a fuzzy heuristic based on the default memory settings of the Gradle client (64MB)
+    // Usually, the OutputEvents queued are very small (<250 bytes), but they can be much larger (>4000 bytes)
+    // Assuming an average of ~1000 bytes, 64MB/1000 ~= 65536 output events before we need to flush
+    // To hit this limit, that means we must have queued more than 65k output events in a console throttle interval (default 100ms)
+    // We could be fancier here and assign different costs/weights to particular output events and adjust this based on
+    // the available memory, but this is intended to just discourage ugly OOM errors.
+    static final int CRITICAL_FLUSH_SIZE = 65536;
     private final OutputEventListener listener;
 
     private final ScheduledExecutorService executor;
@@ -83,6 +90,11 @@ public class ThrottlingOutputEventListener implements OutputEventListener {
                 // Flush and clean up
                 renderNow();
                 executor.shutdown();
+            }
+
+            if (queue.size() > CRITICAL_FLUSH_SIZE) {
+                renderNow();
+                return;
             }
 
             // Else, wait for the next update event
