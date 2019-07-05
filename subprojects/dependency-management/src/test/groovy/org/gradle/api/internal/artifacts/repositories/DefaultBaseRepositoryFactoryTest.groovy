@@ -18,6 +18,7 @@ package org.gradle.api.internal.artifacts.repositories
 
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.internal.CollectionCallbackActionDecorator
+import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.artifacts.DependencyManagementTestUtil
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory
 import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler
@@ -59,7 +60,7 @@ class DefaultBaseRepositoryFactoryTest extends Specification {
         localMavenRepoLocator, fileResolver, transportFactory, locallyAvailableResourceFinder,
         artifactIdentifierFileStore, externalResourceFileStore, pomParser, metadataParser, authenticationSchemeRegistry, ivyContextManager, moduleIdentifierFactory,
         TestUtil.instantiatorFactory(), Mock(FileResourceRepository), TestUtil.featurePreviews(), mavenMetadataFactory, ivyMetadataFactory, SnapshotTestUtil.valueSnapshotter(), Mock(ObjectFactory),
-        CollectionCallbackActionDecorator.NOOP
+        Mock(DocumentationRegistry), CollectionCallbackActionDecorator.NOOP
     )
 
     def testCreateFlatDirResolver() {

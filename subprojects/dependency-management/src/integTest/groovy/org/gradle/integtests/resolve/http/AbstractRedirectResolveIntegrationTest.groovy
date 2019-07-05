@@ -15,131 +15,61 @@
  */
 package org.gradle.integtests.resolve.http
 
-import org.gradle.api.logging.configuration.WarningMode
 import org.gradle.integtests.fixtures.AbstractHttpDependencyResolutionTest
+import org.gradle.test.fixtures.ivy.IvyModule
+import org.gradle.test.fixtures.maven.MavenModule
 import org.gradle.test.fixtures.server.http.HttpServer
 import org.gradle.util.SetSystemProperties
 import org.junit.Rule
-
-import static org.gradle.internal.resource.transport.http.JavaSystemPropertiesHttpTimeoutSettings.SOCKET_TIMEOUT_SYSTEM_PROPERTY
 
 abstract class AbstractRedirectResolveIntegrationTest extends AbstractHttpDependencyResolutionTest {
     @Rule SetSystemProperties systemProperties = new SetSystemProperties()
     @Rule HttpServer backingServer = new HttpServer()
 
-    abstract String getFrontServerBaseUrl();
-    /**
-     * The goal is to deprecate the download of artifacts over HTTP as it is a security vulnerability.
-     */
-    abstract boolean shouldWarnAboutDeprecation();
-
-    def module = ivyRepo().module('group', 'projectA').publish()
-
-    abstract void beforeServerStart();
-
-    def setupServer() {
-        beforeServerStart()
+    def setup() {
         server.useHostname()
         backingServer.useHostname()
         backingServer.start()
-    }
 
-    @Override
-    def setup() {
-        setupServer()
-        executer.withWarningMode(WarningMode.All)
-    }
-
-    void optionallyExpectDeprecation() {
-        if (shouldWarnAboutDeprecation()) {
-            outputContains("Insecure HTTP requests has been deprecated. This is scheduled to be removed in Gradle 6.0. The URL was '")
-            outputContains("Switch the protocol to HTTPS or allow insecure protocols.")
-        }
-    }
-
-    def "resolves module artifacts via HTTP redirect"() {
-        given:
-        buildFile << configurationWithIvyDependencyAndExpectedArtifact('group:projectA:1.0', 'projectA-1.0.jar')
-
-        when:
-        server.expectGetRedirected('/repo/group/projectA/1.0/ivy-1.0.xml', "${backingServer.uri}/redirected/group/projectA/1.0/ivy-1.0.xml")
-        backingServer.expectGet('/redirected/group/projectA/1.0/ivy-1.0.xml', module.ivyFile)
-        server.expectGetRedirected('/repo/group/projectA/1.0/projectA-1.0.jar', "${backingServer.uri}/redirected/group/projectA/1.0/projectA-1.0.jar")
-        backingServer.expectGet('/redirected/group/projectA/1.0/projectA-1.0.jar', module.jarFile)
-
-        then:
-        if (shouldWarnAboutDeprecation()) {
-            int warningCount = insecureServerCount() * 2
-            executer.expectDeprecationWarnings(warningCount)
-        }
-        succeeds('listJars')
-
-        and:
-        optionallyExpectDeprecation()
-    }
-
-    def "prints last redirect location in case of failure"() {
-        given:
-        buildFile << configurationWithIvyDependencyAndExpectedArtifact('group:projectA:1.0', 'projectA-1.0.jar')
-
-        when:
-        server.expectGetRedirected('/repo/group/projectA/1.0/ivy-1.0.xml', "${backingServer.uri}/redirected/group/projectA/1.0/ivy-1.0.xml")
-        backingServer.expectGetBroken('/redirected/group/projectA/1.0/ivy-1.0.xml')
-
-        then:
-        if (shouldWarnAboutDeprecation()) {
-            executer.expectDeprecationWarnings(insecureServerCount())
-        }
-        fails('listJars')
-
-        and:
-        optionallyExpectDeprecation()
-        failureCauseContains("Could not get resource '${server.uri}/repo/group/projectA/1.0/ivy-1.0.xml'")
-        failureCauseContains("Could not GET '${backingServer.uri}/redirected/group/projectA/1.0/ivy-1.0.xml'")
-    }
-
-    def "prints last redirect location in case of timeout"() {
-        given:
-        buildFile << configurationWithIvyDependencyAndExpectedArtifact('group:projectA:1.0', 'projectA-1.0.jar')
-
-        when:
-        server.expectGetRedirected('/repo/group/projectA/1.0/ivy-1.0.xml', "${backingServer.uri}/redirected/group/projectA/1.0/ivy-1.0.xml")
-        backingServer.expectGetBlocking('/redirected/group/projectA/1.0/ivy-1.0.xml')
-
-        then:
-        executer.beforeExecute { withArgument("-D${SOCKET_TIMEOUT_SYSTEM_PROPERTY}=1000") }
-        if (shouldWarnAboutDeprecation()) {
-            executer.expectDeprecationWarnings(insecureServerCount())
-        }
-        fails('listJars')
-
-        and:
-        optionallyExpectDeprecation()
-        failureCauseContains("Could not get resource '${server.uri}/repo/group/projectA/1.0/ivy-1.0.xml'")
-        failureCauseContains("Could not GET '${backingServer.uri}/redirected/group/projectA/1.0/ivy-1.0.xml'")
-        failureCauseContains("Read timed out")
-    }
-
-    def configurationWithIvyDependencyAndExpectedArtifact(String dependency, String expectedArtifact) {
-        """
-            repositories {
-                ivy { url "$frontServerBaseUrl/repo" }
-            }
+        buildFile << """
             configurations { compile }
-            dependencies { compile '$dependency' }
+            dependencies { compile 'group:projectA:1.0' }
             task listJars {
+                dependsOn configurations.compile
                 doLast {
-                    assert configurations.compile.collect { it.name } == ['$expectedArtifact']
+                    assert configurations.compile.singleFile.name == 'projectA-1.0.jar'
                 }
             }
         """
     }
 
-    /**
-     * The number of servers involved in the redirect chain using an insecure protocol.
-     */
-    private int insecureServerCount() {
-        [backingServer.uri.scheme == "http", server.uri.scheme == "http"].count { it }.intValue()
+    MavenModule withMavenRepository() {
+        buildFile << """
+            repositories {
+                maven { url "${server.uri}/repo" }
+            }
+        """
+        return mavenRepo().module('group', 'projectA').publish()
     }
 
+    IvyModule withIvyRepository() {
+        buildFile << """
+            repositories {
+                ivy { url "${server.uri}/repo" }
+            }
+        """
+        return ivyRepo().module('group', 'projectA').publish()
+    }
+
+    void redirect(String from, String to, File resource) {
+        server.expectGetRedirected(from, "${backingServer.uri}/${to}")
+        backingServer.expectGet(to, resource)
+    }
+    void redirectBroken(String from, String to) {
+        server.expectGetRedirected(from, "${backingServer.uri}/${to}")
+        backingServer.expectGetBroken(to)
+    }
+    void assertWarnsAboutInsecureRedirects() {
+        outputContains("Following insecure redirects has been deprecated. This is scheduled to be removed in Gradle 6.0. Use a secure protocol (like HTTPS) or allow insecure protocols.")
+    }
 }

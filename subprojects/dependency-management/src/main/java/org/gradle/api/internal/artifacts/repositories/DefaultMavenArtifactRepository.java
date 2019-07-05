@@ -26,6 +26,8 @@ import org.gradle.api.artifacts.ComponentMetadataSupplierDetails;
 import org.gradle.api.artifacts.repositories.AuthenticationContainer;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenRepositoryContentDescriptor;
+import org.gradle.api.artifacts.repositories.UrlArtifactRepository;
+import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
 import org.gradle.api.internal.artifacts.ModuleVersionPublisher;
@@ -61,6 +63,8 @@ import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.resource.local.FileResourceRepository;
 import org.gradle.internal.resource.local.FileStore;
 import org.gradle.internal.resource.local.LocallyAvailableResourceFinder;
+import org.gradle.util.DeprecationLogger;
+import org.gradle.util.GUtil;
 
 import javax.annotation.Nonnull;
 import java.net.URI;
@@ -88,11 +92,11 @@ public class DefaultMavenArtifactRepository extends AbstractAuthenticationSuppor
     private final FileStore<ModuleComponentArtifactIdentifier> artifactFileStore;
     private final MetaDataParser<MutableMavenModuleResolveMetadata> pomParser;
     private final GradleModuleMetadataParser metadataParser;
-    private final ImmutableModuleIdentifierFactory moduleIdentifierFactory;
     private final FileStore<String> resourcesFileStore;
     private final FileResourceRepository fileResourceRepository;
     private final MavenMutableModuleMetadataFactory metadataFactory;
     private final IsolatableFactory isolatableFactory;
+    private final DocumentationRegistry documentationRegistry;
     private final MavenMetadataSources metadataSources = new MavenMetadataSources();
     private final InstantiatorFactory instantiatorFactory;
 
@@ -109,10 +113,10 @@ public class DefaultMavenArtifactRepository extends AbstractAuthenticationSuppor
                                           FeaturePreviews featurePreviews,
                                           MavenMutableModuleMetadataFactory metadataFactory,
                                           IsolatableFactory isolatableFactory,
-                                          ObjectFactory objectFactory) {
+                                          ObjectFactory objectFactory, DocumentationRegistry documentationRegistry) {
         this(new DefaultDescriber(), fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory,
             artifactFileStore, pomParser, metadataParser, authenticationContainer, moduleIdentifierFactory,
-            resourcesFileStore, fileResourceRepository, featurePreviews, metadataFactory, isolatableFactory, objectFactory);
+            resourcesFileStore, fileResourceRepository, featurePreviews, metadataFactory, isolatableFactory, objectFactory, documentationRegistry);
     }
 
     public DefaultMavenArtifactRepository(Transformer<String, MavenArtifactRepository> describer,
@@ -129,7 +133,7 @@ public class DefaultMavenArtifactRepository extends AbstractAuthenticationSuppor
                                           FeaturePreviews featurePreviews,
                                           MavenMutableModuleMetadataFactory metadataFactory,
                                           IsolatableFactory isolatableFactory,
-                                          ObjectFactory objectFactory) {
+                                          ObjectFactory objectFactory, DocumentationRegistry documentationRegistry) {
         super(instantiatorFactory.decorateLenient(), authenticationContainer, objectFactory);
         this.describer = describer;
         this.fileResolver = fileResolver;
@@ -139,11 +143,11 @@ public class DefaultMavenArtifactRepository extends AbstractAuthenticationSuppor
         this.artifactFileStore = artifactFileStore;
         this.pomParser = pomParser;
         this.metadataParser = metadataParser;
-        this.moduleIdentifierFactory = moduleIdentifierFactory;
         this.resourcesFileStore = resourcesFileStore;
         this.fileResourceRepository = fileResourceRepository;
         this.metadataFactory = metadataFactory;
         this.isolatableFactory = isolatableFactory;
+        this.documentationRegistry = documentationRegistry;
         this.metadataSources.setDefaults(featurePreviews);
         this.instantiatorFactory = instantiatorFactory;
     }
@@ -234,6 +238,10 @@ public class DefaultMavenArtifactRepository extends AbstractAuthenticationSuppor
         URI rootUri = getUrl();
         if (rootUri == null) {
             throw new InvalidUserDataException("You must specify a URL for a Maven repository.");
+        }
+        if (!GUtil.isSecureUrl(rootUri)) {
+            String helpLink = documentationRegistry.getDslRefForProperty(UrlArtifactRepository.class, "allowInsecureProtocol");
+            DeprecationLogger.nagUserOfDeprecated("Using insecure protocols with repositories", String.format("Switch repository '%s' to a secure protocol (like HTTPS) or allow insecure protocols, see %s.", getDisplayName(), helpLink));
         }
         return rootUri;
     }

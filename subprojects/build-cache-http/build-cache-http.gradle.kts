@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":buildCache"))
     implementation(project(":coreApi"))
     implementation(project(":core"))
+    implementation(project(":logging"))
     implementation(project(":resources"))
     implementation(project(":resourcesHttp"))
 
@@ -36,8 +37,7 @@ dependencies {
     implementation(library("inject"))
 
     testImplementation(testFixtures(project(":core")))
-
-    integTestImplementation(project(":logging"))
+    
     integTestImplementation(testLibrary("jetty"))
 
     integTestRuntimeOnly(project(":runtimeApiInfo"))

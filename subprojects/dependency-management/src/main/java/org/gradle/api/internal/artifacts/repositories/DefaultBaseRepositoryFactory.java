@@ -25,14 +25,14 @@ import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
+import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.FeaturePreviews;
-import org.gradle.internal.instantiation.InstantiatorFactory;
 import org.gradle.api.internal.artifacts.BaseRepositoryFactory;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
 import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler;
 import org.gradle.api.internal.artifacts.ivyservice.IvyContextManager;
-import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.MetaDataParser;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.GradleModuleMetadataParser;
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.MetaDataParser;
 import org.gradle.api.internal.artifacts.mvnsettings.LocalMavenRepositoryLocator;
 import org.gradle.api.internal.artifacts.repositories.metadata.IvyMutableModuleMetadataFactory;
 import org.gradle.api.internal.artifacts.repositories.metadata.MavenMutableModuleMetadataFactory;
@@ -45,6 +45,7 @@ import org.gradle.internal.authentication.DefaultAuthenticationContainer;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactMetadata;
 import org.gradle.internal.component.external.model.maven.MutableMavenModuleResolveMetadata;
+import org.gradle.internal.instantiation.InstantiatorFactory;
 import org.gradle.internal.isolation.IsolatableFactory;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.resource.local.FileResourceRepository;
@@ -75,6 +76,7 @@ public class DefaultBaseRepositoryFactory implements BaseRepositoryFactory {
     private final IvyMutableModuleMetadataFactory ivyMetadataFactory;
     private final IsolatableFactory isolatableFactory;
     private final ObjectFactory objectFactory;
+    private final DocumentationRegistry documentationRegistry;
     private CollectionCallbackActionDecorator callbackActionDecorator;
 
     public DefaultBaseRepositoryFactory(LocalMavenRepositoryLocator localMavenRepositoryLocator,
@@ -95,6 +97,7 @@ public class DefaultBaseRepositoryFactory implements BaseRepositoryFactory {
                                         IvyMutableModuleMetadataFactory ivyMetadataFactory,
                                         IsolatableFactory isolatableFactory,
                                         ObjectFactory objectFactory,
+                                        DocumentationRegistry documentationRegistry,
                                         CollectionCallbackActionDecorator callbackActionDecorator) {
         this.localMavenRepositoryLocator = localMavenRepositoryLocator;
         this.fileResolver = fileResolver;
@@ -115,12 +118,13 @@ public class DefaultBaseRepositoryFactory implements BaseRepositoryFactory {
         this.ivyMetadataFactory = ivyMetadataFactory;
         this.isolatableFactory = isolatableFactory;
         this.objectFactory = objectFactory;
+        this.documentationRegistry = documentationRegistry;
         this.callbackActionDecorator = callbackActionDecorator;
     }
 
     @Override
     public FlatDirectoryArtifactRepository createFlatDirRepository() {
-        return instantiator.newInstance(DefaultFlatDirArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, artifactFileStore, moduleIdentifierFactory, ivyMetadataFactory, instantiatorFactory, objectFactory);
+        return instantiator.newInstance(DefaultFlatDirArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, artifactFileStore, moduleIdentifierFactory, ivyMetadataFactory, instantiatorFactory, objectFactory, documentationRegistry);
     }
 
     @Override
@@ -138,7 +142,7 @@ public class DefaultBaseRepositoryFactory implements BaseRepositoryFactory {
 
     @Override
     public MavenArtifactRepository createMavenLocalRepository() {
-        MavenArtifactRepository mavenRepository = instantiator.newInstance(DefaultMavenLocalArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory);
+        MavenArtifactRepository mavenRepository = instantiator.newInstance(DefaultMavenLocalArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory, documentationRegistry);
         File localMavenRepository = localMavenRepositoryLocator.getLocalMavenRepository();
         mavenRepository.setUrl(localMavenRepository);
         return mavenRepository;
@@ -167,16 +171,16 @@ public class DefaultBaseRepositoryFactory implements BaseRepositoryFactory {
 
     @Override
     public IvyArtifactRepository createIvyRepository() {
-        return instantiator.newInstance(DefaultIvyArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, artifactFileStore, externalResourcesFileStore, createAuthenticationContainer(), ivyContextManager, moduleIdentifierFactory, instantiatorFactory, fileResourceRepository, metadataParser, featurePreviews, ivyMetadataFactory, isolatableFactory, objectFactory);
+        return instantiator.newInstance(DefaultIvyArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, artifactFileStore, externalResourcesFileStore, createAuthenticationContainer(), ivyContextManager, moduleIdentifierFactory, instantiatorFactory, fileResourceRepository, metadataParser, featurePreviews, ivyMetadataFactory, isolatableFactory, objectFactory, documentationRegistry);
     }
 
     @Override
     public MavenArtifactRepository createMavenRepository() {
-        return instantiator.newInstance(DefaultMavenArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, externalResourcesFileStore, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory);
+        return instantiator.newInstance(DefaultMavenArtifactRepository.class, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, externalResourcesFileStore, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory, documentationRegistry);
     }
 
     public MavenArtifactRepository createMavenRepository(Transformer<String, MavenArtifactRepository> describer) {
-        return instantiator.newInstance(DefaultMavenArtifactRepository.class, describer, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, externalResourcesFileStore, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory);
+        return instantiator.newInstance(DefaultMavenArtifactRepository.class, describer, fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, createAuthenticationContainer(), moduleIdentifierFactory, externalResourcesFileStore, fileResourceRepository, featurePreviews, mavenMetadataFactory, isolatableFactory, objectFactory, documentationRegistry);
     }
 
     protected AuthenticationContainer createAuthenticationContainer() {

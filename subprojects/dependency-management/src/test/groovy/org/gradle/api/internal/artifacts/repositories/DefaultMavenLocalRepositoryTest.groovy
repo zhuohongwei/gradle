@@ -16,6 +16,7 @@
 package org.gradle.api.internal.artifacts.repositories
 
 import org.gradle.api.artifacts.repositories.AuthenticationContainer
+import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.artifacts.DependencyManagementTestUtil
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.GradleModuleMetadataParser
@@ -46,20 +47,21 @@ class DefaultMavenLocalRepositoryTest extends Specification {
     final MavenMutableModuleMetadataFactory mavenMetadataFactory = DependencyManagementTestUtil.mavenMetadataFactory()
 
     final DefaultMavenArtifactRepository repository = new DefaultMavenLocalArtifactRepository(
-        resolver,
-        transportFactory,
-        locallyAvailableResourceFinder,
-        TestUtil.instantiatorFactory(),
-        artifactIdentifierFileStore,
-        pomParser,
-        metadataParser,
-        authenticationContainer,
-        moduleIdentifierFactory,
-        Mock(FileResourceRepository),
-        TestUtil.featurePreviews(),
-        mavenMetadataFactory,
-        SnapshotTestUtil.valueSnapshotter(),
-        Mock(ObjectFactory)
+            resolver,
+            transportFactory,
+            locallyAvailableResourceFinder,
+            TestUtil.instantiatorFactory(),
+            artifactIdentifierFileStore,
+            pomParser,
+            metadataParser,
+            authenticationContainer,
+            moduleIdentifierFactory,
+            Mock(FileResourceRepository),
+            TestUtil.featurePreviews(),
+            mavenMetadataFactory,
+            SnapshotTestUtil.valueSnapshotter(),
+            Mock(ObjectFactory),
+            Mock(DocumentationRegistry)
     )
 
     def "creates local repository"() {

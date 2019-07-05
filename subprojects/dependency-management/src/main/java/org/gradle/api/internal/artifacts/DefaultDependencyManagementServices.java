@@ -62,7 +62,6 @@ import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionS
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.LocalComponentMetadataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.dependencies.LocalConfigurationMetadataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSet;
-import org.gradle.api.internal.attributes.AttributeDesugaring;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.AttributeContainerSerializer;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.store.ResolutionResultsStoreFactory;
 import org.gradle.api.internal.artifacts.mvnsettings.LocalMavenRepositoryLocator;
@@ -92,6 +91,7 @@ import org.gradle.api.internal.artifacts.transform.TransformationRegistrationFac
 import org.gradle.api.internal.artifacts.transform.TransformerInvoker;
 import org.gradle.api.internal.artifacts.type.ArtifactTypeRegistry;
 import org.gradle.api.internal.artifacts.type.DefaultArtifactTypeRegistry;
+import org.gradle.api.internal.attributes.AttributeDesugaring;
 import org.gradle.api.internal.attributes.AttributesSchemaInternal;
 import org.gradle.api.internal.attributes.DefaultAttributesSchema;
 import org.gradle.api.internal.attributes.ImmutableAttributesFactory;
@@ -434,28 +434,30 @@ public class DefaultDependencyManagementServices implements DependencyManagement
                                                           IvyMutableModuleMetadataFactory ivyMetadataFactory,
                                                           IsolatableFactory isolatableFactory,
                                                           ObjectFactory objectFactory,
+                                                          DocumentationRegistry documentationRegistry,
                                                           CollectionCallbackActionDecorator callbackDecorator,
                                                           NamedObjectInstantiator instantiator) {
             return new DefaultBaseRepositoryFactory(
-                localMavenRepositoryLocator,
-                fileResolver,
-                repositoryTransportFactory,
-                locallyAvailableResourceFinder,
-                artifactIdentifierFileStore,
-                externalResourceFileStore,
-                new GradlePomModuleDescriptorParser(versionSelectorScheme, moduleIdentifierFactory, fileResourceRepository, metadataFactory),
-                new GradleModuleMetadataParser(attributesFactory, moduleIdentifierFactory, instantiator),
-                authenticationSchemeRegistry,
-                ivyContextManager,
-                moduleIdentifierFactory,
-                instantiatorFactory,
-                fileResourceRepository,
-                featurePreviews,
-                metadataFactory,
-                ivyMetadataFactory,
-                isolatableFactory,
-                objectFactory,
-                callbackDecorator);
+                    localMavenRepositoryLocator,
+                    fileResolver,
+                    repositoryTransportFactory,
+                    locallyAvailableResourceFinder,
+                    artifactIdentifierFileStore,
+                    externalResourceFileStore,
+                    new GradlePomModuleDescriptorParser(versionSelectorScheme, moduleIdentifierFactory, fileResourceRepository, metadataFactory),
+                    new GradleModuleMetadataParser(attributesFactory, moduleIdentifierFactory, instantiator),
+                    authenticationSchemeRegistry,
+                    ivyContextManager,
+                    moduleIdentifierFactory,
+                    instantiatorFactory,
+                    fileResourceRepository,
+                    featurePreviews,
+                    metadataFactory,
+                    ivyMetadataFactory,
+                    isolatableFactory,
+                    objectFactory,
+                    documentationRegistry,
+                    callbackDecorator);
         }
 
         RepositoryHandler createRepositoryHandler(Instantiator instantiator, BaseRepositoryFactory baseRepositoryFactory, CollectionCallbackActionDecorator callbackDecorator) {

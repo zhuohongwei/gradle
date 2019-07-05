@@ -18,6 +18,7 @@ package org.gradle.caching.http.internal;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.gradle.api.GradleException;
+import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.authentication.Authentication;
 import org.gradle.caching.BuildCacheService;
 import org.gradle.caching.BuildCacheServiceFactory;
@@ -27,6 +28,8 @@ import org.gradle.internal.authentication.DefaultBasicAuthentication;
 import org.gradle.internal.resource.transport.http.DefaultHttpSettings;
 import org.gradle.internal.resource.transport.http.HttpClientHelper;
 import org.gradle.internal.resource.transport.http.SslContextFactory;
+import org.gradle.util.DeprecationLogger;
+import org.gradle.util.GUtil;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -40,11 +43,13 @@ import java.util.Collections;
 public class DefaultHttpBuildCacheServiceFactory implements BuildCacheServiceFactory<HttpBuildCache> {
 
     private final SslContextFactory sslContextFactory;
+    private final DocumentationRegistry documentationRegistry;
     private final HttpBuildCacheRequestCustomizer requestCustomizer;
 
     @Inject
-    public DefaultHttpBuildCacheServiceFactory(SslContextFactory sslContextFactory, HttpBuildCacheRequestCustomizer requestCustomizer) {
+    public DefaultHttpBuildCacheServiceFactory(SslContextFactory sslContextFactory, DocumentationRegistry documentationRegistry, HttpBuildCacheRequestCustomizer requestCustomizer) {
         this.sslContextFactory = sslContextFactory;
+        this.documentationRegistry = documentationRegistry;
         this.requestCustomizer = requestCustomizer;
     }
 
@@ -54,6 +59,12 @@ public class DefaultHttpBuildCacheServiceFactory implements BuildCacheServiceFac
         if (url == null) {
             throw new IllegalStateException("HTTP build cache has no URL configured");
         }
+
+        if (!GUtil.isSecureUrl(url)) {
+            String helpLink = documentationRegistry.getDslRefForProperty(HttpBuildCache.class, "allowInsecureProtocol");
+            DeprecationLogger.nagUserOfDeprecated("Using insecure protocols with remote build cache", String.format("Switch remote build cache to a secure protocol (like HTTPS) or allow insecure protocols, see %s.", helpLink));
+        }
+
         URI noUserInfoUrl = stripUserInfo(url);
 
         HttpBuildCacheCredentials credentials = configuration.getCredentials();

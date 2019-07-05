@@ -17,6 +17,7 @@ package org.gradle.api.internal.artifacts.repositories;
 
 import org.gradle.api.artifacts.repositories.AuthenticationContainer;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.GradleModuleMetadataParser;
@@ -60,8 +61,8 @@ public class DefaultMavenLocalArtifactRepository extends DefaultMavenArtifactRep
                                                FeaturePreviews featurePreviews,
                                                MavenMutableModuleMetadataFactory metadataFactory,
                                                IsolatableFactory isolatableFactory,
-                                               ObjectFactory objectFactory) {
-        super(fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, authenticationContainer, moduleIdentifierFactory, null, fileResourceRepository, featurePreviews, metadataFactory, isolatableFactory, objectFactory);
+                                               ObjectFactory objectFactory, DocumentationRegistry documentationRegistry) {
+        super(fileResolver, transportFactory, locallyAvailableResourceFinder, instantiatorFactory, artifactFileStore, pomParser, metadataParser, authenticationContainer, moduleIdentifierFactory, null, fileResourceRepository, featurePreviews, metadataFactory, isolatableFactory, objectFactory, documentationRegistry);
     }
 
     @Override

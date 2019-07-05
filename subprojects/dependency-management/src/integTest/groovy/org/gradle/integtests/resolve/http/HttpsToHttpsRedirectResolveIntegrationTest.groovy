@@ -20,26 +20,42 @@ import org.gradle.integtests.fixtures.TestResources
 import org.gradle.test.fixtures.keystore.TestKeyStore
 import org.junit.Rule
 
-
 class HttpsToHttpsRedirectResolveIntegrationTest extends AbstractRedirectResolveIntegrationTest {
-
     @Rule TestResources resources = new TestResources(temporaryFolder)
-    TestKeyStore keyStore
 
-    @Override
-    String getFrontServerBaseUrl() {
-        "https://localhost:${server.sslPort}"
-    }
-
-    @Override
-    boolean shouldWarnAboutDeprecation() {
-        return false
-    }
-
-    void beforeServerStart() {
-        keyStore = TestKeyStore.init(resources.dir)
+    def setup() {
+        TestKeyStore keyStore = TestKeyStore.init(resources.dir)
         keyStore.enableSslWithServerCert(server)
         keyStore.enableSslWithServerCert(backingServer)
         keyStore.configureServerCert(executer)
+    }
+
+    def "resolves Ivy module artifacts via HTTPS redirect with no deprecation"() {
+        def module = withIvyRepository()
+        when:
+        redirect('/repo/group/projectA/1.0/ivy-1.0.xml', '/redirected/group/projectA/1.0/ivy-1.0.xml', module.ivyFile)
+        redirect('/repo/group/projectA/1.0/projectA-1.0.jar', '/redirected/group/projectA/1.0/projectA-1.0.jar', module.jarFile)
+
+        then:
+        succeeds('listJars')
+    }
+
+    def "resolves Maven module artifacts via HTTPS redirect with no deprecation"() {
+        def module = withMavenRepository()
+        when:
+        redirect('/repo/group/projectA/1.0/projectA-1.0.pom', '/redirected/group/projectA/1.0/projectA-1.0.pom', module.pomFile)
+        redirect('/repo/group/projectA/1.0/projectA-1.0.jar', '/redirected/group/projectA/1.0/projectA-1.0.jar', module.artifactFile)
+
+        then:
+        succeeds('listJars')
+    }
+
+    def "prints last redirect location in case of failure with no deprecation"() {
+        withIvyRepository()
+        when:
+        redirectBroken('/repo/group/projectA/1.0/ivy-1.0.xml', '/redirected/group/projectA/1.0/ivy-1.0.xml')
+
+        then:
+        fails('listJars')
     }
 }

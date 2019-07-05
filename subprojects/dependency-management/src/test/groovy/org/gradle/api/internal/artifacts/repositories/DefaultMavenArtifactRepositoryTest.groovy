@@ -21,6 +21,7 @@ import org.gradle.api.artifacts.ComponentMetadataSupplier
 import org.gradle.api.artifacts.ComponentMetadataSupplierDetails
 import org.gradle.api.artifacts.ComponentMetadataVersionLister
 import org.gradle.api.artifacts.repositories.AuthenticationContainer
+import org.gradle.api.internal.DocumentationRegistry
 import org.gradle.api.internal.artifacts.DependencyManagementTestUtil
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.parser.GradleModuleMetadataParser
@@ -56,7 +57,7 @@ class DefaultMavenArtifactRepositoryTest extends Specification {
     final MavenMutableModuleMetadataFactory mavenMetadataFactory = DependencyManagementTestUtil.mavenMetadataFactory()
 
     final DefaultMavenArtifactRepository repository = new DefaultMavenArtifactRepository(
-        resolver, transportFactory, locallyAvailableResourceFinder, TestUtil.instantiatorFactory(), artifactIdentifierFileStore, pomParser, metadataParser, authenticationContainer, moduleIdentifierFactory, externalResourceFileStore, Mock(FileResourceRepository), TestUtil.featurePreviews(), mavenMetadataFactory, SnapshotTestUtil.valueSnapshotter(), Mock(ObjectFactory))
+        resolver, transportFactory, locallyAvailableResourceFinder, TestUtil.instantiatorFactory(), artifactIdentifierFileStore, pomParser, metadataParser, authenticationContainer, moduleIdentifierFactory, externalResourceFileStore, Mock(FileResourceRepository), TestUtil.featurePreviews(), mavenMetadataFactory, SnapshotTestUtil.valueSnapshotter(), Mock(ObjectFactory), Mock(DocumentationRegistry))
 
     def "creates local repository"() {
         given:

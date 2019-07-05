@@ -28,6 +28,8 @@ import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepositoryMetaDataProvider;
 import org.gradle.api.artifacts.repositories.IvyPatternRepositoryLayout;
 import org.gradle.api.artifacts.repositories.RepositoryLayout;
+import org.gradle.api.artifacts.repositories.UrlArtifactRepository;
+import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.internal.artifacts.repositories.metadata.RedirectingGradleMetadataModuleMetadataSource;
 import org.gradle.internal.instantiation.InstantiatorFactory;
@@ -72,7 +74,9 @@ import org.gradle.internal.resource.local.FileStore;
 import org.gradle.internal.resource.local.LocallyAvailableResourceFinder;
 import org.gradle.util.ConfigureUtil;
 import org.gradle.util.DeprecationLogger;
+import org.gradle.util.GUtil;
 
+import javax.annotation.Nonnull;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -99,6 +103,7 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
     private final GradleModuleMetadataParser moduleMetadataParser;
     private final IvyMutableModuleMetadataFactory metadataFactory;
     private final IsolatableFactory isolatableFactory;
+    private final DocumentationRegistry documentationRegistry;
     private final IvyMetadataSources metadataSources = new IvyMetadataSources();
 
     public DefaultIvyArtifactRepository(FileResolver fileResolver, RepositoryTransportFactory transportFactory,
@@ -114,7 +119,7 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
                                         FeaturePreviews featurePreviews,
                                         IvyMutableModuleMetadataFactory metadataFactory,
                                         IsolatableFactory isolatableFactory,
-                                        ObjectFactory objectFactory) {
+                                        ObjectFactory objectFactory, DocumentationRegistry documentationRegistry) {
         super(instantiatorFactory.decorateLenient(), authenticationContainer, objectFactory);
         this.urlArtifactRepository = new DefaultUrlArtifactRepository(fileResolver);
         this.transportFactory = transportFactory;
@@ -128,6 +133,7 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
         this.moduleMetadataParser = moduleMetadataParser;
         this.metadataFactory = metadataFactory;
         this.isolatableFactory = isolatableFactory;
+        this.documentationRegistry = documentationRegistry;
         this.layout = new GradleRepositoryLayout();
         this.metaDataProvider = new MetaDataProvider();
         this.instantiator = instantiatorFactory.decorateLenient();
@@ -178,7 +184,8 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
             m2Compatible = false;
         }
 
-        return new IvyRepositoryDescriptor.Builder(getName(), getUrl())
+        URI rootUri = validateUrl();
+        return new IvyRepositoryDescriptor.Builder(getName(), rootUri)
             .setAuthenticated(getConfiguredCredentials() != null)
             .setAuthenticationSchemes(getAuthenticationSchemes())
             .setMetadataSources(metadataSources.asList())
@@ -194,7 +201,7 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
         validate(schemes);
 
         IvyResolver resolver = createResolver(schemes);
-        URI uri = getUrl();
+        URI uri = validateUrl();
         layout.apply(uri, resolver);
         additionalPatternsLayout.apply(uri, resolver);
 
@@ -219,6 +226,19 @@ public class DefaultIvyArtifactRepository extends AbstractAuthenticationSupporte
             additionalPatternsLayout.addSchemes(uri, schemes);
         }
         return schemes;
+    }
+
+    @Nonnull
+    protected URI validateUrl() {
+        URI rootUri = getUrl();
+        if (rootUri == null) {
+            throw new InvalidUserDataException("You must specify a URL for a Ivy repository.");
+        }
+        if (!GUtil.isSecureUrl(rootUri)) {
+            String helpLink = documentationRegistry.getDslRefForProperty(UrlArtifactRepository.class, "allowInsecureProtocol");
+            DeprecationLogger.nagUserOfDeprecated("Using insecure protocols with repositories", String.format("Switch repository '%s' to a secure protocol (like HTTPS) or allow insecure protocols, see %s.", getDisplayName(), helpLink));
+        }
+        return rootUri;
     }
 
     private IvyResolver createResolver(RepositoryTransport transport) {
