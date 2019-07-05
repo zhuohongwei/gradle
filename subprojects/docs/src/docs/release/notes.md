@@ -160,6 +160,12 @@ The `Sync` task and `Project.copy()` and `sync()` operations now also handle cas
 
 The `warning-mode` command line option now has a [new `fail` value](userguide/command_line_interface.html#sec:command_line_warnings) that will behave like `all` and in addition fail the build if any deprecation warning was reported during the execution.
 
+## Improving integrity of builds
+
+Gradle will now warn when resolving dependencies, text resources and script plugins with the insecure HTTP protocol.
+
+TBD
+
 ## Promoted features
 Promoted features are features that were incubating in previous versions of Gradle but are now supported and subject to backwards compatibility.
 See the User Manual section on the “[Feature Lifecycle](userguide/feature_lifecycle.html)” for more information.
