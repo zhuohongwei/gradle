@@ -25,7 +25,7 @@ class HttpResourceAccessorIntegrationTest extends ConcurrentSpecification {
     @Issue("GRADLE-3574")
     def "should not generate any concurrent exception"() {
         def http = Mock(HttpClientHelper) {
-            performGet(uri.toString(), _) >> Mock(HttpClientResponse)
+            performGet(uri, _) >> Mock(HttpClientResponse)
         }
         def httpResourceAccessor = new HttpResourceAccessor(http)
 

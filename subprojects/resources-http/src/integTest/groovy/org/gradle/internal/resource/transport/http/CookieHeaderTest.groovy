@@ -48,7 +48,7 @@ class CookieHeaderTest extends Specification {
         httpServer.expect("/cookie", ['GET'],
             new RespondWithCookieAction("some; ${attributes}"))
         when:
-        client.performGet("${httpServer.address}/cookie", false)
+        client.performGet(new URI("${httpServer.address}/cookie"), false)
 
         then:
         listener.events*.message.every { assert !it.contains('Invalid cookie header:') }

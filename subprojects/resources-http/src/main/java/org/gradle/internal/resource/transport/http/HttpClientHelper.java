@@ -68,19 +68,19 @@ public class HttpClientHelper implements Closeable {
         }
     }
 
-    private HttpClientResponse performRawHead(String source, boolean revalidate) {
+    private HttpClientResponse performRawHead(URI source, boolean revalidate) {
         return performRequest(new HttpHead(source), revalidate);
     }
 
-    public HttpClientResponse performHead(String source, boolean revalidate) {
+    public HttpClientResponse performHead(URI source, boolean revalidate) {
         return processResponse(performRawHead(source, revalidate));
     }
 
-    HttpClientResponse performRawGet(String source, boolean revalidate) {
+    HttpClientResponse performRawGet(URI source, boolean revalidate) {
         return performRequest(new HttpGet(source), revalidate);
     }
 
-    public HttpClientResponse performGet(String source, boolean revalidate) {
+    public HttpClientResponse performGet(URI source, boolean revalidate) {
         return processResponse(performRawGet(source, revalidate));
     }
 
@@ -173,8 +173,21 @@ public class HttpClientHelper implements Closeable {
      * Redirecting through an insecure protocol can allow for a MITM redirect to an attacker controlled HTTPS server.
      */
     private void validateRedirectChain(HttpContext httpContext) {
-        for (URI redirect : getRedirectLocations(httpContext)) {
-            validateUrl(redirect);
+        /*
+         * For security purposes this intentionally requires a user to opt-in to http on case by case basis.
+         * We do not want to have a system/gradle property that allows a universal disable of this check.
+         */
+        if (!settings.allowInsecureProtocol()) {
+            for (URI redirect : getRedirectLocations(httpContext)) {
+                if (!GUtil.isSecureUrl(redirect)) {
+                    // TODO:
+                    DeprecationLogger.nagUserOfDeprecated(
+                        "Following insecure redirects",
+                        "Switch the protocol to HTTPS or allow insecure protocols. The URL was '" + redirect + "'."
+                    );
+                    return;
+                }
+            }
         }
     }
 

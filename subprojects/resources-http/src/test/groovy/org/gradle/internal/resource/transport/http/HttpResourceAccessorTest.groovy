@@ -25,7 +25,7 @@ class HttpResourceAccessorTest extends Specification {
     def "should call close() on CloseableHttpResource when getMetaData is called"() {
         def response = Mock(CloseableHttpResponse)
         def http = Mock(HttpClientHelper) {
-            performHead(uri.toString(), _) >> new HttpClientResponse("GET", uri, response)
+            performHead(uri, _) >> new HttpClientResponse("GET", uri, response)
         }
 
         when:
