@@ -244,13 +244,9 @@ class HttpBuildCacheServiceIntegrationTest extends AbstractIntegrationSpec imple
         settingsFile.text = useHttpBuildCache(httpBuildCacheServer.uri)
 
         when:
-        withBuildCache().run "jar"
-        succeeds "clean"
         executer.expectDeprecationWarning()
         withBuildCache().run "jar"
-
         then:
-        skipped(":compileJava")
         outputContains("Using insecure protocols with remote build cache has been deprecated. This is scheduled to be removed in Gradle 6.0. Switch remote build cache to a secure protocol (like HTTPS) or allow insecure protocols, see ")
     }
 
