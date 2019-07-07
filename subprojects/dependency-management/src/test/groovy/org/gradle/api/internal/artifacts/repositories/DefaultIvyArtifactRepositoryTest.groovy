@@ -69,6 +69,7 @@ class DefaultIvyArtifactRepositoryTest extends Specification {
 
     def "creates a resolver for HTTP patterns"() {
         repository.name = 'name'
+        repository.url = "http://host/"
         repository.artifactPattern 'http://host/[organisation]/[artifact]-[revision].[ext]'
         repository.artifactPattern 'http://other/[module]/[artifact]-[revision].[ext]'
         repository.ivyPattern 'http://host/[module]/ivy-[revision].xml'
