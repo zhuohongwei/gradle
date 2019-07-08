@@ -19,6 +19,8 @@ import org.gradle.performance.AbstractCrossVersionPerformanceTest
 import org.gradle.performance.categories.PerformanceExperiment
 import org.gradle.performance.fixture.BuildExperimentInvocationInfo
 import org.gradle.performance.fixture.BuildExperimentListenerAdapter
+import org.gradle.performance.results.ResultsStoreHelper
+import org.junit.Assume
 import org.junit.experimental.categories.Category
 import spock.lang.Issue
 import spock.lang.Unroll
@@ -56,6 +58,8 @@ class GradleInceptionPerformanceTest extends AbstractCrossVersionPerformanceTest
         def targetVersion = "5.6-20190706000041+0000"
         runner.targetVersions = [targetVersion]
         runner.minimumVersion = targetVersion
+        // This test always uses latest Gradle feature, thus not suitable for historical performance test
+        Assume.assumeTrue(ResultsStoreHelper.determineChannel() != 'historical')
     }
 
     @Unroll

@@ -35,6 +35,7 @@ class JavaNonABIChangePerformanceTest extends AbstractCrossVersionPerformanceTes
         runner.tasksToRun = ['assemble']
         runner.addBuildExperimentListener(new ApplyNonAbiChangeToJavaSourceFileMutator(testProject.config.fileToChangeByScenario['assemble']))
         runner.targetVersions = ["5.6-20190626000031+0000"]
+        runner.minimumVersion = minimumVersion
 
         when:
         def result = runner.run()
@@ -43,6 +44,10 @@ class JavaNonABIChangePerformanceTest extends AbstractCrossVersionPerformanceTes
         result.assertCurrentVersionHasNotRegressed()
 
         where:
-        testProject << [LARGE_MONOLITHIC_JAVA_PROJECT, LARGE_JAVA_MULTI_PROJECT, LARGE_MONOLITHIC_GROOVY_PROJECT, LARGE_GROOVY_MULTI_PROJECT]
+        testProject                     | minimumVersion
+        LARGE_MONOLITHIC_JAVA_PROJECT   | null
+        LARGE_JAVA_MULTI_PROJECT        | null
+        LARGE_MONOLITHIC_GROOVY_PROJECT | '5.5'
+        LARGE_GROOVY_MULTI_PROJECT      | '5.5'
     }
 }
