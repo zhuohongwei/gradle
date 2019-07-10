@@ -160,7 +160,7 @@ public class TarBuildCacheEntryPacker implements BuildCacheEntryPacker {
 
     @Override
     public UnpackResult unpack(CacheableEntity entity, InputStream input, OriginReader readOrigin) throws IOException {
-        try (TarArchiveInputStream tarInput = new TarArchiveInputStream(input, UTF_8)) {
+        try (TarArchiveInputStream tarInput = new TarArchiveInputStream(input)) {
             return unpack(entity, tarInput, readOrigin);
         }
     }
