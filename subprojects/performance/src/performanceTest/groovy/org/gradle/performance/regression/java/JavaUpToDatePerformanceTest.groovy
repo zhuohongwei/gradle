@@ -37,11 +37,20 @@ class JavaUpToDatePerformanceTest extends AbstractCrossVersionPerformanceTest {
         runner.targetVersions = ["5.5-20190515115345+0000"]
         runner.args += ["-Dorg.gradle.parallel=$parallel"]
 
+        File logDir = new File(temporaryFolder.testDirectory, "${System.currentTimeMillis()}")
+        logDir.mkdirs()
+        File log = new File(logDir, "log.txt")
+        log.createNewFile()
+        runner.gradleOpts = ["-Xloggc:${log.absolutePath}", '-XX:+PrintGCDateStamps', '-XX:+UnlockDiagnosticVMOptions', '-XX:+PrintFlagsFinal']
+
         when:
         def result = runner.run()
 
         then:
         result.assertCurrentVersionHasNotRegressed()
+
+        cleanup:
+        println log.text
 
         where:
         testProject                   | parallel
