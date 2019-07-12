@@ -22,11 +22,12 @@ import org.joda.time.DateTime
 
 @ToString(includeNames = true)
 @CompileStatic
-public class MeasuredOperation {
+class MeasuredOperation {
     DateTime start
     DateTime end
     Amount<Duration> totalTime
     Amount<Duration> gcTime
+    Amount<Duration> gcCount
     Exception exception
 
     boolean isValid() {
@@ -34,6 +35,7 @@ public class MeasuredOperation {
             start!=null &&
             end != null &&
             totalTime != null &&
-            gcTime != null
+            gcTime != null &&
+            gcCount != null
     }
 }

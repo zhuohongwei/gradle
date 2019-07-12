@@ -27,6 +27,7 @@ public class DurationMeasurementImpl implements DurationMeasurement {
     private DateTime start;
     private long startNanos;
     private long startGcMillis;
+    private long startGcCount;
     private final MeasuredOperation measuredOperation;
 
     public DurationMeasurementImpl(MeasuredOperation measuredOperation) {
@@ -38,6 +39,7 @@ public class DurationMeasurementImpl implements DurationMeasurement {
         start = DateTime.now();
         startNanos = System.nanoTime();
         startGcMillis = gcMillis();
+        startGcCount = gcCount();
     }
 
     @Override
@@ -45,16 +47,24 @@ public class DurationMeasurementImpl implements DurationMeasurement {
         long duration = System.nanoTime() - startNanos;
         DateTime end = DateTime.now();
         long gcMillis = gcMillis() - startGcMillis;
+        long gcCount = gcCount() - startGcCount;
 
         measuredOperation.setStart(start);
         measuredOperation.setEnd(end);
         measuredOperation.setTotalTime(Duration.millis(duration / 1000000L));
         measuredOperation.setGcTime(Duration.millis(gcMillis));
+        measuredOperation.setGcCount(Duration.millis(gcCount));
     }
 
     private static long gcMillis() {
         return ManagementFactory.getGarbageCollectorMXBeans().stream()
             .mapToLong(gc -> Math.max(0, gc.getCollectionTime()))
+            .sum();
+    }
+
+    private static long gcCount() {
+        return ManagementFactory.getGarbageCollectorMXBeans().stream()
+            .mapToLong(gc -> Math.max(0, gc.getCollectionCount()))
             .sum();
     }
 

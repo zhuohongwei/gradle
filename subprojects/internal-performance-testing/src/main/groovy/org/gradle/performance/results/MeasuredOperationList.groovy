@@ -35,7 +35,8 @@ public class MeasuredOperationList extends LinkedList<MeasuredOperation> {
    max: ${totalTime.max.format()}, 
    se: ${totalTime.standardError.format()}
    >run: ${totalTime.collect { it.format() }}
-   >gc:  ${this*.gcTime}
+   >gct  ${this*.gcTime}
+   >gcc: ${this*.gcTime}
 """
     }
 }
