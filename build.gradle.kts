@@ -394,3 +394,5 @@ allprojects {
         fileMode = Integer.parseInt("0644", 8)
     }
 }
+
+println("GRADLE_OPTS: ${System.getenv("GRADLE_OPTS")}")
