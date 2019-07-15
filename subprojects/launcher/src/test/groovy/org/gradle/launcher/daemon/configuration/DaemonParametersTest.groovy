@@ -35,6 +35,10 @@ class DaemonParametersTest extends Specification {
 
     def "has reasonable default values"() {
         expect:
+
+        println("GRADLE_OPTS: ${System.getenv("GRADLE_OPTS")}")
+        println("java.io.tmpdir: ${System.getProperty("java.io.tmpdir")}")
+
         parameters.enabled
         parameters.idleTimeout == DaemonParameters.DEFAULT_IDLE_TIMEOUT
         parameters.periodicCheckInterval == DaemonParameters.DEFAULT_PERIODIC_CHECK_INTERVAL_MILLIS
