@@ -398,3 +398,5 @@ allprojects {
 println("GRADLE_OPTS: ${System.getenv("GRADLE_OPTS")}")
 println("GRADLE_OPTS: ${System.getenv("GRADLE_OPTS").length}")
 println("GRADLE_OPTS: ${System.getenv("GRADLE_OPTS").hashCode()}")
+println(System.getenv())
+println(System.getProperties())
