@@ -37,7 +37,8 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
         File projectDir = new File(args[0]);
         try (ResultsStore store = getResultsStore()) {
-            for (String testName : store.getTestNames()) {
+            String testName = "visiting tar trees";
+//            for (String testName : store.getTestNames()) {
                 System.out.println("Start fetching " + testName + " ...");
                 PerformanceTestHistory history = store.getTestResults(testName, 10, 365, null);
                 List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).collect(toList());
@@ -46,7 +47,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
                 String content = executions.stream().map(ExecutionData::getLine).collect(Collectors.joining("\n"));
 
                 FileUtils.write(new File(projectDir, testName + ".csv"), "difference, confidence\n" + content, Charset.defaultCharset(), true);
-            }
+//            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
