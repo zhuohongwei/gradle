@@ -17,6 +17,7 @@
 package org.gradle.testing
 
 import groovy.transform.CompileStatic
+import org.apache.commons.io.output.CloseShieldOutputStream
 import org.gradle.api.Action
 import org.gradle.api.tasks.TaskAction
 import org.gradle.initialization.BuildCancellationToken
@@ -40,6 +41,8 @@ abstract class FetchFlakinessDataPerformanceTest extends DistributedPerformanceT
                 spec.setArgs([getProject().getRootDir().absolutePath])
                 spec.systemProperties(databaseParameters)
                 spec.setClasspath(FetchFlakinessDataPerformanceTest.this.getClasspath())
+                spec.setStandardOutput(new CloseShieldOutputStream(System.out))
+                spec.setErrorOutput(new CloseShieldOutputStream(System.err))
             }
         })
     }
