@@ -20,6 +20,7 @@ import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.testing.BuildScanPerformanceTest
 import org.gradle.testing.DistributedPerformanceTest
+import org.gradle.testing.FetchFlakinessDataPerformanceTest
 import org.gradle.testing.PerformanceTest
 import org.gradle.testing.RebaselinePerformanceTests
 import org.gradle.testing.ReportGenerationPerformanceTest
@@ -251,6 +252,8 @@ class PerformanceTestPlugin : Plugin<Project> {
             createDistributedPerformanceTestTask(name, clazz, performanceSourceSet, prepareSamplesTask).configure(configure)
         }
 
+        create("fetchPerformanceFlakiness", FetchFlakinessDataPerformanceTest::class) {
+        }
         create("distributedPerformanceTest", RerunableDistributedPerformanceTest::class) {
             (options as JUnitOptions).excludeCategories(performanceExperimentCategory)
             channel = "commits"

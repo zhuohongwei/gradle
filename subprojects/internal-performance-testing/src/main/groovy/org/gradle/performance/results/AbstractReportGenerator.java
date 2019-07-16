@@ -16,6 +16,7 @@
 
 package org.gradle.performance.results;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.gradle.util.GFileUtils;
 
@@ -24,14 +25,31 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
+import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionData;
 
 public abstract class AbstractReportGenerator<R extends ResultsStore> {
-
     protected void generateReport(String... args) {
-        File outputDirectory = new File(args[0]);
-        File resultJson = new File(args[1]);
-        String projectName = args[2];
-        generate(PerformanceFlakinessAnalyzer.create(), outputDirectory, resultJson, projectName);
+        File projectDir = new File(args[0]);
+        try (ResultsStore store = getResultsStore()) {
+            for (String testName : store.getTestNames()) {
+                System.out.println("Start fetching " + testName + " ...");
+                PerformanceTestHistory history = store.getTestResults(testName, 10, 365, null);
+                List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).collect(toList());
+                System.out.println("Fetched " + executions.size() + " executions for " + testName + "");
+
+                String content = executions.stream().map(ExecutionData::getLine).collect(Collectors.joining("\n"));
+
+                FileUtils.write(new File(projectDir, testName + ".csv"), "difference, confidence\n" + content, Charset.defaultCharset(), true);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void generate(PerformanceFlakinessAnalyzer flakinessAnalyzer, File outputDirectory, File resultJson, String projectName) {
@@ -52,6 +70,32 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
             copyResource("performanceReport.js", outputDirectory);
         } catch (Exception e) {
             throw new RuntimeException(String.format("Could not generate performance test report to '%s'.", outputDirectory), e);
+        }
+    }
+
+    protected List<ExecutionData> removeEmptyExecution(List<? extends PerformanceTestExecution> executions) {
+        return executions.stream().map(this::extractExecutionData).filter(Objects::nonNull).collect(toList());
+    }
+
+    private ExecutionData extractExecutionData(PerformanceTestExecution performanceTestExecution) {
+        List<MeasuredOperationList> nonEmptyExecutions = performanceTestExecution
+            .getScenarios()
+            .stream()
+            .filter(testExecution -> !testExecution.getTotalTime().isEmpty())
+            .collect(toList());
+        if (nonEmptyExecutions.size() > 1) {
+            int size = nonEmptyExecutions.size();
+            return new ExecutionData(performanceTestExecution.getStartTime(), getCommit(performanceTestExecution), nonEmptyExecutions.get(size - 2), nonEmptyExecutions.get(size - 1));
+        } else {
+            return null;
+        }
+    }
+
+    private String getCommit(PerformanceTestExecution execution) {
+        if (execution.getVcsCommits().isEmpty()) {
+            return "";
+        } else {
+            return execution.getVcsCommits().get(0);
         }
     }
 

@@ -132,6 +132,10 @@ class ScenarioBuildResultData {
             return 100.0 * DataSeries.confidenceInDifference(baseVersion.totalTime, currentVersion.totalTime)
         }
 
+        String getLine() {
+            return "${differencePercentage}, ${confidencePercentage}"
+        }
+
         String getFormattedDifferencePercentage() {
             String.format("%.2f%%", differencePercentage)
         }

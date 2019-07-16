@@ -201,7 +201,7 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                     ResultSet operations = null;
 
                     try {
-                        executionsForName = connection.prepareStatement("select top ? id, startTime, endTime, targetVersion, testProject, tasks, args, gradleOpts, daemon, operatingSystem, jvm, vcsBranch, vcsCommit, channel, host, cleanTasks, teamCityBuildId from testExecution where testId = ? and startTime >= ? and channel = ? order by startTime desc");
+                        executionsForName = connection.prepareStatement("select top ? id, startTime, endTime, targetVersion, testProject, tasks, args, gradleOpts, daemon, operatingSystem, jvm, vcsBranch, vcsCommit, channel, host, cleanTasks, teamCityBuildId from testExecution where testId = ? and startTime >= ? order by startTime desc");
                         executionsForName.setFetchSize(mostRecentN);
                         executionsForName.setInt(1, mostRecentN);
                         executionsForName.setString(2, testName);
@@ -236,7 +236,7 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                         }
 
                         operationsForExecution = connection.prepareStatement("select version, testExecution, totalTime from testOperation "
-                                + "where testExecution in (select top ? id from testExecution where testId = ? and startTime >= ? and channel = ? order by startTime desc)");
+                                + "where testExecution in (select top ? id from testExecution where testId = ? and startTime >= ? order by startTime desc)");
                         operationsForExecution.setFetchSize(10 * results.size());
                         operationsForExecution.setInt(1, mostRecentN);
                         operationsForExecution.setString(2, testName);
