@@ -247,11 +247,8 @@ public class DefaultCacheAwareExternalResourceAccessor implements CacheAwareExte
             if (destination.getParentFile() != null) {
                 GFileUtils.mkdirs(destination.getParentFile());
             }
-            FileOutputStream outputStream = new FileOutputStream(destination);
-            try {
+            try (FileOutputStream outputStream = new FileOutputStream(destination)) {
                 IOUtils.copyLarge(inputStream, outputStream);
-            } finally {
-                outputStream.close();
             }
             return null;
         }

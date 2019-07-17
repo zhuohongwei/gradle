@@ -81,11 +81,8 @@ public abstract class RhinoWorkerUtils {
 
         Scriptable scope = context.initStandardObjects();
         try {
-            Reader reader = new InputStreamReader(new FileInputStream(source), encoding);
-            try {
+            try (Reader reader = new InputStreamReader(new FileInputStream(source), encoding)) {
                 context.evaluateReader(scope, reader, source.getName(), 0, null);
-            } finally {
-                reader.close();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

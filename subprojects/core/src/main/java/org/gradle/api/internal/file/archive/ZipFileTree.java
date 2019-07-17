@@ -80,9 +80,8 @@ public class ZipFileTree implements MinimalFileTree, ArchiveFileTree {
         AtomicBoolean stopFlag = new AtomicBoolean();
 
         try {
-            ZipFile zip = new ZipFile(zipFile);
-            File expandedDir = getExpandedDir();
-            try {
+            try (ZipFile zip = new ZipFile(zipFile)) {
+                File expandedDir = getExpandedDir();
                 // The iteration order of zip.getEntries() is based on the hash of the zip entry. This isn't much use
                 // to us. So, collect the entries in a map and iterate over them in alphabetical order.
                 Map<String, ZipEntry> entriesByName = new TreeMap<String, ZipEntry>();
@@ -100,8 +99,6 @@ public class ZipFileTree implements MinimalFileTree, ArchiveFileTree {
                         visitor.visitFile(new DetailsImpl(zipFile, expandedDir, entry, zip, stopFlag, chmod));
                     }
                 }
-            } finally {
-                zip.close();
             }
         } catch (Exception e) {
             throw new GradleException(String.format("Could not expand %s.", getDisplayName()), e);

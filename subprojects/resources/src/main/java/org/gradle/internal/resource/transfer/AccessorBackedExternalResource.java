@@ -74,17 +74,11 @@ public class AccessorBackedExternalResource extends AbstractExternalResource {
                 return null;
             }
             try {
-                CountingInputStream input = new CountingInputStream(response.openStream());
-                try {
-                    FileOutputStream output = new FileOutputStream(destination);
-                    try {
+                try (CountingInputStream input = new CountingInputStream(response.openStream())) {
+                    try (FileOutputStream output = new FileOutputStream(destination)) {
                         IOUtils.copyLarge(input, output);
                         return ExternalResourceReadResult.of(input.getCount());
-                    } finally {
-                        output.close();
                     }
-                } finally {
-                    input.close();
                 }
             } finally {
                 response.close();
@@ -108,12 +102,9 @@ public class AccessorBackedExternalResource extends AbstractExternalResource {
                 return null;
             }
             try {
-                CountingInputStream input = new CountingInputStream(new BufferedInputStream(response.openStream()));
-                try {
+                try (CountingInputStream input = new CountingInputStream(new BufferedInputStream(response.openStream()))) {
                     T value = transformer.transform(input);
                     return ExternalResourceReadResult.of(input.getCount(), value);
-                } finally {
-                    input.close();
                 }
             } finally {
                 response.close();
@@ -132,12 +123,9 @@ public class AccessorBackedExternalResource extends AbstractExternalResource {
                 return null;
             }
             try {
-                CountingInputStream stream = new CountingInputStream(new BufferedInputStream(response.openStream()));
-                try {
+                try (CountingInputStream stream = new CountingInputStream(new BufferedInputStream(response.openStream()))) {
                     T value = readAction.execute(stream, response.getMetaData());
                     return ExternalResourceReadResult.of(stream.getCount(), value);
-                } finally {
-                    stream.close();
                 }
             } finally {
                 response.close();

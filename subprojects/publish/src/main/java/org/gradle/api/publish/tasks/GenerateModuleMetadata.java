@@ -165,11 +165,8 @@ public class GenerateModuleMetadata extends DefaultTask {
         PublicationInternal publication = (PublicationInternal) this.publication.get();
         List<PublicationInternal> publications = Cast.uncheckedCast(this.publications.get());
         try {
-            Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "utf8"));
-            try {
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "utf8"))) {
                 new GradleModuleMetadataWriter(getBuildInvocationScopeId(), getProjectDependencyPublicationResolver()).generateTo(publication, publications, writer);
-            } finally {
-                writer.close();
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Could not generate metadata file " + outputFile.get(), e);

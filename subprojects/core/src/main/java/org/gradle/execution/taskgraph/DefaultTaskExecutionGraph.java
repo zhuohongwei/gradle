@@ -149,11 +149,8 @@ public class DefaultTaskExecutionGraph implements TaskExecutionGraphInternal {
 
     @Override
     public void execute(Collection<? super Throwable> failures) {
-        ProjectExecutionServiceRegistry projectExecutionServices = new ProjectExecutionServiceRegistry();
-        try {
+        try (ProjectExecutionServiceRegistry projectExecutionServices = new ProjectExecutionServiceRegistry()) {
             executeWithServices(projectExecutionServices, failures);
-        } finally {
-            projectExecutionServices.close();
         }
     }
 

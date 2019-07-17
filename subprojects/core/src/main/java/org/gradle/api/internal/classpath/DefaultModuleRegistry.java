@@ -276,16 +276,13 @@ public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore
 
     private Properties loadModuleProperties(String name, File jarFile) {
         try {
-            ZipFile zipFile = new ZipFile(jarFile);
-            try {
+            try (ZipFile zipFile = new ZipFile(jarFile)) {
                 String entryName = getClasspathManifestName(name);
                 ZipEntry entry = zipFile.getEntry(entryName);
                 if (entry == null) {
                     throw new IllegalStateException("Did not find " + entryName + " in " + jarFile.getAbsolutePath());
                 }
                 return GUtil.loadProperties(zipFile.getInputStream(entry));
-            } finally {
-                zipFile.close();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(String.format("Could not load properties for module '%s' from %s", name, jarFile), e);
@@ -294,13 +291,10 @@ public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore
 
     private boolean hasModuleProperties(String name, File jarFile) {
         try {
-            ZipFile zipFile = new ZipFile(jarFile);
-            try {
+            try (ZipFile zipFile = new ZipFile(jarFile)) {
                 String entryName = getClasspathManifestName(name);
                 ZipEntry entry = zipFile.getEntry(entryName);
                 return entry != null;
-            } finally {
-                zipFile.close();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(String.format("Could not load properties for module '%s' from %s", name, jarFile), e);

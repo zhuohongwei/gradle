@@ -151,16 +151,13 @@ public class DefaultScriptCompilationHandler implements ScriptCompilationHandler
         File metadataFile = new File(metadataDir, METADATA_FILE_NAME);
         try {
             GFileUtils.mkdirs(metadataDir);
-            KryoBackedEncoder encoder = new KryoBackedEncoder(new FileOutputStream(metadataFile));
-            try {
+            try (KryoBackedEncoder encoder = new KryoBackedEncoder(new FileOutputStream(metadataFile))) {
                 byte flags = (byte) ((emptyScript ? EMPTY_FLAG : 0) | (hasMethods ? HAS_METHODS_FLAG : 0));
                 encoder.writeByte(flags);
                 if (extractingTransformer != null && extractingTransformer.getDataSerializer() != null) {
                     Serializer<M> serializer = extractingTransformer.getDataSerializer();
                     serializer.write(encoder, extractingTransformer.getExtractedData());
                 }
-            } finally {
-                encoder.close();
             }
         } catch (Exception e) {
             throw new GradleException(String.format("Failed to serialize script metadata extracted for %s", scriptSource.getDisplayName()), e);
@@ -202,8 +199,7 @@ public class DefaultScriptCompilationHandler implements ScriptCompilationHandler
                                                                   ClassLoaderId classLoaderId) {
         File metadataFile = new File(metadataCacheDir, METADATA_FILE_NAME);
         try {
-            KryoBackedDecoder decoder = new KryoBackedDecoder(new FileInputStream(metadataFile));
-            try {
+            try (KryoBackedDecoder decoder = new KryoBackedDecoder(new FileInputStream(metadataFile))) {
                 byte flags = decoder.readByte();
                 boolean isEmpty = (flags & EMPTY_FLAG) != 0;
                 boolean hasMethods = (flags & HAS_METHODS_FLAG) != 0;
@@ -217,8 +213,6 @@ public class DefaultScriptCompilationHandler implements ScriptCompilationHandler
                     data = null;
                 }
                 return new ClassesDirCompiledScript<T, M>(isEmpty, hasMethods, classLoaderId, scriptBaseClass, scriptCacheDir, classLoader, source, sourceHashCode, data);
-            } finally {
-                decoder.close();
             }
         } catch (Exception e) {
             throw new IllegalStateException(String.format("Failed to deserialize script metadata extracted for %s", source.getDisplayName()), e);

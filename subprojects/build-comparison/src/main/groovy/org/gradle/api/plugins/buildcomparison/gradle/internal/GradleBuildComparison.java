@@ -163,11 +163,8 @@ public class GradleBuildComparison {
     }
 
     private ProjectOutcomes executeBuild(ComparableGradleBuildExecuter executer) {
-        ProjectConnection connection = createProjectConnection(executer);
-        try {
+        try (ProjectConnection connection = createProjectConnection(executer)) {
             return executer.executeWith(connection);
-        } finally {
-            connection.close();
         }
     }
 

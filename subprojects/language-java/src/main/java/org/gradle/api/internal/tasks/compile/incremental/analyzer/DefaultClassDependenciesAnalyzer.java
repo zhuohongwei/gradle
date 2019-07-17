@@ -44,11 +44,8 @@ public class DefaultClassDependenciesAnalyzer implements ClassDependenciesAnalyz
     @Override
     public ClassAnalysis getClassAnalysis(HashCode classFileHash, FileTreeElement classFile) {
         try {
-            InputStream input = classFile.open();
-            try {
+            try (InputStream input = classFile.open()) {
                 return getClassAnalysis(input);
-            } finally {
-                input.close();
             }
         } catch (IOException e) {
             throw new RuntimeException("Problems loading class analysis for " + classFile.toString());

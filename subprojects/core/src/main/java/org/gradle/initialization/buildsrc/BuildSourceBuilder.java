@@ -119,11 +119,8 @@ public class BuildSourceBuilder {
             @Override
             public ClassPath transform(BuildController buildController) {
                 File lockTarget = new File(buildDefinition.getBuildRootDir(), ".gradle/noVersion/buildSrc");
-                FileLock lock = fileLockManager.lock(lockTarget, LOCK_OPTIONS, "buildSrc build lock");
-                try {
+                try (FileLock lock = fileLockManager.lock(lockTarget, LOCK_OPTIONS, "buildSrc build lock")) {
                     return new BuildSrcUpdateFactory(buildController, buildSrcBuildListenerFactory, cachedClasspathTransformer).create();
-                } finally {
-                    lock.close();
                 }
             }
         });

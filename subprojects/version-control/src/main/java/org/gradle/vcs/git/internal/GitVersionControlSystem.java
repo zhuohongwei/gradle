@@ -144,9 +144,7 @@ public class GitVersionControlSystem implements VersionControlSystem {
     }
 
     private static void resetRepo(File workingDir, GitVersionControlSpec gitSpec, VersionRef ref) {
-        Git git = null;
-        try {
-            git = Git.open(workingDir);
+        try (Git git = Git.open(workingDir)) {
             git.reset().setMode(ResetCommand.ResetType.HARD).setRef(ref.getCanonicalId()).call();
             updateSubModules(git);
         } catch (IOException e) {
@@ -155,30 +153,20 @@ public class GitVersionControlSystem implements VersionControlSystem {
             throw wrapGitCommandException("reset", gitSpec.getUrl(), workingDir, e);
         } catch (JGitInternalException e) {
             throw wrapGitCommandException("reset", gitSpec.getUrl(), workingDir, e);
-        } finally {
-            if (git != null) {
-                git.close();
-            }
         }
     }
 
     private static void updateSubModules(Git git) throws IOException, GitAPIException {
-        SubmoduleWalk walker = SubmoduleWalk.forIndex(git.getRepository());
-        try {
+        try (SubmoduleWalk walker = SubmoduleWalk.forIndex(git.getRepository())) {
             while (walker.next()) {
-                Repository submodule = walker.getRepository();
-                try {
+                try (Repository submodule = walker.getRepository()) {
                     Git submoduleGit = Git.wrap(submodule);
                     configureTransport(submoduleGit.fetch()).call();
                     git.submoduleUpdate().addPath(walker.getPath()).call();
                     submoduleGit.reset().setMode(ResetCommand.ResetType.HARD).call();
                     updateSubModules(submoduleGit);
-                } finally {
-                    submodule.close();
                 }
             }
-        } finally {
-            walker.close();
         }
     }
 

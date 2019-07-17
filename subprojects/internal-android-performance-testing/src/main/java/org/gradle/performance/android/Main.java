@@ -66,13 +66,10 @@ public class Main {
             gradleConnector.useInstallation(gradleInstallDir);
         }
 
-        ProjectConnection connect = gradleConnector.connect();
-        try {
+        try (ProjectConnection connect = gradleConnector.connect()) {
             for (int i = 0; i < 5; i++) {
                 SyncAction.withProjectConnection(connect, null);
             }
-        } finally {
-            connect.close();
         }
 
         timer.stop();

@@ -80,11 +80,8 @@ public class S3ResourceConnector implements ExternalResourceConnector {
     @Override
     public void upload(ReadableContent resource, URI destination) throws IOException {
         LOGGER.debug("Attempting to upload stream to : {}", destination);
-        InputStream inputStream = resource.open();
-        try {
+        try (InputStream inputStream = resource.open()) {
             s3Client.put(inputStream, resource.getContentLength(), destination);
-        } finally {
-            inputStream.close();
         }
     }
 }

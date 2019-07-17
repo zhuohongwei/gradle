@@ -151,11 +151,8 @@ public class PackageListGenerator extends DefaultTask {
             public void visitFile(FileVisitDetails fileDetails) {
                 try {
                     ZipEntry zipEntry = new ZipEntry(fileDetails.getPath());
-                    InputStream inputStream = fileDetails.open();
-                    try {
+                    try (InputStream inputStream = fileDetails.open()) {
                         processEntry(zipEntry, builder);
-                    } finally {
-                        inputStream.close();
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);

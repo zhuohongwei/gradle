@@ -53,14 +53,11 @@ public class DefaultLegacyTypesSupport implements LegacyTypesSupport {
         Set<String> classNames = new HashSet<String>();
         URL resource = LegacyTypesSupport.class.getResource(resourceName);
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(resource.openStream()));
-            try {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.openStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     classNames.add(line.trim());
                 }
-            } finally {
-                reader.close();
             }
         } catch (IOException e) {
             throw new GradleException("Could not load class names from '" + resource + "'.", e);

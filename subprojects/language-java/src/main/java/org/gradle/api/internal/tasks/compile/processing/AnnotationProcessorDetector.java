@@ -130,8 +130,7 @@ public class AnnotationProcessorDetector {
 
         private List<AnnotationProcessorDeclaration> detectProcessorsInJar(File jar) {
             try {
-                ZipFile zipFile = new ZipFile(jar);
-                try {
+                try (ZipFile zipFile = new ZipFile(jar)) {
                     List<String> processorClassNames = getProcessorClassNames(zipFile);
                     try {
                         Map<String, IncrementalAnnotationProcessorType> processorTypes = getProcessorTypes(zipFile);
@@ -140,8 +139,6 @@ public class AnnotationProcessorDetector {
                         logger.warn("Could not read annotation processor declarations from " + jar + ". Gradle will assume that all processors in this jar are non-incremental.", logStackTraces ? e : null);
                         return toProcessorDeclarations(processorClassNames, Collections.<String, IncrementalAnnotationProcessorType>emptyMap());
                     }
-                } finally {
-                    zipFile.close();
                 }
             } catch (Exception e) {
                 logger.warn("Could not read annotation processor declarations from " + jar + ". Gradle will assume that this jar contains no annotation processors.", logStackTraces ? e : null);
@@ -167,11 +164,8 @@ public class AnnotationProcessorDetector {
         }
 
         private List<String> readLines(ZipFile zipFile, ZipEntry zipEntry) throws IOException {
-            InputStream in = zipFile.getInputStream(zipEntry);
-            try {
+            try (InputStream in = zipFile.getInputStream(zipEntry)) {
                 return CharStreams.readLines(new InputStreamReader(in, Charsets.UTF_8), new MetadataLineProcessor());
-            } finally {
-                in.close();
             }
         }
 

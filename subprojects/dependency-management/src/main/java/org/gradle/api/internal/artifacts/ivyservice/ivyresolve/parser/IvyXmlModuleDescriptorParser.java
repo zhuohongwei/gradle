@@ -1371,18 +1371,12 @@ public class IvyXmlModuleDescriptorParser extends AbstractModuleDescriptorParser
         public static void parse(
                 URL xmlURL, URL schema, DefaultHandler handler)
                 throws SAXException, IOException, ParserConfigurationException {
-            InputStream xmlStream = URLHandlerRegistry.getDefault().openStream(xmlURL);
-            try {
+            try (InputStream xmlStream = URLHandlerRegistry.getDefault().openStream(xmlURL)) {
                 InputSource inSrc = new InputSource(xmlStream);
                 inSrc.setSystemId(xmlURL.toExternalForm());
                 parse(inSrc, schema, handler);
-            } finally {
-                try {
-                    xmlStream.close();
-                } catch (IOException e) {
-                    // ignored
-                }
             }
+            // ignored
         }
 
         public static void parse(

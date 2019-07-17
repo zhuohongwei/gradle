@@ -335,13 +335,10 @@ public class BuildScriptBuilder {
             public void generate() {
                 File target = getTargetFile();
                 try {
-                    PrintWriter writer = new PrintWriter(new FileWriter(target));
-                    try {
+                    try (PrintWriter writer = new PrintWriter(new FileWriter(target))) {
                         PrettyPrinter printer = new PrettyPrinter(syntaxFor(dsl), writer);
                         printer.printFileHeader(headerLines);
                         block.writeBodyTo(printer);
-                    } finally {
-                        writer.close();
                     }
                 } catch (Exception e) {
                     throw new GradleException("Could not generate file " + target + ".", e);

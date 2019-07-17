@@ -29,11 +29,8 @@ import java.io.Writer;
 public class FileRenderer {
     public <T> void render(T model, ReportRenderer<T, Writer> renderer, File outputFile) throws IOException {
         GFileUtils.parentMkdirs(outputFile);
-        Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8"));
-        try {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), "UTF-8"))) {
             renderer.render(model, writer);
-        } finally {
-            writer.close();
         }
     }
 }

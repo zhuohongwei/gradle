@@ -180,13 +180,10 @@ public class WorkerProcessClassPathProvider implements ClassPathProvider, Closea
             try {
                 File jarFile = jarFile(cache);
                 LOGGER.debug("Generating worker process classes to {}.", jarFile);
-                ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)));
-                try {
+                try (ZipOutputStream outputStream = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)))) {
                     for (Class<?> classToMap : getClassesForWorkerJar()) {
                         remapClass(classToMap, outputStream);
                     }
-                } finally {
-                    outputStream.close();
                 }
             } catch (Exception e) {
                 throw new GradleException("Could not generate worker process bootstrap classes.", e);

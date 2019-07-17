@@ -17,14 +17,14 @@
 package org.gradle.api.publish.maven.internal.publisher;
 
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.publish.PublicationArtifact;
 import org.gradle.api.publish.internal.PublicationFieldValidator;
 import org.gradle.api.publish.maven.InvalidMavenPublicationException;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.gradle.api.publish.maven.MavenArtifact;
 
 import java.io.File;
@@ -86,11 +86,8 @@ public class ValidatingMavenPublisher implements MavenPublisher {
     }
 
     private Model readModelFromPom(File pomFile) throws IOException, XmlPullParserException {
-        FileReader reader = new FileReader(pomFile);
-        try {
+        try (FileReader reader = new FileReader(pomFile)) {
             return new MavenXpp3Reader().read(reader);
-        } finally {
-            reader.close();
         }
     }
 

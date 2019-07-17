@@ -128,11 +128,8 @@ public class LocalFileStandInExternalResource extends AbstractExternalResource i
         try {
             CountingInputStream input = new CountingInputStream(new FileInputStream(localFile));
             try {
-                FileOutputStream output = new FileOutputStream(destination);
-                try {
+                try (FileOutputStream output = new FileOutputStream(destination)) {
                     IOUtils.copyLarge(input, output);
-                } finally {
-                    output.close();
                 }
             } finally {
                 input.close();
@@ -168,12 +165,9 @@ public class LocalFileStandInExternalResource extends AbstractExternalResource i
             return null;
         }
         try {
-            CountingInputStream input = new CountingInputStream(new BufferedInputStream(new FileInputStream(localFile)));
-            try {
+            try (CountingInputStream input = new CountingInputStream(new BufferedInputStream(new FileInputStream(localFile)))) {
                 T resourceReadResult = readAction.execute(input, getMetaData());
                 return ExternalResourceReadResult.of(input.getCount(), resourceReadResult);
-            } finally {
-                input.close();
             }
         } catch (IOException e) {
             throw ResourceExceptions.getFailed(getURI(), e);
@@ -187,12 +181,9 @@ public class LocalFileStandInExternalResource extends AbstractExternalResource i
             return null;
         }
         try {
-            CountingInputStream input = new CountingInputStream(new BufferedInputStream(new FileInputStream(localFile)));
-            try {
+            try (CountingInputStream input = new CountingInputStream(new BufferedInputStream(new FileInputStream(localFile)))) {
                 T resourceReadResult = readAction.transform(input);
                 return ExternalResourceReadResult.of(input.getCount(), resourceReadResult);
-            } finally {
-                input.close();
             }
         } catch (IOException e) {
             throw ResourceExceptions.getFailed(getURI(), e);
@@ -207,8 +198,7 @@ public class LocalFileStandInExternalResource extends AbstractExternalResource i
             }
             Files.createParentDirs(localFile);
 
-            InputStream input = location.open();
-            try {
+            try (InputStream input = location.open()) {
                 CountingOutputStream output = new CountingOutputStream(new FileOutputStream(localFile));
                 try {
                     IOUtils.copyLarge(input, output);
@@ -216,8 +206,6 @@ public class LocalFileStandInExternalResource extends AbstractExternalResource i
                     output.close();
                 }
                 return new ExternalResourceWriteResult(output.getCount());
-            } finally {
-                input.close();
             }
         } catch (IOException e) {
             throw ResourceExceptions.putFailed(getURI(), e);

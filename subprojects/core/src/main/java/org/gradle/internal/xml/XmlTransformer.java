@@ -202,11 +202,8 @@ public class XmlTransformer implements Transformer<String, String> {
 
         public void writeTo(File file) {
             try {
-                OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file));
-                try {
+                try (OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
                     writeTo(outputStream);
-                } finally {
-                    outputStream.close();
                 }
             } catch (IOException e) {
                 throw UncheckedException.throwAsUncheckedException(e);

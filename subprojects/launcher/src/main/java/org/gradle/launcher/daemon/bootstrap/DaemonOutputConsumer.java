@@ -48,9 +48,8 @@ public class DaemonOutputConsumer implements StreamsHandler {
 
         // Wait for the process' stdout to indicate that the process has been started successfully
         StringWriter output = new StringWriter();
-        Scanner scanner = new Scanner(processStdOutput);
-        PrintWriter printer = new PrintWriter(output);
-        try {
+        try (Scanner scanner = new Scanner(processStdOutput)) {
+            PrintWriter printer = new PrintWriter(output);
             while (scanner.hasNext()) {
                 String line = scanner.nextLine();
                 LOGGER.debug("daemon out: {}", line);
@@ -59,8 +58,6 @@ public class DaemonOutputConsumer implements StreamsHandler {
                     break;
                 }
             }
-        } finally {
-            scanner.close();
         }
         processOutput = output.toString();
     }

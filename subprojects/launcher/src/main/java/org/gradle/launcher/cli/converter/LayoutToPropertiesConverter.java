@@ -88,11 +88,8 @@ public class LayoutToPropertiesConverter {
 
         Properties properties = new Properties();
         try {
-            FileInputStream inputStream = new FileInputStream(propertiesFile);
-            try {
+            try (FileInputStream inputStream = new FileInputStream(propertiesFile)) {
                 properties.load(inputStream);
-            } finally {
-                inputStream.close();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

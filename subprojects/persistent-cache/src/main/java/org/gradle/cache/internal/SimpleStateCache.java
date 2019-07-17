@@ -123,11 +123,8 @@ public class SimpleStateCache<T> implements PersistentStateCache<T> {
             }
             chmod.chmod(cacheFile.getParentFile(), 0700); // read-write-execute for user only
             chmod.chmod(cacheFile, 0600); // read-write for user only
-            OutputStreamBackedEncoder encoder = new OutputStreamBackedEncoder(new BufferedOutputStream(new FileOutputStream(cacheFile)));
-            try {
+            try (OutputStreamBackedEncoder encoder = new OutputStreamBackedEncoder(new BufferedOutputStream(new FileOutputStream(cacheFile)))) {
                 serializer.write(encoder, newValue);
-            } finally {
-                encoder.close();
             }
         } catch (Exception e) {
             throw new GradleException(String.format("Could not write cache value to '%s'.", cacheFile), e);
@@ -139,11 +136,8 @@ public class SimpleStateCache<T> implements PersistentStateCache<T> {
             return null;
         }
         try {
-            InputStreamBackedDecoder decoder = new InputStreamBackedDecoder(new BufferedInputStream(new FileInputStream(cacheFile)));
-            try {
+            try (InputStreamBackedDecoder decoder = new InputStreamBackedDecoder(new BufferedInputStream(new FileInputStream(cacheFile)))) {
                 return serializer.read(decoder);
-            } finally {
-                decoder.close();
             }
         } catch (Exception e) {
             throw new GradleException(String.format("Could not read cache value from '%s'.", cacheFile), e);

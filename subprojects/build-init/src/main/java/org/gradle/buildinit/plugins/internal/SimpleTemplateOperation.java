@@ -55,11 +55,8 @@ public class SimpleTemplateOperation implements TemplateOperation {
             SimpleTemplateEngine templateEngine = new SimpleTemplateEngine();
             String templateText = Resources.asCharSource(templateURL, CharsetToolkit.getDefaultSystemCharset()).read();
             Template template = templateEngine.createTemplate(templateText);
-            Writer writer = Files.asCharSink(target, Charsets.UTF_8).openStream();
-            try {
+            try (Writer writer = Files.asCharSink(target, Charsets.UTF_8).openStream()) {
                 template.make(bindings).writeTo(writer);
-            } finally {
-                writer.close();
             }
         } catch (Exception ex) {
             throw new GradleException("Could not generate file " + target + ".", ex);

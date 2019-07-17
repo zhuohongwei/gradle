@@ -180,14 +180,11 @@ public class WrapperDistributionCleanupAction implements DirectoryCleanupAction 
         if (zipEntry == null) {
             return null;
         }
-        InputStream in = zipFile.getInputStream(zipEntry);
-        try {
+        try (InputStream in = zipFile.getInputStream(zipEntry)) {
             Properties properties = new Properties();
             properties.load(in);
             String versionString = properties.getProperty(GradleVersion.VERSION_NUMBER_PROPERTY);
             return GradleVersion.version(versionString);
-        } finally {
-            in.close();
         }
     }
 

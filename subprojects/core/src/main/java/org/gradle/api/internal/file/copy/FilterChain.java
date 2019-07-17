@@ -115,11 +115,9 @@ public class FilterChain implements Transformer<InputStream, InputStream> {
             public Reader transform(Reader original) {
                 try {
                     Template template;
-                    try {
+                    try (original) {
                         SimpleTemplateEngine engine = new SimpleTemplateEngine();
                         template = engine.createTemplate(original);
-                    } finally {
-                        original.close();
                     }
                     StringWriter writer = new StringWriter();
                     template.make(properties).writeTo(writer);

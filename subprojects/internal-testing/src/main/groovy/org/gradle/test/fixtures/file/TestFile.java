@@ -208,11 +208,8 @@ public class TestFile extends File {
         assertIsFile();
         Properties properties = new Properties();
         try {
-            FileInputStream inStream = new FileInputStream(this);
-            try {
+            try (FileInputStream inStream = new FileInputStream(this)) {
                 properties.load(inStream);
-            } finally {
-                inStream.close();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -227,11 +224,8 @@ public class TestFile extends File {
     public Manifest getManifest() {
         assertIsFile();
         try {
-            JarFile jarFile = new JarFile(this);
-            try {
+            try (JarFile jarFile = new JarFile(this)) {
                 return jarFile.getManifest();
-            } finally {
-                jarFile.close();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -240,8 +234,7 @@ public class TestFile extends File {
 
     public List<String> linesThat(Matcher<? super String> matcher) {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(this));
-            try {
+            try (BufferedReader reader = new BufferedReader(new FileReader(this))) {
                 List<String> lines = new ArrayList<String>();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -250,8 +243,6 @@ public class TestFile extends File {
                     }
                 }
                 return lines;
-            } finally {
-                reader.close();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -827,11 +818,8 @@ public class TestFile extends File {
         Properties props = new Properties();
         props.putAll(properties);
         try {
-            FileOutputStream stream = new FileOutputStream(this);
-            try {
+            try (FileOutputStream stream = new FileOutputStream(this)) {
                 props.store(stream, "comment");
-            } finally {
-                stream.close();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

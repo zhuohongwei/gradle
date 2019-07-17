@@ -26,10 +26,10 @@ import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.file.archive.ZipCopyAction;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
-import org.gradle.internal.classanalysis.AsmConstants;
 import org.gradle.internal.ErroringAction;
 import org.gradle.internal.IoActions;
 import org.gradle.internal.UncheckedException;
+import org.gradle.internal.classanalysis.AsmConstants;
 import org.gradle.internal.installation.GradleRuntimeShadedJarDetector;
 import org.gradle.internal.io.StreamByteBuffer;
 import org.gradle.internal.logging.progress.ProgressLogger;
@@ -199,11 +199,8 @@ class RuntimeShadedJarCreator {
                     processEntry(outputStream, null, zipEntry, buffer, seenPaths, services);
                 } else {
                     ZipEntry zipEntry = newZipEntryWithFixedTime(details.getPath());
-                    InputStream inputStream = details.open();
-                    try {
+                    try (InputStream inputStream = details.open()) {
                         processEntry(outputStream, inputStream, zipEntry, buffer, seenPaths, services);
-                    } finally {
-                        inputStream.close();
                     }
                 }
             } catch (IOException e) {

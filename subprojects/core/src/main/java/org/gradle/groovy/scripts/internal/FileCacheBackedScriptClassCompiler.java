@@ -97,19 +97,16 @@ public class FileCacheBackedScriptClassCompiler implements ScriptClassCompiler, 
         // Both caches can be closed directly after use because:
         // For 1, if the script changes or its compile classpath changes, a different directory will be used
         // For 2, if the script changes, a different cache is used. If the classpath changes, the cache is invalidated, but classes are remapped to 1. anyway so never directly used
-        PersistentCache remappedClassesCache = cacheRepository.cache("scripts-remapped/" + source.getClassName() + "/" + sourceHash + "/" + classpathHash)
+        try (PersistentCache remappedClassesCache = cacheRepository.cache("scripts-remapped/" + source.getClassName() + "/" + sourceHash + "/" + classpathHash)
             .withDisplayName(dslId + " remapped class cache for " + sourceHash)
             .withInitializer(new ProgressReportingInitializer(progressLoggerFactory, new RemapBuildScriptsAction<M, T>(remapped, classpathHash, sourceHash, dslId, classLoader, operation, verifier, scriptBaseClass),
                 "Compiling script into cache",
                 "Compiling " + source.getFileName() + " into local compilation cache"))
-            .open();
-        try {
+            .open()) {
             File remappedClassesDir = classesDir(remappedClassesCache);
             File remappedMetadataDir = metadataDir(remappedClassesCache);
 
             return scriptCompilationHandler.loadFromDir(source, sourceHashCode, classLoader, remappedClassesDir, remappedMetadataDir, operation, scriptBaseClass, classLoaderId);
-        } finally {
-            remappedClassesCache.close();
         }
     }
 
@@ -421,21 +418,18 @@ public class FileCacheBackedScriptClassCompiler implements ScriptClassCompiler, 
 
         @Override
         public void execute(final PersistentCache remappedClassesCache) {
-            final PersistentCache cache = cacheRepository.cache("scripts/" + sourceHash + "/" + dslId + "/" + classpathHash)
+            try (PersistentCache cache = cacheRepository.cache("scripts/" + sourceHash + "/" + dslId + "/" + classpathHash)
                 .withDisplayName(dslId + " generic class cache for " + source.getDisplayName())
                 .withInitializer(new ProgressReportingInitializer(
                     progressLoggerFactory,
                     new CompileToCrossBuildCacheAction(remapped, classLoader, operation, verifier, scriptBaseClass),
                     "Compiling script into cache",
                     "Compiling " + source.getDisplayName() + " to cross build script cache"))
-                .open();
-            try {
+                .open()) {
                 final File genericClassesDir = classesDir(cache);
                 final File metadataDir = metadataDir(cache);
                 remapClasses(genericClassesDir, classesDir(remappedClassesCache), remapped);
                 copyMetadata(metadataDir, metadataDir(remappedClassesCache));
-            } finally {
-                cache.close();
             }
         }
 

@@ -18,7 +18,6 @@ package org.gradle.tooling.internal.provider.serialization;
 
 import com.google.common.collect.MapMaker;
 import com.google.common.io.ByteStreams;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.GradleException;
 import org.gradle.internal.classloader.ClassLoaderUtils;
 import org.gradle.internal.classloader.ClasspathUtil;
@@ -27,6 +26,7 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.File;
 import java.io.InputStream;
 import java.net.JarURLConnection;
@@ -100,11 +100,8 @@ public class ClasspathInferer {
                 // There are other options for solving this that may be more performant. However a class is inspected this way once and the result reused, so this approach is probably fine
                 urlConnection.setUseCaches(false);
             }
-            InputStream inputStream = urlConnection.getInputStream();
-            try {
+            try (InputStream inputStream = urlConnection.getInputStream()) {
                 reader = new ClassReader(ByteStreams.toByteArray(inputStream));
-            } finally {
-                inputStream.close();
             }
 
             char[] charBuffer = new char[reader.getMaxStringLength()];
