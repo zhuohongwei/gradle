@@ -164,7 +164,6 @@ public class BaseCrossBuildResultsStore<R extends CrossBuildPerformanceResults> 
                     executionsForName.setString(2, testName);
                     Timestamp minDate = new Timestamp(LocalDate.now().minusDays(maxDaysOld).toDate().getTime());
                     executionsForName.setTimestamp(3, minDate);
-                    executionsForName.setString(4, channel);
                     ResultSet testExecutions = executionsForName.executeQuery();
                     while (testExecutions.next()) {
                         long id = testExecutions.getLong(1);

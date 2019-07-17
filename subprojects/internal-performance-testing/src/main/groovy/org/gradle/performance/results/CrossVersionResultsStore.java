@@ -207,7 +207,6 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                         executionsForName.setString(2, testName);
                         Timestamp minDate = new Timestamp(LocalDate.now().minusDays(maxDaysOld).toDate().getTime());
                         executionsForName.setTimestamp(3, minDate);
-                        executionsForName.setString(4, channel);
 
                         testExecutions = executionsForName.executeQuery();
                         while (testExecutions.next()) {
@@ -241,7 +240,6 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                         operationsForExecution.setInt(1, mostRecentN);
                         operationsForExecution.setString(2, testName);
                         operationsForExecution.setTimestamp(3, minDate);
-                        operationsForExecution.setString(4, channel);
 
                         operations = operationsForExecution.executeQuery();
                         while (operations.next()) {
