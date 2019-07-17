@@ -157,7 +157,7 @@ public class SystemApplicationClassLoaderWorker implements Callable<Void> {
         return null;
     }
 
-    private class PrintUnrecoverableErrorToFileHandler implements Action<Throwable>, Stoppable {
+    private static class PrintUnrecoverableErrorToFileHandler implements Action<Throwable>, Stoppable {
         private final File workerDirectory;
         private PrintStream ps;
 

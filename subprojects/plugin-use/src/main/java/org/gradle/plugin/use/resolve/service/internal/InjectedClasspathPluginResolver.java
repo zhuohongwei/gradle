@@ -25,9 +25,9 @@ import org.gradle.api.internal.plugins.PluginImplementation;
 import org.gradle.api.internal.plugins.PluginInspector;
 import org.gradle.api.internal.plugins.PluginRegistry;
 import org.gradle.internal.classpath.ClassPath;
-import org.gradle.plugin.use.PluginId;
 import org.gradle.plugin.management.internal.InvalidPluginRequestException;
 import org.gradle.plugin.management.internal.PluginRequestInternal;
+import org.gradle.plugin.use.PluginId;
 import org.gradle.plugin.use.resolve.internal.PluginResolution;
 import org.gradle.plugin.use.resolve.internal.PluginResolutionResult;
 import org.gradle.plugin.use.resolve.internal.PluginResolveContext;
@@ -74,7 +74,7 @@ public class InjectedClasspathPluginResolver implements PluginResolver {
         return injectedClasspath.isEmpty();
     }
 
-    private class InjectedClasspathPluginResolution implements PluginResolution {
+    private static class InjectedClasspathPluginResolution implements PluginResolution {
         private final PluginImplementation<?> plugin;
 
         public InjectedClasspathPluginResolution(PluginImplementation<?> plugin) {

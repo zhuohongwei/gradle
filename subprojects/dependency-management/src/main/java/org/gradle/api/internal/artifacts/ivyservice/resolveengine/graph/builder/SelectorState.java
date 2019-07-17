@@ -248,7 +248,7 @@ class SelectorState implements DependencyGraphSelector, ResolvableSelectorState 
     public ComponentSelectionReasonInternal getSelectionReason() {
         return ComponentSelectionReasons.of(dependencyReasons);
     }
-     
+
     /**
      * Append selection descriptors to the supplied "reason", enhancing with any 'unmatched' or 'rejected' reasons.
      */
@@ -331,7 +331,7 @@ class SelectorState implements DependencyGraphSelector, ResolvableSelectorState 
         }
     }
 
-    private class UnmatchedVersionsReason implements Describable {
+    private static class UnmatchedVersionsReason implements Describable {
         private final Collection<String> rejectedVersions;
         private final ComponentSelectionDescriptorInternal descriptor;
 

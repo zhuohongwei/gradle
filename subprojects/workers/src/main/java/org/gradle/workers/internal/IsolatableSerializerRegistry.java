@@ -188,7 +188,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         return Thread.currentThread().getContextClassLoader().loadClass(className);
     }
 
-    private class StringValueSnapshotSerializer implements IsolatableSerializer<StringValueSnapshot> {
+    private static class StringValueSnapshotSerializer implements IsolatableSerializer<StringValueSnapshot> {
         @Override
         public void write(Encoder encoder, StringValueSnapshot value) throws Exception {
             encoder.writeByte(STRING_VALUE);
@@ -206,7 +206,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class BooleanValueSnapshotSerializer implements IsolatableSerializer<BooleanValueSnapshot> {
+    private static class BooleanValueSnapshotSerializer implements IsolatableSerializer<BooleanValueSnapshot> {
         @Override
         public void write(Encoder encoder, BooleanValueSnapshot value) throws Exception {
             encoder.writeByte(BOOLEAN_VALUE);
@@ -224,7 +224,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class ShortValueSnapshotSerializer implements IsolatableSerializer<ShortValueSnapshot> {
+    private static class ShortValueSnapshotSerializer implements IsolatableSerializer<ShortValueSnapshot> {
         @Override
         public void write(Encoder encoder, ShortValueSnapshot value) throws Exception {
             encoder.writeByte(SHORT_VALUE);
@@ -242,7 +242,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class IntegerValueSnapshotSerializer implements IsolatableSerializer<IntegerValueSnapshot> {
+    private static class IntegerValueSnapshotSerializer implements IsolatableSerializer<IntegerValueSnapshot> {
         @Override
         public void write(Encoder encoder, IntegerValueSnapshot value) throws Exception {
             encoder.writeByte(INTEGER_VALUE);
@@ -260,7 +260,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class LongValueSnapshotSerializer implements IsolatableSerializer<LongValueSnapshot> {
+    private static class LongValueSnapshotSerializer implements IsolatableSerializer<LongValueSnapshot> {
         @Override
         public void write(Encoder encoder, LongValueSnapshot value) throws Exception {
             encoder.writeByte(LONG_VALUE);
@@ -353,7 +353,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class FileValueSnapshotSerializer implements IsolatableSerializer<FileValueSnapshot> {
+    private static class FileValueSnapshotSerializer implements IsolatableSerializer<FileValueSnapshot> {
         @Override
         public void write(Encoder encoder, FileValueSnapshot value) throws Exception {
             encoder.writeByte(FILE_VALUE);
@@ -401,7 +401,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry {
         }
     }
 
-    private class NullValueSnapshotSerializer implements IsolatableSerializer<NullValueSnapshot> {
+    private static class NullValueSnapshotSerializer implements IsolatableSerializer<NullValueSnapshot> {
         @Override
         public void write(Encoder encoder, NullValueSnapshot value) throws Exception {
             encoder.writeByte(NULL_VALUE);

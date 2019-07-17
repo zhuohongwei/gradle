@@ -73,7 +73,7 @@ public class BuildOperationBackedScriptCompilationHandler implements ScriptCompi
         return delegate.loadFromDir(source, sourceHashCode, classLoader, scriptCacheDir, metadataCacheDir, transformer, scriptBaseClass, classLoaderId);
     }
 
-    private class Details implements CompileScriptBuildOperationType.Details {
+    private static class Details implements CompileScriptBuildOperationType.Details {
 
         private final String stage;
 
