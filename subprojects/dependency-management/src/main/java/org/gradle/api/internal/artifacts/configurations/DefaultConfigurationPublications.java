@@ -57,7 +57,6 @@ public class DefaultConfigurationPublications implements ConfigurationPublicatio
     private final ImmutableAttributesFactory attributesFactory;
     private final DomainObjectCollectionFactory domainObjectCollectionFactory;
     private NamedDomainObjectContainer<ConfigurationVariant> variants;
-    private ConfigurationVariantFactory variantFactory;
     private List<Capability> capabilities;
     private boolean canCreate = true;
 
@@ -153,7 +152,7 @@ public class DefaultConfigurationPublications implements ConfigurationPublicatio
     public NamedDomainObjectContainer<ConfigurationVariant> getVariants() {
         if (variants == null) {
             // Create variants container only as required
-            variantFactory = new ConfigurationVariantFactory();
+            ConfigurationVariantFactory variantFactory = new ConfigurationVariantFactory();
             variants = domainObjectCollectionFactory.newNamedDomainObjectContainer(ConfigurationVariant.class, variantFactory);
         }
         return variants;

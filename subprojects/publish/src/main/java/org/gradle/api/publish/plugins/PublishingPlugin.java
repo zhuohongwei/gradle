@@ -52,8 +52,6 @@ public class PublishingPlugin implements Plugin<Project> {
     private final Instantiator instantiator;
     private final ArtifactPublicationServices publicationServices;
     private final ProjectPublicationRegistry projectPublicationRegistry;
-    private final FeaturePreviews featurePreviews;
-    private final DocumentationRegistry documentationRegistry;
     private CollectionCallbackActionDecorator collectionCallbackActionDecorator;
 
     @Inject
@@ -66,8 +64,6 @@ public class PublishingPlugin implements Plugin<Project> {
         this.publicationServices = publicationServices;
         this.instantiator = instantiator;
         this.projectPublicationRegistry = projectPublicationRegistry;
-        this.featurePreviews = featurePreviews;
-        this.documentationRegistry = documentationRegistry;
         this.collectionCallbackActionDecorator = collectionCallbackActionDecorator;
     }
 

@@ -88,20 +88,15 @@ public class SymbolHider {
     }
 
     private static class SymbolRecord {
-        private int storageClass;
         private byte[] name;
-        private int value;
-        private int sectionNumber;
-        private int type;
-        private int numberOfAuxSymbols;
 
         public SymbolRecord(DataReader data) {
             name = data.readBytes(8);
-            value = data.readDoubleWord();
-            sectionNumber = data.readWord();
-            type = data.readWord();
-            storageClass = data.readByte();
-            numberOfAuxSymbols = data.readByte();
+            int value = data.readDoubleWord();
+            int sectionNumber = data.readWord();
+            int type = data.readWord();
+            int storageClass = data.readByte();
+            int numberOfAuxSymbols = data.readByte();
         }
 
         public String getName() {

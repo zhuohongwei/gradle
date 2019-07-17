@@ -120,13 +120,11 @@ public class InMemoryCacheDecoratorFactory {
     }
 
     private static class CacheDetails {
-        private final String cacheId;
         private final int maxEntries;
         private final Cache<Object, Object> entries;
         private final AtomicReference<FileLock.State> lockState;
 
         CacheDetails(String cacheId, int maxEntries, Cache<Object, Object> entries, AtomicReference<FileLock.State> lockState) {
-            this.cacheId = cacheId;
             this.maxEntries = maxEntries;
             this.entries = entries;
             this.lockState = lockState;

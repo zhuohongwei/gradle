@@ -23,11 +23,9 @@ import java.util.List;
 
 public class ClassDocSuperTypeBuilder {
     private final DslDocModel model;
-    private final GenerationListener listener;
 
     public ClassDocSuperTypeBuilder(DslDocModel model, GenerationListener listener) {
         this.model = model;
-        this.listener = listener;
     }
 
     /**

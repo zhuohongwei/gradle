@@ -495,7 +495,6 @@ public class IvyXmlModuleDescriptorParser extends AbstractModuleDescriptorParser
         private String conf;
         private boolean artifactsDeclared;
         private StringBuffer buffer;
-        private String descriptorVersion;
         private String[] publicationsDefaultConf;
         private boolean hasGradleMetadataRedirect;
         final Map<String, String> properties;
@@ -1048,7 +1047,7 @@ public class IvyXmlModuleDescriptorParser extends AbstractModuleDescriptorParser
         }
 
         private void ivyModuleStarted(Attributes attributes) throws SAXException {
-            descriptorVersion = attributes.getValue("version");
+            String descriptorVersion = attributes.getValue("version");
             int versionIndex = ALLOWED_VERSIONS.indexOf(descriptorVersion);
             if (versionIndex == -1) {
                 addError("invalid version " + descriptorVersion);

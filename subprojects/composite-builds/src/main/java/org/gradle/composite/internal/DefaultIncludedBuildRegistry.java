@@ -48,7 +48,6 @@ import java.util.Set;
 
 public class DefaultIncludedBuildRegistry implements BuildStateRegistry, Stoppable {
     private final IncludedBuildFactory includedBuildFactory;
-    private final ProjectStateRegistry projectRegistry;
     private final IncludedBuildDependencySubstitutionsBuilder dependencySubstitutionsBuilder;
     private final GradleLauncherFactory gradleLauncherFactory;
     private final ListenerManager listenerManager;
@@ -62,7 +61,6 @@ public class DefaultIncludedBuildRegistry implements BuildStateRegistry, Stoppab
 
     public DefaultIncludedBuildRegistry(IncludedBuildFactory includedBuildFactory, ProjectStateRegistry projectRegistry, IncludedBuildDependencySubstitutionsBuilder dependencySubstitutionsBuilder, GradleLauncherFactory gradleLauncherFactory, ListenerManager listenerManager, BuildTreeScopeServices rootServices) {
         this.includedBuildFactory = includedBuildFactory;
-        this.projectRegistry = projectRegistry;
         this.dependencySubstitutionsBuilder = dependencySubstitutionsBuilder;
         this.gradleLauncherFactory = gradleLauncherFactory;
         this.listenerManager = listenerManager;

@@ -669,12 +669,10 @@ public class AvailableToolChains {
 
     public static class InstalledSwiftc extends InstalledToolChain {
         private final File binDir;
-        private final VersionNumber compilerVersion;
 
         public InstalledSwiftc(File binDir, VersionNumber compilerVersion) {
             super(ToolFamily.SWIFTC, compilerVersion);
             this.binDir = binDir;
-            this.compilerVersion = compilerVersion;
         }
 
         public File tool(String name) {

@@ -31,7 +31,6 @@ public class ResourceOperation {
     private final ProgressLogger progressLogger;
     private final Type operationType;
     private final String contentLengthString;
-    private final String resourceName;
 
     private long loggedKBytes;
     private long totalProcessedBytes;
@@ -40,7 +39,6 @@ public class ResourceOperation {
         this.progressLogger = progressLogger;
         this.operationType = type;
         this.contentLengthString = getLengthText(contentLength != 0 ? contentLength : null);
-        this.resourceName = resourceName;
     }
 
     private String getLengthText(Long bytes) {

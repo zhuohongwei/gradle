@@ -32,10 +32,9 @@ public abstract class PerformanceTestResult {
     private List<String> previousTestIds;
     private String versionUnderTest;
     private String channel;
-    private Throwable whereAmI;
 
     public PerformanceTestResult() {
-        whereAmI = new Throwable();
+        Throwable whereAmI = new Throwable();
     }
 
     /**

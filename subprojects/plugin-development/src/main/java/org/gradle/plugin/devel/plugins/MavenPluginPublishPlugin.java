@@ -37,11 +37,9 @@ import javax.inject.Inject;
 import static org.gradle.plugin.use.resolve.internal.ArtifactRepositoriesPluginResolver.PLUGIN_MARKER_SUFFIX;
 
 class MavenPluginPublishPlugin implements Plugin<Project> {
-    private final FeaturePreviews featurePreviews;
 
     @Inject
     MavenPluginPublishPlugin(FeaturePreviews featurePreviews) {
-        this.featurePreviews = featurePreviews;
     }
 
     @Override

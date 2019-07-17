@@ -33,14 +33,12 @@ public class BuildDependenciesOnlyVisitedArtifactSet implements VisitedArtifactS
     private final Set<UnresolvedDependency> unresolvedDependencies;
     private final VisitedArtifactsResults artifactsResults;
     private final ArtifactTransforms artifactTransforms;
-    private final ResolvableDependencies resolvableDependencies;
     private final ExtraExecutionGraphDependenciesResolverFactory resolverFactory;
 
     public BuildDependenciesOnlyVisitedArtifactSet(Set<UnresolvedDependency> unresolvedDependencies, VisitedArtifactsResults artifactsResults, ArtifactTransforms artifactTransforms, ResolvableDependencies resolvableDependencies, ExtraExecutionGraphDependenciesResolverFactory resolverFactory) {
         this.unresolvedDependencies = unresolvedDependencies;
         this.artifactsResults = artifactsResults;
         this.artifactTransforms = artifactTransforms;
-        this.resolvableDependencies = resolvableDependencies;
         this.resolverFactory = resolverFactory;
     }
 

@@ -40,11 +40,9 @@ import javax.inject.Inject;
 import static org.gradle.plugin.use.resolve.internal.ArtifactRepositoriesPluginResolver.PLUGIN_MARKER_SUFFIX;
 
 class IvyPluginPublishingPlugin implements Plugin<Project> {
-    private final FeaturePreviews featurePreviews;
 
     @Inject
     IvyPluginPublishingPlugin(FeaturePreviews featurePreviews) {
-        this.featurePreviews = featurePreviews;
     }
 
     @Override

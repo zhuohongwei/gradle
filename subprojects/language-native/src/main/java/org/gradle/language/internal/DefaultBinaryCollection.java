@@ -43,7 +43,6 @@ public class DefaultBinaryCollection<T extends SoftwareComponent> implements Bin
     }
 
     private final Class<T> elementType;
-    private final ProviderFactory providerFactory;
     private final Set<T> elements = new LinkedHashSet<T>();
     private List<SingleElementProvider<?>> pending = new LinkedList<SingleElementProvider<?>>();
     private State state = State.Collecting;
@@ -54,7 +53,6 @@ public class DefaultBinaryCollection<T extends SoftwareComponent> implements Bin
     @Inject
     public DefaultBinaryCollection(Class<T> elementType, ProviderFactory providerFactory) {
         this.elementType = elementType;
-        this.providerFactory = providerFactory;
     }
 
     @Override

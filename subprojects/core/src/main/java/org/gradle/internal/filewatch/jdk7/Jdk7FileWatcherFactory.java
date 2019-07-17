@@ -33,11 +33,9 @@ import java.util.concurrent.ExecutorService;
 public class Jdk7FileWatcherFactory implements FileWatcherFactory {
 
     private final ListeningExecutorService executor;
-    private final FileSystem fileSystem;
 
     public Jdk7FileWatcherFactory(ExecutorService executor, FileSystem fileSystem) {
         this.executor = MoreExecutors.listeningDecorator(executor);
-        this.fileSystem = fileSystem;
     }
 
     @Override

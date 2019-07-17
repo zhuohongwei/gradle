@@ -86,7 +86,6 @@ public class DependencyGraphBuilder {
     private final AttributesSchemaInternal attributesSchema;
     private final ModuleExclusions moduleExclusions;
     private final BuildOperationExecutor buildOperationExecutor;
-    private final ModuleReplacementsData moduleReplacementsData;
     private final ComponentSelectorConverter componentSelectorConverter;
     private final DependencySubstitutionApplicator dependencySubstitutionApplicator;
     private final ImmutableAttributesFactory attributesFactory;
@@ -119,7 +118,6 @@ public class DependencyGraphBuilder {
         this.attributesSchema = attributesSchema;
         this.moduleExclusions = moduleExclusions;
         this.buildOperationExecutor = buildOperationExecutor;
-        this.moduleReplacementsData = moduleReplacementsData;
         this.dependencySubstitutionApplicator = dependencySubstitutionApplicator;
         this.componentSelectorConverter = componentSelectorConverter;
         this.attributesFactory = attributesFactory;

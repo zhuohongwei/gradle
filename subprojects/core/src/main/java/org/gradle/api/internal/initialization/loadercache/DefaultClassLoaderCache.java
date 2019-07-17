@@ -177,10 +177,8 @@ public class DefaultClassLoaderCache implements ClassLoaderCacheInternal, Stoppa
     }
 
     private static class UnmanagedClassLoaderSpec extends ClassLoaderSpec {
-        private final ClassLoader loader;
 
         public UnmanagedClassLoaderSpec(ClassLoader loader) {
-            this.loader = loader;
         }
     }
 

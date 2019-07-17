@@ -23,7 +23,6 @@ public class ExternalDependency extends Dependency {
     private final String module;
     private final String version;
     private final String classifier;
-    private final Collection<String> excludedModules;
 
     public ExternalDependency(String configuration, String group, String module, String version, String classifier, Collection<String> excludedModules) {
         super(configuration);
@@ -31,7 +30,6 @@ public class ExternalDependency extends Dependency {
         this.module = module;
         this.version = version;
         this.classifier = classifier;
-        this.excludedModules = excludedModules;
     }
 
     public String getGroupId() {

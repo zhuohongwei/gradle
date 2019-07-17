@@ -49,7 +49,6 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
     private final DefaultWorkerProcessBuilder workerProcessBuilder;
     private Action<WorkerProcess> onFailure = Actions.doNothing();
     private RequestArgumentSerializers argumentSerializers = new RequestArgumentSerializers();
-    private final ClassPath implementationClasspath;
 
     static {
         try {
@@ -64,7 +63,7 @@ class DefaultMultiRequestWorkerProcessBuilder<WORKER> implements MultiRequestWor
         this.workerType = workerType;
         this.workerImplementation = workerImplementation;
         this.workerProcessBuilder = workerProcessBuilder;
-        this.implementationClasspath = ClasspathUtil.getClasspath(workerImplementation.getClassLoader());
+        ClassPath implementationClasspath = ClasspathUtil.getClasspath(workerImplementation.getClassLoader());
         workerProcessBuilder.worker(new WorkerAction(workerImplementation));
         workerProcessBuilder.setImplementationClasspath(implementationClasspath.getAsURLs());
     }

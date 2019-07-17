@@ -62,7 +62,6 @@ import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionS
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.LocalComponentMetadataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.moduleconverter.dependencies.LocalConfigurationMetadataBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.ResolvedArtifactSet;
-import org.gradle.api.internal.attributes.AttributeDesugaring;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.AttributeContainerSerializer;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.store.ResolutionResultsStoreFactory;
 import org.gradle.api.internal.artifacts.mvnsettings.LocalMavenRepositoryLocator;
@@ -92,6 +91,7 @@ import org.gradle.api.internal.artifacts.transform.TransformationRegistrationFac
 import org.gradle.api.internal.artifacts.transform.TransformerInvoker;
 import org.gradle.api.internal.artifacts.type.ArtifactTypeRegistry;
 import org.gradle.api.internal.artifacts.type.DefaultArtifactTypeRegistry;
+import org.gradle.api.internal.attributes.AttributeDesugaring;
 import org.gradle.api.internal.attributes.AttributesSchemaInternal;
 import org.gradle.api.internal.attributes.DefaultAttributesSchema;
 import org.gradle.api.internal.attributes.ImmutableAttributesFactory;
@@ -638,11 +638,9 @@ public class DefaultDependencyManagementServices implements DependencyManagement
     private static class DefaultDependencyResolutionServices implements DependencyResolutionServices {
 
         private final ServiceRegistry services;
-        private final DomainObjectContext domainObjectContext;
 
         private DefaultDependencyResolutionServices(ServiceRegistry services, DomainObjectContext domainObjectContext) {
             this.services = services;
-            this.domainObjectContext = domainObjectContext;
         }
 
         @Override

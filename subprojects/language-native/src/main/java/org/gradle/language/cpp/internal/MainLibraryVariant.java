@@ -33,7 +33,6 @@ import java.util.Set;
 
 public class MainLibraryVariant implements ComponentWithVariants, SoftwareComponentInternal {
     private final String name;
-    private final Usage usage;
     private final Set<PublishArtifact> artifacts = new LinkedHashSet<PublishArtifact>();
     private final Configuration dependencies;
     private final DomainObjectSet<SoftwareComponent> variants;
@@ -41,7 +40,6 @@ public class MainLibraryVariant implements ComponentWithVariants, SoftwareCompon
 
     public MainLibraryVariant(String name, Usage usage, Configuration dependencies, AttributeContainer attributeContainer, ObjectFactory objectFactory) {
         this.name = name;
-        this.usage = usage;
         this.dependencies = dependencies;
         this.attributeContainer = attributeContainer;
         this.variants = objectFactory.domainObjectSet(SoftwareComponent.class);
