@@ -15,7 +15,6 @@
  */
 package org.gradle.plugins.ide.eclipse.internal;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Sets;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -35,12 +34,7 @@ public class LinkedResourcesCreator {
         SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets();
         EclipseClasspath classpath = project.getExtensions().getByType(EclipseModel.class).getClasspath();
         File defaultOutputDir = classpath == null ? project.file(EclipsePluginConstants.DEFAULT_PROJECT_OUTPUT_PATH) : classpath.getDefaultOutputDir();
-        List<SourceFolder> sourceFolders = new SourceFoldersCreator().getBasicExternalSourceFolders(sourceSets, new Function<File, String>() {
-            @Override
-            public String apply(File dir) {
-                return project.relativePath(dir);
-            }
-        }, defaultOutputDir);
+        List<SourceFolder> sourceFolders = new SourceFoldersCreator().getBasicExternalSourceFolders(sourceSets, dir -> project.relativePath(dir), defaultOutputDir);
         Set<Link> links = Sets.newLinkedHashSetWithExpectedSize(sourceFolders.size());
         for (SourceFolder sourceFolder : sourceFolders) {
             links.add(new Link(sourceFolder.getName(), "2", sourceFolder.getAbsolutePath(), null));

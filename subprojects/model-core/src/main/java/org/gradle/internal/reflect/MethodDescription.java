@@ -16,7 +16,6 @@
 
 package org.gradle.internal.reflect;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import org.gradle.internal.Cast;
@@ -92,12 +91,7 @@ public class MethodDescription {
     }
 
     public MethodDescription takes(Type[] parameterTypes) {
-        this.parameterTypes = Iterables.transform(Arrays.asList(parameterTypes), new Function<Type, String>() {
-            @Override
-            public String apply(Type input) {
-                return typeName(input);
-            }
-        });
+        this.parameterTypes = Iterables.transform(Arrays.asList(parameterTypes), input -> typeName(input));
         return this;
     }
 

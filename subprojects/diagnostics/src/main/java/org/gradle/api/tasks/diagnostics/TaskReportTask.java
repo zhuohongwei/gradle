@@ -31,7 +31,6 @@ import org.gradle.api.tasks.diagnostics.internal.TaskDetails;
 import org.gradle.api.tasks.diagnostics.internal.TaskDetailsFactory;
 import org.gradle.api.tasks.diagnostics.internal.TaskReportRenderer;
 import org.gradle.api.tasks.options.Option;
-import org.gradle.internal.Factory;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -128,13 +127,10 @@ public class TaskReportTask extends AbstractReportTask {
 
     private SingleProjectTaskReportModel buildTaskReportModelFor(final TaskDetailsFactory taskDetailsFactory, final Project subproject) {
         ProjectState projectState = getProjectStateRegistry().stateFor(subproject);
-        return projectState.withMutableState(new Factory<SingleProjectTaskReportModel>() {
-            @Override
-            public SingleProjectTaskReportModel create() {
-                SingleProjectTaskReportModel subprojectTaskModel = new SingleProjectTaskReportModel(taskDetailsFactory);
-                subprojectTaskModel.build(getProjectTaskLister().listProjectTasks(subproject));
-                return subprojectTaskModel;
-            }
+        return projectState.withMutableState(() -> {
+            SingleProjectTaskReportModel subprojectTaskModel = new SingleProjectTaskReportModel(taskDetailsFactory);
+            subprojectTaskModel.build(getProjectTaskLister().listProjectTasks(subproject));
+            return subprojectTaskModel;
         });
     }
 

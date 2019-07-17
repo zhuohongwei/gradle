@@ -17,12 +17,9 @@ package org.gradle.nativeplatform.tasks;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
-import org.gradle.api.Transformer;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
@@ -75,15 +72,12 @@ public abstract class AbstractLinkTask extends DefaultTask implements ObjectFile
         this.source = getProject().files();
         this.linkedFile = objectFactory.fileProperty();
         this.destinationDirectory = objectFactory.directoryProperty();
-        destinationDirectory.set(linkedFile.map(new Transformer<Directory, RegularFile>() {
-            @Override
-            public Directory transform(RegularFile regularFile) {
-                // TODO: Get rid of destinationDirectory entirely and replace it with a
-                // collection of link outputs
-                DirectoryProperty dirProp = objectFactory.directoryProperty();
-                dirProp.set(regularFile.getAsFile().getParentFile());
-                return dirProp.get();
-            }
+        destinationDirectory.set(linkedFile.map(regularFile -> {
+            // TODO: Get rid of destinationDirectory entirely and replace it with a
+            // collection of link outputs
+            DirectoryProperty dirProp = objectFactory.directoryProperty();
+            dirProp.set(regularFile.getAsFile().getParentFile());
+            return dirProp.get();
         }));
         this.linkerArgs = getProject().getObjects().listProperty(String.class);
         this.debuggable = objectFactory.property(Boolean.class).value(false);

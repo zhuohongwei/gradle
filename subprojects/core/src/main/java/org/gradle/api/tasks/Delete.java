@@ -16,7 +16,6 @@
 
 package org.gradle.api.tasks;
 
-import org.gradle.api.Action;
 import org.gradle.api.file.DeleteSpec;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
@@ -75,12 +74,7 @@ public class Delete extends ConventionTask implements DeleteSpec {
         Deleter deleter = new Deleter(getFileResolver(), getFileSystem(), getClock());
         final boolean innerFollowSymLinks = followSymlinks;
         final Object[] paths = delete.toArray();
-        setDidWork(deleter.delete(new Action<DeleteSpec>(){
-            @Override
-            public void execute(DeleteSpec deleteSpec) {
-                deleteSpec.delete(paths).setFollowSymlinks(innerFollowSymLinks);
-            }
-        }).getDidWork());
+        setDidWork(deleter.delete(deleteSpec -> deleteSpec.delete(paths).setFollowSymlinks(innerFollowSymLinks)).getDidWork());
     }
 
     /**

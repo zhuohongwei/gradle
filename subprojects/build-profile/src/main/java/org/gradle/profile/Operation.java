@@ -32,17 +32,14 @@ public abstract class Operation {
      * @return comparator that compares operations, slowest first, then alphabetically
      */
     public static Comparator<? super Operation> slowestFirst() {
-        return new Comparator<Operation>() {
-            @Override
-            public int compare(Operation o1, Operation o2) {
-                long byElapsedTime = o2.getElapsedTime() - o1.getElapsedTime();
-                if (byElapsedTime > 0) {
-                    return 1;
-                } else if (byElapsedTime < 0) {
-                    return -1;
-                }
-                return o1.getDescription().compareTo(o2.getDescription());
+        return (Comparator<Operation>) (o1, o2) -> {
+            long byElapsedTime = o2.getElapsedTime() - o1.getElapsedTime();
+            if (byElapsedTime > 0) {
+                return 1;
+            } else if (byElapsedTime < 0) {
+                return -1;
             }
+            return o1.getDescription().compareTo(o2.getDescription());
         };
     }
 }

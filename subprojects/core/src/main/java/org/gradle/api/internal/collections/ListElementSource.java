@@ -28,12 +28,7 @@ import java.util.NoSuchElementException;
 
 public class ListElementSource<T> extends AbstractIterationOrderRetainingElementSource<T> implements IndexedElementSource<T> {
 
-    private final Spec<ValuePointer<T>> alwaysAccept = new Spec<ValuePointer<T>>() {
-        @Override
-        public boolean isSatisfiedBy(ValuePointer<T> pointer) {
-            return true;
-        }
-    };
+    private final Spec<ValuePointer<T>> alwaysAccept = pointer -> true;
 
     @Override
     public Iterator<T> iterator() {

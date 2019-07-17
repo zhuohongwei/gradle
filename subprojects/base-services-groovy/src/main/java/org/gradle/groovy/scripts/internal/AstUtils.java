@@ -200,12 +200,7 @@ public abstract class AstUtils {
 
     @Nullable
     public static ScriptBlock detectScriptBlock(Statement statement, final Collection<String> names) {
-        return detectScriptBlock(statement, new Predicate<ScriptBlock>() {
-            @Override
-            public boolean apply(ScriptBlock input) {
-                return names.contains(input.getName());
-            }
-        });
+        return detectScriptBlock(statement, input -> names.contains(input.getName()));
     }
 
     public static boolean isOfType(ConstantExpression constantExpression, Class<?> type) {

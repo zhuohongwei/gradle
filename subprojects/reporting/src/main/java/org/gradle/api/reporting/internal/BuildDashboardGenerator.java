@@ -28,7 +28,6 @@ import org.gradle.util.RelativePathUtil;
 import java.io.File;
 import java.io.Writer;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Set;
 import java.util.TreeSet;
@@ -39,12 +38,7 @@ public class BuildDashboardGenerator extends ReportRenderer<Collection<Report>, 
 
     @Override
     public void render(Collection<Report> reports, final File outputFile) {
-        this.reports = new TreeSet<Report>(new Comparator<Report>() {
-            @Override
-            public int compare(Report o1, Report o2) {
-                return o1.getDisplayName().compareTo(o2.getDisplayName());
-            }
-        });
+        this.reports = new TreeSet<Report>((o1, o2) -> o1.getDisplayName().compareTo(o2.getDisplayName()));
         this.reports.addAll(reports);
         this.outputFile = outputFile;
 

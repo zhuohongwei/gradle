@@ -16,7 +16,6 @@
 
 package org.gradle.plugins.javascript.coffeescript.compile.internal.rhino;
 
-import org.gradle.api.Action;
 import org.gradle.api.internal.file.RelativeFile;
 import org.gradle.plugins.javascript.base.SourceTransformationException;
 import org.gradle.plugins.javascript.coffeescript.compile.internal.CoffeeScriptCompileDestinationCalculator;
@@ -25,18 +24,17 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 
-import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.*;
+import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.DefaultScopeOperation;
+import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.childScope;
+import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.parse;
+import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.readFile;
+import static org.gradle.plugins.javascript.rhino.worker.internal.RhinoWorkerUtils.writeFile;
 
 public class CoffeeScriptCompilerWorker implements CoffeeScriptCompilerProtocol {
 
     @Override
     public void process(SerializableCoffeeScriptCompileSpec spec) {
-        Scriptable coffeeScriptScope = parse(spec.getCoffeeScriptJs(), "UTF-8", new Action<Context>() {
-            @Override
-            public void execute(Context context) {
-                context.setOptimizationLevel(-1);
-            }
-        });
+        Scriptable coffeeScriptScope = parse(spec.getCoffeeScriptJs(), "UTF-8", context -> context.setOptimizationLevel(-1));
 
         String encoding = spec.getOptions().getEncoding();
 

@@ -16,7 +16,6 @@
 
 package org.gradle.play.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
@@ -84,23 +83,17 @@ public class PlayCoffeeScriptPlugin implements Plugin<Project> {
 
         @Finalize
         void createCoffeeScriptSourceSets(@Each PlayApplicationSpec playComponent) {
-            playComponent.getSources().create("coffeeScript", CoffeeScriptSourceSet.class, new Action<CoffeeScriptSourceSet>() {
-                @Override
-                public void execute(CoffeeScriptSourceSet coffeeScriptSourceSet) {
-                    coffeeScriptSourceSet.getSource().srcDir("app/assets");
-                    coffeeScriptSourceSet.getSource().include("**/*.coffee");
-                }
+            playComponent.getSources().create("coffeeScript", CoffeeScriptSourceSet.class, coffeeScriptSourceSet -> {
+                coffeeScriptSourceSet.getSource().srcDir("app/assets");
+                coffeeScriptSourceSet.getSource().include("**/*.coffee");
             });
         }
 
         @Mutate
         void createGeneratedJavaScriptSourceSets(@Path("binaries") ModelMap<PlayApplicationBinarySpecInternal> binaries, final ObjectFactory objectFactory) {
-            binaries.all(new Action<PlayApplicationBinarySpecInternal>() {
-                @Override
-                public void execute(PlayApplicationBinarySpecInternal playApplicationBinarySpec) {
-                    for (CoffeeScriptSourceSet coffeeScriptSourceSet : playApplicationBinarySpec.getInputs().withType(CoffeeScriptSourceSet.class)) {
-                        playApplicationBinarySpec.addGeneratedJavaScript(coffeeScriptSourceSet, objectFactory);
-                    }
+            binaries.all(playApplicationBinarySpec -> {
+                for (CoffeeScriptSourceSet coffeeScriptSourceSet : playApplicationBinarySpec.getInputs().withType(CoffeeScriptSourceSet.class)) {
+                    playApplicationBinarySpec.addGeneratedJavaScript(coffeeScriptSourceSet, objectFactory);
                 }
             });
         }

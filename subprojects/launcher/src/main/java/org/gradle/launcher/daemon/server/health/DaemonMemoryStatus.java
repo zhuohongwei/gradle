@@ -47,44 +47,29 @@ public class DaemonMemoryStatus {
     public boolean isHeapSpaceExhausted() {
         GarbageCollectionStats gcStats = stats.getHeapStats();
 
-        return exceedsThreshold(HEAP, gcStats, new Spec<GarbageCollectionStats>() {
-            @Override
-            public boolean isSatisfiedBy(GarbageCollectionStats gcStats) {
-                return heapUsageThreshold != 0
-                    && heapRateThreshold != 0
-                    && gcStats.isValid()
-                    && gcStats.getUsedPercent() >= heapUsageThreshold
-                    && gcStats.getGcRate() >= heapRateThreshold;
-            }
-        });
+        return exceedsThreshold(HEAP, gcStats, gcStats1 -> heapUsageThreshold != 0
+            && heapRateThreshold != 0
+            && gcStats1.isValid()
+            && gcStats1.getUsedPercent() >= heapUsageThreshold
+            && gcStats1.getGcRate() >= heapRateThreshold);
     }
 
     public boolean isNonHeapSpaceExhausted() {
         GarbageCollectionStats gcStats = stats.getNonHeapStats();
 
-        return exceedsThreshold(NON_HEAP, gcStats, new Spec<GarbageCollectionStats>() {
-            @Override
-            public boolean isSatisfiedBy(GarbageCollectionStats gcStats) {
-                return nonHeapUsageThreshold != 0
-                    && gcStats.isValid()
-                    && gcStats.getUsedPercent() >= nonHeapUsageThreshold;
-            }
-        });
+        return exceedsThreshold(NON_HEAP, gcStats, gcStats1 -> nonHeapUsageThreshold != 0
+            && gcStats1.isValid()
+            && gcStats1.getUsedPercent() >= nonHeapUsageThreshold);
     }
 
     public boolean isThrashing() {
         GarbageCollectionStats gcStats = stats.getHeapStats();
 
-        return exceedsThreshold(HEAP, gcStats, new Spec<GarbageCollectionStats>() {
-            @Override
-            public boolean isSatisfiedBy(GarbageCollectionStats gcStats) {
-                return heapUsageThreshold != 0
-                    && thrashingThreshold != 0
-                    && gcStats.isValid()
-                    && gcStats.getUsedPercent() >= heapUsageThreshold
-                    && gcStats.getGcRate() >= thrashingThreshold;
-            }
-        });
+        return exceedsThreshold(HEAP, gcStats, gcStats1 -> heapUsageThreshold != 0
+            && thrashingThreshold != 0
+            && gcStats1.isValid()
+            && gcStats1.getUsedPercent() >= heapUsageThreshold
+            && gcStats1.getGcRate() >= thrashingThreshold);
     }
 
     private boolean exceedsThreshold(String pool, GarbageCollectionStats gcStats, Spec<GarbageCollectionStats> spec) {

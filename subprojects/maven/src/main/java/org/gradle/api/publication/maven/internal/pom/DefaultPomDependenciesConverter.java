@@ -16,20 +16,31 @@
 package org.gradle.api.publication.maven.internal.pom;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
 import org.gradle.api.GradleException;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.ExcludeRule;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.maven.Conf2ScopeMapping;
 import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.publication.maven.internal.VersionRangeMapper;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Strings.emptyToNull;
 
@@ -132,21 +143,18 @@ class DefaultPomDependenciesConverter implements PomDependenciesConverter {
         if (dependency instanceof ProjectDependency) {
             // TODO: Combine with ProjectDependencyPublicationResolver
             final ProjectDependency projectDependency = (ProjectDependency) dependency;
-            ((ProjectInternal)projectDependency.getDependencyProject()).getMutationState().withMutableState(new Runnable() {
-                @Override
-                public void run() {
-                    String artifactId = determineProjectDependencyArtifactId(projectDependency);
+            ((ProjectInternal)projectDependency.getDependencyProject()).getMutationState().withMutableState(() -> {
+                String artifactId = determineProjectDependencyArtifactId(projectDependency);
 
-                    Configuration dependencyConfig = getTargetConfiguration(projectDependency);
+                Configuration dependencyConfig = getTargetConfiguration(projectDependency);
 
-                    for (PublishArtifact artifactToPublish : dependencyConfig.getAllArtifacts()) {
-                        Dependency mavenDependency = new Dependency();
-                        mavenDependency.setArtifactId(artifactId);
-                        if (artifactToPublish.getClassifier() != null && !artifactToPublish.getClassifier().equals("")) {
-                            mavenDependency.setClassifier(artifactToPublish.getClassifier());
-                        }
-                        mavenDependencies.add(mavenDependency);
+                for (PublishArtifact artifactToPublish : dependencyConfig.getAllArtifacts()) {
+                    Dependency mavenDependency = new Dependency();
+                    mavenDependency.setArtifactId(artifactId);
+                    if (artifactToPublish.getClassifier() != null && !artifactToPublish.getClassifier().equals("")) {
+                        mavenDependency.setClassifier(artifactToPublish.getClassifier());
                     }
+                    mavenDependencies.add(mavenDependency);
                 }
             });
         } else {
@@ -215,12 +223,7 @@ class DefaultPomDependenciesConverter implements PomDependenciesConverter {
         // Consequence is that we use the highest version and the exclusions of highest priority dependency when de-duplicating
         // Use Maven Dependency "Management Key" as discriminator: groupId:artifactId:type:classifier
         final String candidateManagementKey = candidate.getManagementKey();
-        return Iterables.tryFind(dependencies, new Predicate<Dependency>() {
-            @Override
-            public boolean apply(Dependency dependency) {
-                return dependency.getManagementKey().equals(candidateManagementKey);
-            }
-        });
+        return Iterables.tryFind(dependencies, dependency -> dependency.getManagementKey().equals(candidateManagementKey));
     }
 
     private String mapToMavenSyntax(String version) {

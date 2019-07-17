@@ -16,8 +16,6 @@
 
 package org.gradle.integtests.fixtures.logging;
 
-import org.gradle.api.specs.Spec;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,12 +51,7 @@ public class GroupedTransformationFixture {
     }
 
     public String getOutput() {
-        List<String> nonEmptyOutputs = filter(outputs, new Spec<String>() {
-            @Override
-            public boolean isSatisfiedBy(String string) {
-                return !string.equals("");
-            }
-        });
+        List<String> nonEmptyOutputs = filter(outputs, string -> !string.equals(""));
         return join("\n", nonEmptyOutputs);
     }
 

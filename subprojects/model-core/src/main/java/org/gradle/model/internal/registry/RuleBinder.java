@@ -16,11 +16,11 @@
 
 package org.gradle.model.internal.registry;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import org.gradle.api.Action;
 import org.gradle.model.internal.core.ModelAction;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,38 +41,32 @@ public class RuleBinder {
         this.action = action;
         this.inputReferences = inputReferences;
         this.binders = binders;
-        this.subjectBinding = binding(subjectReference, action.getDescriptor(), true, new Action<ModelBinding>() {
-            @Override
-            public void execute(ModelBinding modelBinding) {
-                ModelNodeInternal node = modelBinding.getNode();
-                BindingPredicate predicate = modelBinding.getPredicate();
-                if (node.isAtLeast(predicate.getState())) {
-                    throw new IllegalStateException(String.format("Cannot add rule %s for model element '%s' at state %s as this element is already at state %s.",
-                        modelBinding.referrer,
-                        node.getPath(),
-                        predicate.getState().previous(),
-                        node.getState()
-                    ));
-                }
-                maybeFire();
+        this.subjectBinding = binding(subjectReference, action.getDescriptor(), true, modelBinding -> {
+            ModelNodeInternal node = modelBinding.getNode();
+            BindingPredicate predicate = modelBinding.getPredicate();
+            if (node.isAtLeast(predicate.getState())) {
+                throw new IllegalStateException(String.format("Cannot add rule %s for model element '%s' at state %s as this element is already at state %s.",
+                    modelBinding.referrer,
+                    node.getPath(),
+                    predicate.getState().previous(),
+                    node.getState()
+                ));
             }
+            maybeFire();
         });
-        this.inputBindings = inputBindings(inputReferences, action.getDescriptor(), new Action<ModelBinding>() {
-            @Override
-            public void execute(ModelBinding modelBinding) {
-                ModelNodeInternal node = modelBinding.getNode();
-                BindingPredicate reference = modelBinding.getPredicate();
-                if (node.getState().compareTo(reference.getState()) > 0) {
-                    throw new IllegalStateException(String.format("Cannot add rule %s with input model element '%s' at state %s as this element is already at state %s.",
-                        modelBinding.referrer,
-                        node.getPath(),
-                        reference.getState(),
-                        node.getState()
-                    ));
-                }
-                ++inputsBound;
-                maybeFire();
+        this.inputBindings = inputBindings(inputReferences, action.getDescriptor(), modelBinding -> {
+            ModelNodeInternal node = modelBinding.getNode();
+            BindingPredicate reference = modelBinding.getPredicate();
+            if (node.getState().compareTo(reference.getState()) > 0) {
+                throw new IllegalStateException(String.format("Cannot add rule %s with input model element '%s' at state %s as this element is already at state %s.",
+                    modelBinding.referrer,
+                    node.getPath(),
+                    reference.getState(),
+                    node.getState()
+                ));
             }
+            ++inputsBound;
+            maybeFire();
         });
         if (!isBound()) {
             binders.add(this);

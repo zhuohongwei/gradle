@@ -27,7 +27,6 @@ import org.gradle.cache.CacheRepository;
 import org.gradle.cache.FileLockManager;
 import org.gradle.cache.PersistentCache;
 import org.gradle.cache.internal.CacheRepositoryServices;
-import org.gradle.internal.Factory;
 import org.gradle.internal.SystemProperties;
 import org.gradle.internal.jvm.Jvm;
 import org.gradle.internal.service.DefaultServiceRegistry;
@@ -68,12 +67,9 @@ public class ZincScalaCompilerFactory {
                 LOGGER.warn(ZincScalaCompilerUtil.ZINC_DIR_IGNORED_MESSAGE);
             }
 
-            compiler = SystemProperties.getInstance().withSystemProperty(ZincScalaCompilerUtil.ZINC_DIR_SYSTEM_PROPERTY, cacheDir.getAbsolutePath(), new Factory<Compiler>() {
-                @Override
-                public Compiler create() {
-                    Setup zincSetup = createZincSetup(scalaClasspath, zincClasspath, logger);
-                    return createCompiler(zincSetup, zincCache, logger);
-                }
+            compiler = SystemProperties.getInstance().withSystemProperty(ZincScalaCompilerUtil.ZINC_DIR_SYSTEM_PROPERTY, cacheDir.getAbsolutePath(), () -> {
+                Setup zincSetup = createZincSetup(scalaClasspath, zincClasspath, logger);
+                return createCompiler(zincSetup, zincCache, logger);
             });
         } finally {
             zincCache.close();
@@ -100,12 +96,7 @@ public class ZincScalaCompilerFactory {
         final String sbtInterfaceFileName = Compiler.interfaceId(instance.actualVersion()) + ".jar";
         final File compilerInterface = new File(setup.cacheDir(), sbtInterfaceFileName);
         if (compilerInterface.exists()) {
-            return zincCache.useCache(new Factory<File>() {
-                @Override
-                public File create() {
-                    return compilerInterface;
-                }
-            });
+            return zincCache.useCache(() -> compilerInterface);
         }
 
         try {
@@ -130,27 +121,19 @@ public class ZincScalaCompilerFactory {
                 LOGGER.debug(interfaceCompletedMessage);
             }
 
-            return zincCache.useCache(new Factory<File>() {
-                @Override
-                public File create() {
-                    // Another process may have already copied the compiler interface JAR
-                    // Avoid copying over same existing file to avoid locking problems
-                    if (!compilerInterface.exists()) {
-                        GFileUtils.moveFile(tempFile, compilerInterface);
-                    } else {
-                        GFileUtils.deleteQuietly(tempFile);
-                    }
-                    return compilerInterface;
+            return zincCache.useCache(() -> {
+                // Another process may have already copied the compiler interface JAR
+                // Avoid copying over same existing file to avoid locking problems
+                if (!compilerInterface.exists()) {
+                    GFileUtils.moveFile(tempFile, compilerInterface);
+                } else {
+                    GFileUtils.deleteQuietly(tempFile);
                 }
+                return compilerInterface;
             });
         } catch (IOException e) {
             // fall back to the default logic
-            return zincCache.useCache(new Factory<File>() {
-                @Override
-                public File create() {
-                    return Compiler.compilerInterface(setup, instance, logger);
-                }
-            });
+            return zincCache.useCache(() -> Compiler.compilerInterface(setup, instance, logger));
         }
     }
 

@@ -24,7 +24,12 @@ import org.gradle.internal.nativeintegration.filesystem.FileCanonicalizer;
 import org.gradle.internal.os.OperatingSystem;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class InstalledJvmLocator {
 
@@ -71,12 +76,7 @@ public class InstalledJvmLocator {
         }
 
         List<JvmInstallation> result = new ArrayList<JvmInstallation>(installs.values());
-        Collections.sort(result, new Comparator<JvmInstallation>() {
-            @Override
-            public int compare(JvmInstallation o1, JvmInstallation o2) {
-                return o2.getVersion().compareTo(o1.getVersion());
-            }
-        });
+        Collections.sort(result, (o1, o2) -> o2.getVersion().compareTo(o1.getVersion()));
         return result;
     }
 

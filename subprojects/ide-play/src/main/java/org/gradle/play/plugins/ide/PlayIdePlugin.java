@@ -16,11 +16,9 @@
 
 package org.gradle.play.plugins.ide;
 
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.AppliedPlugin;
 import org.gradle.play.plugins.ide.internal.PlayIdeaPlugin;
 import org.gradle.util.SingleMessageLogger;
 
@@ -35,12 +33,7 @@ public class PlayIdePlugin implements Plugin<Project> {
     @Override
     public void apply(final Project project) {
         SingleMessageLogger.nagUserOfPluginReplacedWithExternalOne("Play Ide", "org.gradle.playframework-ide");
-        project.getPluginManager().withPlugin("idea", new Action<AppliedPlugin>() {
-            @Override
-            public void execute(AppliedPlugin appliedPlugin) {
-                project.getPluginManager().apply(PlayIdeaPlugin.class);
-            }
-        });
+        project.getPluginManager().withPlugin("idea", appliedPlugin -> project.getPluginManager().apply(PlayIdeaPlugin.class));
         // TODO: Configure 'eclipse' projects too
     }
 }

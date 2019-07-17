@@ -34,11 +34,8 @@ public class DefaultTaskDestroyables implements TaskDestroyablesInternal {
 
     @Override
     public void register(final Object... paths) {
-        taskMutator.mutate("TaskDestroys.register(Object...)", new Runnable() {
-            @Override
-            public void run() {
-                Collections.addAll(DefaultTaskDestroyables.this.registeredPaths, paths);
-            }
+        taskMutator.mutate("TaskDestroys.register(Object...)", () -> {
+            Collections.addAll(DefaultTaskDestroyables.this.registeredPaths, paths);
         });
     }
 

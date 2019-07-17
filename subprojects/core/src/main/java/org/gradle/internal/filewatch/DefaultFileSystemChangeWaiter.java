@@ -64,39 +64,27 @@ class DefaultFileSystemChangeWaiter implements FileSystemChangeWaiter {
     }
 
     private static void signal(Lock lock, Condition condition) {
-        signal(lock, condition, new Runnable() {
-            @Override
-            public void run() {
+        signal(lock, condition, () -> {
 
-            }
         });
     }
 
     DefaultFileSystemChangeWaiter(FileWatcherFactory fileWatcherFactory, final PendingChangesListener pendingChangesListener, long quietPeriodMillis, BuildCancellationToken cancellationToken) {
         this.quietPeriodMillis = quietPeriodMillis;
         this.cancellationToken = cancellationToken;
-        this.onError = new Action<Throwable>() {
-            @Override
-            public void execute(Throwable throwable) {
-                error.set(throwable);
-                signal(lock, condition);
-            }
+        this.onError = throwable -> {
+            error.set(throwable);
+            signal(lock, condition);
         };
         watcher = fileWatcherFactory.watch(
             onError,
-            new FileWatcherListener() {
-                @Override
-                public void onChange(final FileWatcher watcher, FileWatcherEvent event) {
-                    if (!(event.getType() == FileWatcherEvent.Type.MODIFY && event.getFile().isDirectory())) {
-                        deliverEvent(event);
-                        signal(lock, condition, new Runnable() {
-                            @Override
-                            public void run() {
-                                lastChangeAt.set(monotonicClockMillis());
-                                pendingChangesListener.onPendingChanges();
-                            }
-                        });
-                    }
+            (watcher, event) -> {
+                if (!(event.getType() == FileWatcherEvent.Type.MODIFY && event.getFile().isDirectory())) {
+                    deliverEvent(event);
+                    signal(lock, condition, () -> {
+                        lastChangeAt.set(monotonicClockMillis());
+                        pendingChangesListener.onPendingChanges();
+                    });
                 }
             }
         );
@@ -116,12 +104,7 @@ class DefaultFileSystemChangeWaiter implements FileSystemChangeWaiter {
 
     @Override
     public void wait(Runnable notifier, FileWatcherEventListener eventListener) {
-        Runnable cancellationHandler = new Runnable() {
-            @Override
-            public void run() {
-                signal(lock, condition);
-            }
-        };
+        Runnable cancellationHandler = () -> signal(lock, condition);
         try {
             attachEventListener(eventListener);
             if (cancellationToken.isCancellationRequested()) {

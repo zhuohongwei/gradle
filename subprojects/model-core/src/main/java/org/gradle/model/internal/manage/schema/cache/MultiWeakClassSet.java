@@ -26,18 +26,8 @@ import java.util.List;
 
 class MultiWeakClassSet extends WeakClassSet {
 
-    private static final Function<Class<?>, WeakReference<Class<?>>> TO_WEAK_REF = new Function<Class<?>, WeakReference<Class<?>>>() {
-        @Override
-        public WeakReference<Class<?>> apply(Class<?> input) {
-            return new WeakReference<Class<?>>(input);
-        }
-    };
-    private static final Function<WeakReference<Class<?>>, Object> UNPACK_REF = new Function<WeakReference<Class<?>>, Object>() {
-        @Override
-        public Object apply(WeakReference<Class<?>> input) {
-            return input.get();
-        }
-    };
+    private static final Function<Class<?>, WeakReference<Class<?>>> TO_WEAK_REF = input -> new WeakReference<Class<?>>(input);
+    private static final Function<WeakReference<Class<?>>, Object> UNPACK_REF = input -> input.get();
 
     private final List<WeakReference<Class<?>>> references;
     private final int hash;

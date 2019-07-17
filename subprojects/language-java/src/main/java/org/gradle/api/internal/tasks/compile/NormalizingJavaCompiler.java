@@ -16,7 +16,6 @@
 package org.gradle.api.internal.tasks.compile;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.gradle.api.logging.Logger;
@@ -26,7 +25,6 @@ import org.gradle.api.tasks.WorkResults;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.util.CollectionUtils;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.util.List;
 
@@ -55,12 +53,7 @@ public class NormalizingJavaCompiler implements Compiler<JavaCompileSpec> {
     private void resolveAndFilterSourceFiles(JavaCompileSpec spec) {
         // this mimics the behavior of the Ant javac task (and therefore AntJavaCompiler),
         // which silently excludes files not ending in .java
-        Iterable<File> javaOnly = Iterables.filter(spec.getSourceFiles(), new Predicate<File>() {
-            @Override
-            public boolean apply(@Nullable File input) {
-                return hasExtension(input, ".java");
-            }
-        });
+        Iterable<File> javaOnly = Iterables.filter(spec.getSourceFiles(), input -> hasExtension(input, ".java"));
 
         spec.setSourceFiles(ImmutableSet.copyOf(javaOnly));
     }

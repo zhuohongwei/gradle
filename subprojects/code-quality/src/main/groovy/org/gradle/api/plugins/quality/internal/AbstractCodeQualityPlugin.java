@@ -15,7 +15,6 @@
  */
 package org.gradle.api.plugins.quality.internal;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Callables;
@@ -120,36 +119,18 @@ public abstract class AbstractCodeQualityPlugin<T> implements Plugin<ProjectInte
     private void configureExtensionRule() {
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("sourceSets", Callables.returning(new ArrayList()));
-        extensionMapping.map("reportsDir", new Callable<File>() {
-            @Override
-            public File call() {
-                return project.getExtensions().getByType(ReportingExtension.class).file(getReportName());
-            }
-        });
-        withBasePlugin(new Action<Plugin>() {
-            @Override
-            public void execute(Plugin plugin) {
-                extensionMapping.map("sourceSets", new Callable<SourceSetContainer>() {
-                    @Override
-                    public SourceSetContainer call() {
-                        return getJavaPluginConvention().getSourceSets();
-                    }
-                });
-            }
-        });
+        extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file(getReportName()));
+        withBasePlugin(plugin -> extensionMapping.map("sourceSets", (Callable<SourceSetContainer>) () -> getJavaPluginConvention().getSourceSets()));
     }
 
     private void configureTaskRule() {
-        project.getTasks().withType(getCastedTaskType()).configureEach(new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                String prunedName = task.getName().replaceFirst(getTaskBaseName(), "");
-                if (prunedName.isEmpty()) {
-                    prunedName = task.getName();
-                }
-                prunedName = ("" + prunedName.charAt(0)).toLowerCase() + prunedName.substring(1);
-                configureTaskDefaults((T) task, prunedName);
+        project.getTasks().withType(getCastedTaskType()).configureEach((Action<Task>) task -> {
+            String prunedName = task.getName().replaceFirst(getTaskBaseName(), "");
+            if (prunedName.isEmpty()) {
+                prunedName = task.getName();
             }
+            prunedName = ("" + prunedName.charAt(0)).toLowerCase() + prunedName.substring(1);
+            configureTaskDefaults((T) task, prunedName);
         });
     }
 
@@ -157,58 +138,23 @@ public abstract class AbstractCodeQualityPlugin<T> implements Plugin<ProjectInte
     }
 
     private void configureSourceSetRule() {
-        withBasePlugin(new Action<Plugin>() {
-            @Override
-            public void execute(Plugin plugin) {
-                configureForSourceSets(getJavaPluginConvention().getSourceSets());
-            }
-        });
+        withBasePlugin(plugin -> configureForSourceSets(getJavaPluginConvention().getSourceSets()));
     }
 
     private void configureForSourceSets(SourceSetContainer sourceSets) {
-        sourceSets.all(new Action<SourceSet>() {
-            @Override
-            public void execute(final SourceSet sourceSet) {
-                project.getTasks().register(sourceSet.getTaskName(getTaskBaseName(), null), getCastedTaskType(), new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        configureForSourceSet(sourceSet, (T)task);
-                    }
-                });
-            }
-        });
+        sourceSets.all(sourceSet -> project.getTasks().register(sourceSet.getTaskName(getTaskBaseName(), null), getCastedTaskType(), (Action<Task>) task -> configureForSourceSet(sourceSet, (T) task)));
     }
 
     protected void configureForSourceSet(SourceSet sourceSet, T task) {
     }
 
     private void configureCheckTask() {
-        withBasePlugin(new Action<Plugin>() {
-            @Override
-            public void execute(Plugin plugin) {
-                configureCheckTaskDependents();
-            }
-        });
+        withBasePlugin(plugin -> configureCheckTaskDependents());
     }
 
     private void configureCheckTaskDependents() {
         final String taskBaseName = getTaskBaseName();
-        project.getTasks().named(JavaBasePlugin.CHECK_TASK_NAME, new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.dependsOn(new Callable() {
-                    @Override
-                    public Object call() {
-                        return Iterables.transform(extension.getSourceSets(), new Function<SourceSet, String>() {
-                            @Override
-                            public String apply(SourceSet sourceSet) {
-                                return sourceSet.getTaskName(taskBaseName, null);
-                            }
-                        });
-                    }
-                });
-            }
-        });
+        project.getTasks().named(JavaBasePlugin.CHECK_TASK_NAME, task -> task.dependsOn((Callable) () -> Iterables.transform(extension.getSourceSets(), sourceSet -> sourceSet.getTaskName(taskBaseName, null))));
     }
 
     protected void withBasePlugin(Action<Plugin> action) {

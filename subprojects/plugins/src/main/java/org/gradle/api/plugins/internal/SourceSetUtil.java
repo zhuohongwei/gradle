@@ -46,65 +46,25 @@ public class SourceSetUtil {
         compile.setSource(sourceSet.getJava());
 
         ConfigurableFileCollection classpath = compile.getProject().getObjects().fileCollection();
-        classpath.from(new Callable<Object>() {
-            @Override
-            public Object call() {
-                return sourceSet.getCompileClasspath().plus(target.files(sourceSet.getJava().getOutputDir()));
-            }
-        });
+        classpath.from((Callable<Object>) () -> sourceSet.getCompileClasspath().plus(target.files(sourceSet.getJava().getOutputDir())));
 
-        compile.getConventionMapping().map("classpath", new Callable<Object>() {
-            @Override
-            public Object call() {
-                return classpath;
-            }
-        });
-        compile.setDestinationDir(target.provider(new Callable<File>() {
-            @Override
-            public File call() {
-                return sourceDirectorySet.getOutputDir();
-            }
-        }));
+        compile.getConventionMapping().map("classpath", () -> classpath);
+        compile.setDestinationDir(target.provider(() -> sourceDirectorySet.getOutputDir()));
     }
 
     public static void configureAnnotationProcessorPath(final SourceSet sourceSet, SourceDirectorySet sourceDirectorySet, CompileOptions options, final Project target) {
         final ConventionMapping conventionMapping = new DslObject(options).getConventionMapping();
-        conventionMapping.map("annotationProcessorPath", new Callable<Object>() {
-            @Override
-            public Object call() {
-                return sourceSet.getAnnotationProcessorPath();
-            }
-        });
+        conventionMapping.map("annotationProcessorPath", () -> sourceSet.getAnnotationProcessorPath());
         final String annotationProcessorGeneratedSourcesChildPath = "generated/sources/annotationProcessor/" + sourceDirectorySet.getName() + "/" + sourceSet.getName();
-        conventionMapping.map("annotationProcessorGeneratedSourcesDirectory", new Callable<Object>() {
-            @Override
-            public Object call() {
-                return new File(target.getBuildDir(), annotationProcessorGeneratedSourcesChildPath);
-            }
-        });
+        conventionMapping.map("annotationProcessorGeneratedSourcesDirectory", () -> new File(target.getBuildDir(), annotationProcessorGeneratedSourcesChildPath));
     }
 
     public static void configureOutputDirectoryForSourceSet(final SourceSet sourceSet, final SourceDirectorySet sourceDirectorySet, final Project target, Provider<? extends AbstractCompile> compileTask, Provider<CompileOptions> options) {
         final String sourceSetChildPath = "classes/" + sourceDirectorySet.getName() + "/" + sourceSet.getName();
-        sourceDirectorySet.setOutputDir(target.provider(new Callable<File>() {
-            @Override
-            public File call() {
-                return new File(target.getBuildDir(), sourceSetChildPath);
-            }
-        }));
+        sourceDirectorySet.setOutputDir(target.provider(() -> new File(target.getBuildDir(), sourceSetChildPath)));
 
         DefaultSourceSetOutput sourceSetOutput = Cast.cast(DefaultSourceSetOutput.class, sourceSet.getOutput());
-        sourceSetOutput.addClassesDir(new Callable<File>() {
-            @Override
-            public File call() {
-                return sourceDirectorySet.getOutputDir();
-            }
-        });
-        sourceSetOutput.getGeneratedSourcesDirs().from(options.map(new Transformer<Object, CompileOptions>() {
-            @Override
-            public Object transform(CompileOptions compileOptions) {
-                return compileOptions.getAnnotationProcessorGeneratedSourcesDirectory();
-            }
-        })).builtBy(compileTask);
+        sourceSetOutput.addClassesDir(() -> sourceDirectorySet.getOutputDir());
+        sourceSetOutput.getGeneratedSourcesDirs().from(options.map((Transformer<Object, CompileOptions>) compileOptions -> compileOptions.getAnnotationProcessorGeneratedSourcesDirectory())).builtBy(compileTask);
     }
 }

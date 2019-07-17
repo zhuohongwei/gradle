@@ -19,7 +19,6 @@ package org.gradle.api.reporting.dependencies.internal;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import groovy.json.JsonBuilder;
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.Configuration;
@@ -146,17 +145,13 @@ public class JsonProjectDependencyRenderer {
 
     private List<Map> createConfigurations(Project project) {
         Iterable<Configuration> configurations = project.getConfigurations();
-        return CollectionUtils.collect(configurations, new Transformer<Map, Configuration>() {
-            @Override
-            public Map transform(Configuration configuration) {
-                LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(4);
-                map.put("name", configuration.getName());
-                map.put("description", configuration.getDescription());
-                map.put("dependencies", createDependencies(configuration));
-                map.put("moduleInsights", createModuleInsights(configuration));
-                return map;
-            }
-
+        return CollectionUtils.collect(configurations, configuration -> {
+            LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(4);
+            map.put("name", configuration.getName());
+            map.put("description", configuration.getDescription());
+            map.put("dependencies", createDependencies(configuration));
+            map.put("moduleInsights", createModuleInsights(configuration));
+            return map;
         });
     }
 
@@ -172,26 +167,23 @@ public class JsonProjectDependencyRenderer {
 
     private List createDependencyChildren(RenderableDependency dependency, final Set<Object> visited) {
         Iterable<? extends RenderableDependency> children = dependency.getChildren();
-        return CollectionUtils.collect(children, new Transformer<Map, RenderableDependency>() {
-            @Override
-            public Map transform(RenderableDependency childDependency) {
-                boolean alreadyVisited = !visited.add(childDependency.getId());
-                boolean alreadyRendered = alreadyVisited && !childDependency.getChildren().isEmpty();
-                String name = replaceArrow(childDependency.getName());
-                boolean hasConflict = !name.equals(childDependency.getName());
-                LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(6);
-                ModuleIdentifier moduleIdentifier = getModuleIdentifier(childDependency);
-                map.put("module", moduleIdentifier == null ? null : moduleIdentifier.toString());
-                map.put("name", name);
-                map.put("resolvable", childDependency.getResolutionState());
-                map.put("hasConflict", hasConflict);
-                map.put("alreadyRendered", alreadyRendered);
-                map.put("children", Collections.emptyList());
-                if (!alreadyRendered) {
-                    map.put("children", createDependencyChildren(childDependency, visited));
-                }
-                return map;
+        return CollectionUtils.collect(children, (Transformer<Map, RenderableDependency>) childDependency -> {
+            boolean alreadyVisited = !visited.add(childDependency.getId());
+            boolean alreadyRendered = alreadyVisited && !childDependency.getChildren().isEmpty();
+            String name = replaceArrow(childDependency.getName());
+            boolean hasConflict = !name.equals(childDependency.getName());
+            LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(6);
+            ModuleIdentifier moduleIdentifier = getModuleIdentifier(childDependency);
+            map.put("module", moduleIdentifier == null ? null : moduleIdentifier.toString());
+            map.put("name", name);
+            map.put("resolvable", childDependency.getResolutionState());
+            map.put("hasConflict", hasConflict);
+            map.put("alreadyRendered", alreadyRendered);
+            map.put("children", Collections.emptyList());
+            if (!alreadyRendered) {
+                map.put("children", createDependencyChildren(childDependency, visited));
             }
+            return map;
         });
     }
 
@@ -205,12 +197,7 @@ public class JsonProjectDependencyRenderer {
 
     private List createModuleInsights(final Configuration configuration) {
         Iterable<ModuleIdentifier> modules = collectModules(configuration);
-        return CollectionUtils.collect(modules, new Transformer<Object, ModuleIdentifier>() {
-            @Override
-            public Object transform(ModuleIdentifier moduleIdentifier) {
-                return createModuleInsight(moduleIdentifier, configuration);
-            }
-        });
+        return CollectionUtils.collect(modules, (Transformer<Object, ModuleIdentifier>) moduleIdentifier -> createModuleInsight(moduleIdentifier, configuration));
     }
 
     private Set<ModuleIdentifier> collectModules(Configuration configuration) {
@@ -254,55 +241,46 @@ public class JsonProjectDependencyRenderer {
         ResolutionResult result = configuration.getIncoming().getResolutionResult();
         final Set<DependencyResult> selectedDependencies = new LinkedHashSet<DependencyResult>();
 
-        result.allDependencies(new Action<DependencyResult>() {
-            @Override
-            public void execute(DependencyResult it) {
-                if (dependencySpec.isSatisfiedBy(it)) {
-                    selectedDependencies.add(it);
-                }
+        result.allDependencies(it -> {
+            if (dependencySpec.isSatisfiedBy(it)) {
+                selectedDependencies.add(it);
             }
         });
 
         Collection<RenderableDependency> sortedDeps = new DependencyInsightReporter(versionSelectorScheme, versionComparator, versionParser).convertToRenderableItems(selectedDependencies, false);
-        return CollectionUtils.collect(sortedDeps, new Transformer<Object, RenderableDependency>() {
-            @Override
-            public Object transform(RenderableDependency dependency) {
-                String name = replaceArrow(dependency.getName());
-                LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(5);
-                map.put("name", replaceArrow(dependency.getName()));
-                map.put("description", dependency.getDescription());
-                map.put("resolvable", dependency.getResolutionState());
-                map.put("hasConflict", !name.equals(dependency.getName()));
-                map.put("children", createInsightDependencyChildren(dependency, new HashSet<Object>(), configuration));
-                return map;
-            }
+        return CollectionUtils.collect(sortedDeps, (Transformer<Object, RenderableDependency>) dependency -> {
+            String name = replaceArrow(dependency.getName());
+            LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(5);
+            map.put("name", replaceArrow(dependency.getName()));
+            map.put("description", dependency.getDescription());
+            map.put("resolvable", dependency.getResolutionState());
+            map.put("hasConflict", !name.equals(dependency.getName()));
+            map.put("children", createInsightDependencyChildren(dependency, new HashSet<Object>(), configuration));
+            return map;
         });
     }
 
     private List createInsightDependencyChildren(RenderableDependency dependency, final Set<Object> visited, final Configuration configuration) {
         Iterable<? extends RenderableDependency> children = dependency.getChildren();
-        return CollectionUtils.collect(children, new Transformer<Object, RenderableDependency>() {
-            @Override
-            public Object transform(RenderableDependency childDependency) {
-                boolean alreadyVisited = !visited.add(childDependency.getId());
-                boolean leaf = childDependency.getChildren().isEmpty();
-                boolean alreadyRendered = alreadyVisited && !leaf;
-                String childName = replaceArrow(childDependency.getName());
-                boolean hasConflict = !childName.equals(childDependency.getName());
-                String name = leaf ? configuration.getName() : childName;
+        return CollectionUtils.collect(children, (Transformer<Object, RenderableDependency>) childDependency -> {
+            boolean alreadyVisited = !visited.add(childDependency.getId());
+            boolean leaf = childDependency.getChildren().isEmpty();
+            boolean alreadyRendered = alreadyVisited && !leaf;
+            String childName = replaceArrow(childDependency.getName());
+            boolean hasConflict = !childName.equals(childDependency.getName());
+            String name = leaf ? configuration.getName() : childName;
 
-                LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(6);
-                map.put("name", name);
-                map.put("resolvable", childDependency.getResolutionState());
-                map.put("hasConflict", hasConflict);
-                map.put("alreadyRendered", alreadyRendered);
-                map.put("isLeaf", leaf);
-                map.put("children", Collections.emptyList());
-                if (!alreadyRendered) {
-                    map.put("children", createInsightDependencyChildren(childDependency, visited, configuration));
-                }
-                return map;
+            LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(6);
+            map.put("name", name);
+            map.put("resolvable", childDependency.getResolutionState());
+            map.put("hasConflict", hasConflict);
+            map.put("alreadyRendered", alreadyRendered);
+            map.put("isLeaf", leaf);
+            map.put("children", Collections.emptyList());
+            if (!alreadyRendered) {
+                map.put("children", createInsightDependencyChildren(childDependency, visited, configuration));
             }
+            return map;
         });
     }
 

@@ -106,12 +106,7 @@ class LockOnDemandCrossProcessCacheAccess extends AbstractCrossProcessCacheAcces
                 fileLock = lockManager.lock(lockTarget, lockOptions, cacheDisplayName, "", whenContended);
                 try {
                     if (initAction.requiresInitialization(fileLock)) {
-                        fileLock.writeFile(new Runnable() {
-                            @Override
-                            public void run() {
-                                initAction.initialize(fileLock);
-                            }
-                        });
+                        fileLock.writeFile(() -> initAction.initialize(fileLock));
                     }
                     onOpen.execute(fileLock);
                 } catch (Exception e) {

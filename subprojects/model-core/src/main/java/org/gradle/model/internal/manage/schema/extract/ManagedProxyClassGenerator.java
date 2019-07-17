@@ -17,7 +17,6 @@
 package org.gradle.model.internal.manage.schema.extract;
 
 import com.google.common.base.Equivalence.Wrapper;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -30,7 +29,6 @@ import groovy.lang.MissingPropertyException;
 import groovy.lang.ReadOnlyPropertyException;
 import org.apache.commons.lang.StringUtils;
 import org.gradle.internal.Cast;
-import org.gradle.internal.reflect.Types.TypeVisitor;
 import org.gradle.internal.reflect.UnsupportedPropertyValueException;
 import org.gradle.internal.typeconversion.TypeConversionException;
 import org.gradle.internal.typeconversion.TypeConverter;
@@ -225,13 +223,10 @@ public class ManagedProxyClassGenerator extends AbstractProxyClassGenerator {
         // We need to also implement all the interfaces of the delegate type because otherwise
         // BinaryContainer won't recognize managed binaries as BinarySpecInternal
         if (delegateSchema != null) {
-            walkTypeHierarchy(delegateSchema.getType().getConcreteClass(), IGNORED_OBJECT_TYPES, new TypeVisitor<D>() {
-                @Override
-                public void visitType(Class<? super D> type) {
-                    if (type.isInterface()) {
-                        typesToDelegate.add(ModelType.of(type));
-                        interfacesToImplement.add(Type.getInternalName(type));
-                    }
+            walkTypeHierarchy(delegateSchema.getType().getConcreteClass(), IGNORED_OBJECT_TYPES, type -> {
+                if (type.isInterface()) {
+                    typesToDelegate.add(ModelType.of(type));
+                    interfacesToImplement.add(Type.getInternalName(type));
                 }
             });
         }
@@ -555,12 +550,7 @@ public class ManagedProxyClassGenerator extends AbstractProxyClassGenerator {
    }
 
     private void writeViewPropertyDslMethods(ClassVisitor visitor, Type generatedType, Collection<ModelProperty<?>> viewProperties, Class<?> viewClass) {
-        boolean writable = Iterables.any(viewProperties, new Predicate<ModelProperty<?>>() {
-            @Override
-            public boolean apply(ModelProperty<?> viewProperty) {
-                return viewProperty.isWritable();
-            }
-        });
+        boolean writable = Iterables.any(viewProperties, viewProperty -> viewProperty.isWritable());
         // TODO:LPTR Instead of the first view property, we should figure out these parameters from the actual property
         ModelProperty<?> firstProperty = viewProperties.iterator().next();
 

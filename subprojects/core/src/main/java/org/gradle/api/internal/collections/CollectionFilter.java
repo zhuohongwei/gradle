@@ -51,13 +51,10 @@ public class CollectionFilter<T> implements Spec<Object> {
     }
 
     public Action<Object> filtered(final Action<? super T> action) {
-        return new Action<Object>() {
-            @Override
-            public void execute(Object o) {
-                T t = filter(o);
-                if (t != null) {
-                    action.execute(t);
-                }
+        return o -> {
+            T t = filter(o);
+            if (t != null) {
+                action.execute(t);
             }
         };
     }

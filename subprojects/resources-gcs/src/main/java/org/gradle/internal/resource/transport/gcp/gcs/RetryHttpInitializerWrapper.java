@@ -21,7 +21,6 @@ import com.google.api.client.http.HttpBackOffIOExceptionHandler;
 import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.HttpUnsuccessfulResponseHandler;
 import com.google.api.client.util.ExponentialBackOff;
@@ -31,7 +30,6 @@ import com.google.common.base.Supplier;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,23 +71,20 @@ final class RetryHttpInitializerWrapper implements HttpRequestInitializer {
                 new ExponentialBackOff()).setSleeper(sleeper);
         final Credential credential = credentialSupplier.get();
         request.setInterceptor(credential);
-        request.setUnsuccessfulResponseHandler(new HttpUnsuccessfulResponseHandler() {
-            @Override
-            public boolean handleResponse(HttpRequest request, HttpResponse response, boolean supportsRetry) throws IOException {
-                // Turn off request logging unless debug mode is enabled
-                request.setLoggingEnabled(loggingEnabled);
-                request.setCurlLoggingEnabled(loggingEnabled);
-                if (credential.handleResponse(request, response, supportsRetry)) {
-                    // If credential decides it can handle it, the return code or message indicated
-                    // something specific to authentication, and no backoff is desired.
-                    return true;
-                } else if (backoffHandler.handleResponse(request, response, supportsRetry)) {
-                    // Otherwise, we defer to the judgement of our internal backoff handler.
-                    LOG.info("Retrying " + request.getUrl().toString());
-                    return true;
-                } else {
-                    return false;
-                }
+        request.setUnsuccessfulResponseHandler((request1, response, supportsRetry) -> {
+            // Turn off request logging unless debug mode is enabled
+            request1.setLoggingEnabled(loggingEnabled);
+            request1.setCurlLoggingEnabled(loggingEnabled);
+            if (credential.handleResponse(request1, response, supportsRetry)) {
+                // If credential decides it can handle it, the return code or message indicated
+                // something specific to authentication, and no backoff is desired.
+                return true;
+            } else if (backoffHandler.handleResponse(request1, response, supportsRetry)) {
+                // Otherwise, we defer to the judgement of our internal backoff handler.
+                LOG.info("Retrying " + request1.getUrl().toString());
+                return true;
+            } else {
+                return false;
             }
         });
         request.setIOExceptionHandler(new HttpBackOffIOExceptionHandler(new ExponentialBackOff())

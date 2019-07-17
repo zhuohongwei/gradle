@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import groovy.lang.Closure;
 import org.gradle.api.Transformer;
-import org.gradle.internal.BiAction;
 import org.gradle.internal.file.RelativeFilePathResolver;
 import org.gradle.model.dsl.internal.inputs.PotentialInput;
 import org.gradle.model.dsl.internal.inputs.PotentialInputs;
@@ -29,7 +28,6 @@ import org.gradle.model.internal.core.InputUsingModelAction;
 import org.gradle.model.internal.core.ModelActionRole;
 import org.gradle.model.internal.core.ModelPath;
 import org.gradle.model.internal.core.ModelReference;
-import org.gradle.model.internal.core.ModelView;
 import org.gradle.model.internal.core.MutableModelNode;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.manage.instance.ManagedInstance;
@@ -85,14 +83,11 @@ public class ClosureBackedRuleFactory {
                     }
                 }
 
-                node.applyToSelf(role, InputUsingModelAction.of(ModelReference.of(node.getPath(), subjectType), descriptor, inputModelReferences, new BiAction<T, List<ModelView<?>>>() {
-                    @Override
-                    public void execute(T t, List<ModelView<?>> modelViews) {
-                        // Make a copy of the closure, attach inputs and execute
-                        Closure<?> cloned = closure.rehydrate(null, closure.getThisObject(), closure.getThisObject());
-                        ((TransformedClosure) cloned).makeRule(new PotentialInputs(modelViews, inputValues), supportsNestedRules ? ClosureBackedRuleFactory.this : null);
-                        ClosureBackedAction.execute(t, cloned);
-                    }
+                node.applyToSelf(role, InputUsingModelAction.of(ModelReference.of(node.getPath(), subjectType), descriptor, inputModelReferences, (t, modelViews) -> {
+                    // Make a copy of the closure, attach inputs and execute
+                    Closure<?> cloned = closure.rehydrate(null, closure.getThisObject(), closure.getThisObject());
+                    ((TransformedClosure) cloned).makeRule(new PotentialInputs(modelViews, inputValues), supportsNestedRules ? ClosureBackedRuleFactory.this : null);
+                    ClosureBackedAction.execute(t, cloned);
                 }));
             }
         };

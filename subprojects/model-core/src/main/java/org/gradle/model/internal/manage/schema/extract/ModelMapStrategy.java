@@ -16,7 +16,6 @@
 
 package org.gradle.model.internal.manage.schema.extract;
 
-import org.gradle.api.Action;
 import org.gradle.model.ModelMap;
 import org.gradle.model.internal.manage.schema.ModelMapSchema;
 import org.gradle.model.internal.manage.schema.ModelSchema;
@@ -58,12 +57,7 @@ public class ModelMapStrategy implements ModelSchemaExtractionStrategy {
 
     private <T, E> ModelSchema<T> getModelSchema(ModelSchemaExtractionContext<T> extractionContext, ModelType<E> elementType) {
         final ModelMapSchema<T, E> schema = new ModelMapSchema<T, E>(extractionContext.getType(), elementType);
-        extractionContext.child(elementType, "element type", new Action<ModelSchema<E>>() {
-            @Override
-            public void execute(ModelSchema<E> elementTypeSchema) {
-                schema.setElementTypeSchema(elementTypeSchema);
-            }
-        });
+        extractionContext.child(elementType, "element type", elementTypeSchema -> schema.setElementTypeSchema(elementTypeSchema));
         return schema;
     }
 }

@@ -70,16 +70,13 @@ public class DefaultUserCodeApplicationContext implements UserCodeApplicationCon
             return action;
         }
 
-        return new Action<T>() {
-            @Override
-            public void execute(T t) {
-                Deque<UserCodeApplicationId> stack = stackThreadLocal.get();
-                stack.push(id);
-                try {
-                    action.execute(t);
-                } finally {
-                    stack.pop();
-                }
+        return t -> {
+            Deque<UserCodeApplicationId> stack = stackThreadLocal.get();
+            stack.push(id);
+            try {
+                action.execute(t);
+            } finally {
+                stack.pop();
             }
         };
     }

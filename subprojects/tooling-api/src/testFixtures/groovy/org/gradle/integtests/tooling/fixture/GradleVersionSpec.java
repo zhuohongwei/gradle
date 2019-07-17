@@ -27,29 +27,14 @@ public class GradleVersionSpec {
     public static Spec<GradleVersion> toSpec(String constraint) {
         String trimmed = constraint.trim();
         if (trimmed.equals("current")) {
-            return new Spec<GradleVersion>() {
-                @Override
-                public boolean isSatisfiedBy(GradleVersion element) {
-                    return element.equals(GradleVersion.current());
-                }
-            };
+            return element -> element.equals(GradleVersion.current());
         }
         if (trimmed.equals("!current")) {
-            return new Spec<GradleVersion>() {
-                @Override
-                public boolean isSatisfiedBy(GradleVersion element) {
-                    return !element.equals(GradleVersion.current());
-                }
-            };
+            return element -> !element.equals(GradleVersion.current());
         }
         if (trimmed.startsWith("=")) {
             final GradleVersion target = GradleVersion.version(trimmed.substring(1)).getBaseVersion();
-            return new Spec<GradleVersion>() {
-                @Override
-                public boolean isSatisfiedBy(GradleVersion element) {
-                    return element.getBaseVersion().equals(target);
-                }
-            };
+            return element -> element.getBaseVersion().equals(target);
         }
 
         List<Spec<GradleVersion>> specs = new ArrayList<Spec<GradleVersion>>();
@@ -57,44 +42,19 @@ public class GradleVersionSpec {
         for (String value : patterns) {
             if (value.startsWith(">=")) {
                 final GradleVersion minVersion = GradleVersion.version(value.substring(2));
-                specs.add(new Spec<GradleVersion>() {
-                    @Override
-                    public boolean isSatisfiedBy(GradleVersion element) {
-                        return element.getBaseVersion().compareTo(minVersion) >= 0;
-                    }
-                });
+                specs.add(element -> element.getBaseVersion().compareTo(minVersion) >= 0);
             } else if (value.startsWith(">")) {
                 final GradleVersion minVersion = GradleVersion.version(value.substring(1));
-                specs.add(new Spec<GradleVersion>() {
-                    @Override
-                    public boolean isSatisfiedBy(GradleVersion element) {
-                        return element.getBaseVersion().compareTo(minVersion) > 0;
-                    }
-                });
+                specs.add(element -> element.getBaseVersion().compareTo(minVersion) > 0);
             } else if (value.startsWith("<=")) {
                 final GradleVersion maxVersion = GradleVersion.version(value.substring(2));
-                specs.add(new Spec<GradleVersion>() {
-                    @Override
-                    public boolean isSatisfiedBy(GradleVersion element) {
-                        return element.getBaseVersion().compareTo(maxVersion) <= 0;
-                    }
-                });
+                specs.add(element -> element.getBaseVersion().compareTo(maxVersion) <= 0);
             } else if (value.startsWith("<")) {
                 final GradleVersion maxVersion = GradleVersion.version(value.substring(1));
-                specs.add(new Spec<GradleVersion>() {
-                    @Override
-                    public boolean isSatisfiedBy(GradleVersion element) {
-                        return element.getBaseVersion().compareTo(maxVersion) < 0;
-                    }
-                });
+                specs.add(element -> element.getBaseVersion().compareTo(maxVersion) < 0);
             } else if (value.startsWith("!")) {
                 final GradleVersion excludedVersion = GradleVersion.version(value.substring(1));
-                specs.add(new Spec<GradleVersion>() {
-                    @Override
-                    public boolean isSatisfiedBy(GradleVersion element) {
-                        return !element.getBaseVersion().equals(excludedVersion);
-                    }
-                });
+                specs.add(element -> !element.getBaseVersion().equals(excludedVersion));
             } else {
                 throw new RuntimeException(String.format("Unsupported version range '%s' specified in constraint '%s'. Supported formats: '>=nnn', '>nnn', '<=nnn', '<nnn', '!nnn' or space-separate patterns", value, constraint));
             }

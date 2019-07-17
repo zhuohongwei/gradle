@@ -20,7 +20,6 @@ import com.dd.plist.NSDictionary;
 import com.dd.plist.NSString;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Provider;
@@ -111,12 +110,9 @@ public class GenerateXcodeProjectFileTask extends PropertyListGeneratorTask<Xcod
         XcodeprojSerializer serializer = new XcodeprojSerializer(gidGenerator, project);
         final NSDictionary rootObject = serializer.toPlist();
 
-        projectFile.transformAction(new Action<NSDictionary>() {
-            @Override
-            public void execute(NSDictionary dict) {
-                dict.clear();
-                dict.putAll(rootObject);
-            }
+        projectFile.transformAction(dict -> {
+            dict.clear();
+            dict.putAll(rootObject);
         });
     }
 

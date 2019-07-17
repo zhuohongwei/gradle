@@ -17,7 +17,6 @@
 package org.gradle.play.internal.toolchain;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
@@ -92,12 +91,7 @@ public class DefaultPlayToolChain implements PlayToolChainInternal {
     }
 
     private Configuration resolveToolClasspath(Object... dependencyNotations) {
-        List<Dependency> dependencies = CollectionUtils.collect(dependencyNotations, new Transformer<Dependency, Object>() {
-            @Override
-            public Dependency transform(Object dependencyNotation) {
-                return dependencyHandler.create(dependencyNotation);
-            }
-        });
+        List<Dependency> dependencies = CollectionUtils.collect(dependencyNotations, dependencyNotation -> dependencyHandler.create(dependencyNotation));
         Dependency[] dependenciesArray = dependencies.toArray(new Dependency[0]);
         return configurationContainer.detachedConfiguration(dependenciesArray);
     }

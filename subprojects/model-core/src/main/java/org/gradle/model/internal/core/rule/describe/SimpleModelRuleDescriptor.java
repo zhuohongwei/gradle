@@ -17,11 +17,11 @@
 package org.gradle.model.internal.core.rule.describe;
 
 import com.google.common.base.Objects;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.internal.Factories;
 import org.gradle.internal.Factory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 
 @ThreadSafe
@@ -47,12 +47,7 @@ public class SimpleModelRuleDescriptor extends AbstractModelRuleDescriptor {
     }
 
     public SimpleModelRuleDescriptor(final String descriptor, final Object... args) {
-        this(new Factory<String>() {
-            @Override
-            public String create() {
-                return String.format(descriptor, args);
-            }
-        });
+        this(() -> String.format(descriptor, args));
     }
 
     private String getDescriptor() {

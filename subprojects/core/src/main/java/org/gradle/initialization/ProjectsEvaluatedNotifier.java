@@ -51,12 +51,7 @@ public class ProjectsEvaluatedNotifier {
         @Override
         public BuildOperationDescriptor.Builder description() {
             return BuildOperationDescriptor.displayName(gradle.contextualize("Notify projectsEvaluated listeners"))
-                .details(new NotifyProjectsEvaluatedBuildOperationType.Details() {
-                    @Override
-                    public String getBuildPath() {
-                        return gradle.getIdentityPath().toString();
-                    }
-                });
+                .details((NotifyProjectsEvaluatedBuildOperationType.Details) () -> gradle.getIdentityPath().toString());
         }
     }
 }

@@ -94,54 +94,26 @@ public class NativeSpecVisualStudioTargetBinary implements VisualStudioTargetBin
 
     @Override
     public FileCollection getSourceFiles() {
-        Spec<LanguageSourceSet> filter = new Spec<LanguageSourceSet>() {
-            @Override
-            public boolean isSatisfiedBy(LanguageSourceSet sourceSet) {
-                return !(sourceSet instanceof WindowsResourceSet);
-            }
-        };
-        Transformer<FileCollection, LanguageSourceSet> transform = new Transformer<FileCollection, LanguageSourceSet>() {
-            @Override
-            public FileCollection transform(LanguageSourceSet sourceSet) {
-                return sourceSet.getSource();
-            }
-        };
+        Spec<LanguageSourceSet> filter = sourceSet -> !(sourceSet instanceof WindowsResourceSet);
+        Transformer<FileCollection, LanguageSourceSet> transform = sourceSet -> sourceSet.getSource();
 
         return new FileCollectionAdapter(new LanguageSourceSetCollectionAdapter(getComponentName() + " source files", binary.getInputs(), filter, transform));
     }
 
     @Override
     public FileCollection getResourceFiles() {
-        Spec<LanguageSourceSet> filter = new Spec<LanguageSourceSet>() {
-            @Override
-            public boolean isSatisfiedBy(LanguageSourceSet sourceSet) {
-                return sourceSet instanceof WindowsResourceSet;
-            }
-        };
-        Transformer<FileCollection, LanguageSourceSet> transform = new Transformer<FileCollection, LanguageSourceSet>() {
-            @Override
-            public FileCollection transform(LanguageSourceSet sourceSet) {
-                return sourceSet.getSource();
-            }
-        };
+        Spec<LanguageSourceSet> filter = sourceSet -> sourceSet instanceof WindowsResourceSet;
+        Transformer<FileCollection, LanguageSourceSet> transform = sourceSet -> sourceSet.getSource();
 
         return new FileCollectionAdapter(new LanguageSourceSetCollectionAdapter(getComponentName() + " resource files", binary.getInputs(), filter, transform));
     }
 
     @Override
     public FileCollection getHeaderFiles() {
-        Spec<LanguageSourceSet> filter =  new Spec<LanguageSourceSet>() {
-            @Override
-            public boolean isSatisfiedBy(LanguageSourceSet sourceSet) {
-                return sourceSet instanceof HeaderExportingSourceSet;
-            }
-        };
-        Transformer<FileCollection, LanguageSourceSet> transform = new Transformer<FileCollection, LanguageSourceSet>() {
-            @Override
-            public FileCollection transform(LanguageSourceSet sourceSet) {
-                HeaderExportingSourceSet exportingSourceSet = (HeaderExportingSourceSet) sourceSet;
-                return exportingSourceSet.getExportedHeaders().plus(exportingSourceSet.getImplicitHeaders());
-            }
+        Spec<LanguageSourceSet> filter = sourceSet -> sourceSet instanceof HeaderExportingSourceSet;
+        Transformer<FileCollection, LanguageSourceSet> transform = sourceSet -> {
+            HeaderExportingSourceSet exportingSourceSet = (HeaderExportingSourceSet) sourceSet;
+            return exportingSourceSet.getExportedHeaders().plus(exportingSourceSet.getImplicitHeaders());
         };
 
         return new FileCollectionAdapter(new LanguageSourceSetCollectionAdapter(getComponentName() + " header files", binary.getInputs(), filter, transform));

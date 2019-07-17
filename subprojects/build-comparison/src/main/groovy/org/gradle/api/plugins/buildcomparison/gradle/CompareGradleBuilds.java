@@ -19,7 +19,6 @@ package org.gradle.api.plugins.buildcomparison.gradle;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.buildcomparison.compare.internal.BuildComparisonResult;
@@ -35,7 +34,6 @@ import org.gradle.api.plugins.buildcomparison.outcome.internal.unknown.UnknownBu
 import org.gradle.api.plugins.buildcomparison.outcome.internal.unknown.UnknownBuildOutcomeComparator;
 import org.gradle.api.plugins.buildcomparison.outcome.internal.unknown.UnknownBuildOutcomeComparisonResultHtmlRenderer;
 import org.gradle.api.plugins.buildcomparison.outcome.internal.unknown.UnknownBuildOutcomeHtmlRenderer;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
@@ -86,12 +84,7 @@ public class CompareGradleBuilds extends DefaultTask implements VerificationTask
         targetBuild.setTasks(DEFAULT_TASKS);
 
         // Never up to date
-        getOutputs().upToDateWhen(new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task element) {
-                return false;
-            }
-        });
+        getOutputs().upToDateWhen(element -> false);
     }
 
     @Inject

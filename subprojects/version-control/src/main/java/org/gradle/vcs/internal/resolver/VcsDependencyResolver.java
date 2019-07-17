@@ -29,7 +29,6 @@ import org.gradle.api.internal.artifacts.ivyservice.resolveengine.excludes.specs
 import org.gradle.api.internal.artifacts.type.ArtifactTypeRegistry;
 import org.gradle.api.internal.attributes.ImmutableAttributes;
 import org.gradle.api.internal.component.ArtifactType;
-import org.gradle.api.specs.Spec;
 import org.gradle.initialization.definition.InjectedPluginResolver;
 import org.gradle.internal.Pair;
 import org.gradle.internal.build.BuildState;
@@ -110,13 +109,10 @@ public class VcsDependencyResolver implements DependencyToComponentIdResolver, C
                 IncludedBuildState includedBuild = buildRegistry.addImplicitIncludedBuild(buildDefinition);
 
                 Collection<Pair<ModuleVersionIdentifier, ProjectComponentIdentifier>> moduleToProject = includedBuild.getAvailableModules();
-                Pair<ModuleVersionIdentifier, ProjectComponentIdentifier> entry = CollectionUtils.findFirst(moduleToProject, new Spec<Pair<ModuleVersionIdentifier, ProjectComponentIdentifier>>() {
-                    @Override
-                    public boolean isSatisfiedBy(Pair<ModuleVersionIdentifier, ProjectComponentIdentifier> entry) {
-                        ModuleVersionIdentifier possibleMatch = entry.left;
-                        return depSelector.getGroup().equals(possibleMatch.getGroup())
-                            && depSelector.getModule().equals(possibleMatch.getName());
-                    }
+                Pair<ModuleVersionIdentifier, ProjectComponentIdentifier> entry = CollectionUtils.findFirst(moduleToProject, entry1 -> {
+                    ModuleVersionIdentifier possibleMatch = entry1.left;
+                    return depSelector.getGroup().equals(possibleMatch.getGroup())
+                        && depSelector.getModule().equals(possibleMatch.getName());
                 });
                 if (entry == null) {
                     result.failed(new ModuleVersionResolveException(depSelector, () -> spec.getDisplayName() + " did not contain a project publishing the specified dependency."));

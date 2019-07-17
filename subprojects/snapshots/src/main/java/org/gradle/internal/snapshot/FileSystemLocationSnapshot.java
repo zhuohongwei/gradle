@@ -29,12 +29,7 @@ import java.util.Comparator;
  */
 public interface FileSystemLocationSnapshot extends FileSystemSnapshot {
 
-    Comparator<FileSystemLocationSnapshot> BY_NAME = new Comparator<FileSystemLocationSnapshot>() {
-        @Override
-        public int compare(FileSystemLocationSnapshot o1, FileSystemLocationSnapshot o2) {
-            return o1.getName().compareTo(o2.getName());
-        }
-    };
+    Comparator<FileSystemLocationSnapshot> BY_NAME = (o1, o2) -> o1.getName().compareTo(o2.getName());
 
     /**
      * The type of the file.

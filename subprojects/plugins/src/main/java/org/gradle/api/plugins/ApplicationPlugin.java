@@ -16,7 +16,6 @@
 
 package org.gradle.api.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -68,46 +67,33 @@ public class ApplicationPlugin implements Plugin<Project> {
 
         Distribution distribution = ((DistributionContainer) project.getExtensions().getByName("distributions")).getByName(DistributionPlugin.MAIN_DISTRIBUTION_NAME);
 
-        ((IConventionAware) distribution).getConventionMapping().map("baseName", new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return pluginConvention.getApplicationName();
-            }
-        });
+        ((IConventionAware) distribution).getConventionMapping().map("baseName", () -> pluginConvention.getApplicationName());
         configureDistSpec(distribution.getContents());
         configureInstallTask(project.getTasks().named(TASK_INSTALL_NAME));
     }
 
     private void configureInstallTask(TaskProvider<Task> installTask) {
-        installTask.configure(new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.doFirst(new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        Sync sync = (Sync) task;
-                        File destinationDir = sync.getDestinationDir();
-                        if (destinationDir.isDirectory()) {
-                            String[] children = destinationDir.list();
-                            if (children == null) {
-                                throw new UncheckedIOException("Could not list directory " + destinationDir);
-                            }
-                            if (children.length > 0) {
-                                if (!new File(destinationDir, "lib").isDirectory() || !new File(destinationDir, pluginConvention.getExecutableDir()).isDirectory()) {
-                                    throw new GradleException("The specified installation directory \'"
-                                        + destinationDir
-                                        + "\' is neither empty nor does it contain an installation for \'"
-                                        + pluginConvention.getApplicationName()
-                                        + "\'.\n"
-                                        + "If you really want to install to this directory, delete it and run the install task again.\n"
-                                        + "Alternatively, choose a different installation directory.");
-                                }
-                            }
-                        }
+        installTask.configure(task -> task.doFirst(task1 -> {
+            Sync sync = (Sync) task1;
+            File destinationDir = sync.getDestinationDir();
+            if (destinationDir.isDirectory()) {
+                String[] children = destinationDir.list();
+                if (children == null) {
+                    throw new UncheckedIOException("Could not list directory " + destinationDir);
+                }
+                if (children.length > 0) {
+                    if (!new File(destinationDir, "lib").isDirectory() || !new File(destinationDir, pluginConvention.getExecutableDir()).isDirectory()) {
+                        throw new GradleException("The specified installation directory \'"
+                            + destinationDir
+                            + "\' is neither empty nor does it contain an installation for \'"
+                            + pluginConvention.getApplicationName()
+                            + "\'.\n"
+                            + "If you really want to install to this directory, delete it and run the install task again.\n"
+                            + "Alternatively, choose a different installation directory.");
                     }
-                });
+                }
             }
-        });
+        }));
     }
 
     private void addExtensions() {
@@ -118,73 +104,32 @@ public class ApplicationPlugin implements Plugin<Project> {
     }
 
     private void addRunTask() {
-        project.getTasks().register(TASK_RUN_NAME, JavaExec.class, new Action<JavaExec>() {
-            @Override
-            public void execute(JavaExec run) {
-                run.setDescription("Runs this project as a JVM application");
-                run.setGroup(APPLICATION_GROUP);
+        project.getTasks().register(TASK_RUN_NAME, JavaExec.class, run -> {
+            run.setDescription("Runs this project as a JVM application");
+            run.setGroup(APPLICATION_GROUP);
 
-                JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-                run.setClasspath(javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getRuntimeClasspath());
-                run.getConventionMapping().map("main", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getMainClassName();
-                    }
-                });
-                run.getConventionMapping().map("jvmArgs", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getApplicationDefaultJvmArgs();
-                    }
-                });
-            }
+            JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
+            run.setClasspath(javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getRuntimeClasspath());
+            run.getConventionMapping().map("main", () -> pluginConvention.getMainClassName());
+            run.getConventionMapping().map("jvmArgs", () -> pluginConvention.getApplicationDefaultJvmArgs());
         });
     }
 
     // @Todo: refactor this task configuration to extend a copy task and use replace tokens
     private void addCreateScriptsTask() {
-        project.getTasks().register(TASK_START_SCRIPTS_NAME, CreateStartScripts.class, new Action<CreateStartScripts>() {
-            @Override
-            public void execute(CreateStartScripts startScripts) {
-                startScripts.setDescription("Creates OS specific scripts to run the project as a JVM application.");
-                startScripts.setClasspath(project.getTasks().getAt(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().plus(project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)));
+        project.getTasks().register(TASK_START_SCRIPTS_NAME, CreateStartScripts.class, startScripts -> {
+            startScripts.setDescription("Creates OS specific scripts to run the project as a JVM application.");
+            startScripts.setClasspath(project.getTasks().getAt(JavaPlugin.JAR_TASK_NAME).getOutputs().getFiles().plus(project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME)));
 
-                startScripts.getConventionMapping().map("mainClassName", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getMainClassName();
-                    }
-                });
+            startScripts.getConventionMapping().map("mainClassName", () -> pluginConvention.getMainClassName());
 
-                startScripts.getConventionMapping().map("applicationName", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getApplicationName();
-                    }
-                });
+            startScripts.getConventionMapping().map("applicationName", () -> pluginConvention.getApplicationName());
 
-                startScripts.getConventionMapping().map("outputDir", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return new File(project.getBuildDir(), "scripts");
-                    }
-                });
+            startScripts.getConventionMapping().map("outputDir", () -> new File(project.getBuildDir(), "scripts"));
 
-                startScripts.getConventionMapping().map("executableDir", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getExecutableDir();
-                    }
-                });
+            startScripts.getConventionMapping().map("executableDir", () -> pluginConvention.getExecutableDir());
 
-                startScripts.getConventionMapping().map("defaultJvmOpts", new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        return pluginConvention.getApplicationDefaultJvmArgs();
-                    }
-                });
-            }
+            startScripts.getConventionMapping().map("defaultJvmOpts", () -> pluginConvention.getApplicationDefaultJvmArgs());
         });
     }
 
@@ -199,12 +144,7 @@ public class ApplicationPlugin implements Plugin<Project> {
 
         CopySpec binChildSpec = project.copySpec();
 
-        binChildSpec.into(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return pluginConvention.getExecutableDir();
-            }
-        });
+        binChildSpec.into((Callable<Object>) () -> pluginConvention.getExecutableDir());
         binChildSpec.from(startScripts);
         binChildSpec.setFileMode(0755);
 

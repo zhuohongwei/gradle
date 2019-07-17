@@ -26,7 +26,6 @@ import org.gradle.internal.instantiation.InstantiationScheme;
 import org.gradle.util.NameValidator;
 
 import javax.annotation.Nullable;
-import java.util.concurrent.Callable;
 
 public class TaskFactory implements ITaskFactory {
     private final ProjectInternal project;
@@ -63,21 +62,18 @@ public class TaskFactory implements ITaskFactory {
             implType = identity.type.asSubclass(AbstractTask.class);
         }
 
-        return AbstractTask.injectIntoNewInstance(project, identity, new Callable<S>() {
-            @Override
-            public S call() {
-                try {
-                    Task instance;
-                    if (constructorArgs != null) {
-                        instance = instantiationScheme.instantiator().newInstance(implType, constructorArgs);
-                    } else {
-                        instance = instantiationScheme.deserializationInstantiator().newInstance(implType, AbstractTask.class);
-                    }
-                    return identity.type.cast(instance);
-                } catch (ObjectInstantiationException e) {
-                    throw new TaskInstantiationException(String.format("Could not create task of type '%s'.", identity.type.getSimpleName()),
-                        e.getCause());
+        return AbstractTask.injectIntoNewInstance(project, identity, () -> {
+            try {
+                Task instance;
+                if (constructorArgs != null) {
+                    instance = instantiationScheme.instantiator().newInstance(implType, constructorArgs);
+                } else {
+                    instance = instantiationScheme.deserializationInstantiator().newInstance(implType, AbstractTask.class);
                 }
+                return identity.type.cast(instance);
+            } catch (ObjectInstantiationException e) {
+                throw new TaskInstantiationException(String.format("Could not create task of type '%s'.", identity.type.getSimpleName()),
+                    e.getCause());
             }
         });
     }

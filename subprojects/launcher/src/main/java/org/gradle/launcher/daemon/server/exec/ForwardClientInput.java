@@ -72,12 +72,9 @@ public class ForwardClientInput implements DaemonCommandAction {
 
         try {
             try {
-                new StdinSwapper().swap(replacementStdin, new Callable<Void>() {
-                    @Override
-                    public Void call() {
-                        execution.proceed();
-                        return null;
-                    }
+                new StdinSwapper().swap(replacementStdin, (Callable<Void>) () -> {
+                    execution.proceed();
+                    return null;
                 });
             } finally {
                 execution.getConnection().onStdin(null);

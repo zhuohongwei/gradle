@@ -132,14 +132,11 @@ class CyclicBarrierRequestHandler implements TrackingHttpHandler, WaitPreconditi
             }
 
             if (cancelled) {
-                return new ResponseProducer() {
-                    @Override
-                    public void writeTo(int requestId, HttpExchange exchange) {
-                        try {
-                            exchange.sendResponseHeaders(200, -1);
-                        } catch (IOException e) {
-                            // Ignore
-                        }
+                return (requestId, exchange) -> {
+                    try {
+                        exchange.sendResponseHeaders(200, -1);
+                    } catch (IOException e) {
+                        // Ignore
                     }
                 };
             }

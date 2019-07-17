@@ -20,9 +20,9 @@ import org.gradle.api.Action;
 import org.gradle.api.Transformer;
 import org.gradle.api.resources.ResourceException;
 import org.gradle.internal.operations.BuildOperationContext;
+import org.gradle.internal.operations.BuildOperationDescriptor;
 import org.gradle.internal.operations.BuildOperationExecutor;
 import org.gradle.internal.operations.CallableBuildOperation;
-import org.gradle.internal.operations.BuildOperationDescriptor;
 import org.gradle.internal.resource.metadata.ExternalResourceMetaData;
 
 import javax.annotation.Nullable;
@@ -98,12 +98,7 @@ public class BuildOperationFiringExternalResourceDecorator implements ExternalRe
             @Override
             public ExternalResourceWriteResult call(BuildOperationContext context) {
                 final ExternalResourceWriteResult result = delegate.put(source);
-                context.setResult(new ExternalResourceWriteBuildOperationType.Result() {
-                    @Override
-                    public long getBytesWritten() {
-                        return result.getBytesWritten();
-                    }
-                });
+                context.setResult((ExternalResourceWriteBuildOperationType.Result) () -> result.getBytesWritten());
                 return result;
             }
 

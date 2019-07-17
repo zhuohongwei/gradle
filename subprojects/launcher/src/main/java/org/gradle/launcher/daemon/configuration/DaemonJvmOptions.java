@@ -18,7 +18,6 @@ package org.gradle.launcher.daemon.configuration;
 
 import com.google.common.collect.ImmutableSet;
 import org.gradle.api.internal.file.FileCollectionFactory;
-import org.gradle.api.specs.Spec;
 import org.gradle.cache.internal.HeapProportionalCacheSizer;
 import org.gradle.process.internal.CurrentProcess;
 import org.gradle.process.internal.JvmOptions;
@@ -58,12 +57,7 @@ public class DaemonJvmOptions extends JvmOptions {
     }
 
     public Map<String, Object> getImmutableDaemonProperties() {
-        return CollectionUtils.filter(immutableSystemProperties, new Spec<Map.Entry<String, Object>>() {
-            @Override
-            public boolean isSatisfiedBy(Map.Entry<String, Object> element) {
-                return IMMUTABLE_DAEMON_SYSTEM_PROPERTIES.contains(element.getKey());
-            }
-        });
+        return CollectionUtils.filter(immutableSystemProperties, element -> IMMUTABLE_DAEMON_SYSTEM_PROPERTIES.contains(element.getKey()));
     }
 
     @Override

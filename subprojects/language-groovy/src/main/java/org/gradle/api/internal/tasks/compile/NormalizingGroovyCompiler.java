@@ -16,11 +16,9 @@
 package org.gradle.api.internal.tasks.compile;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import org.gradle.api.Transformer;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.WorkResult;
@@ -65,22 +63,14 @@ public class NormalizingGroovyCompiler implements Compiler<GroovyJavaJointCompil
     }
 
     private void resolveAndFilterSourceFiles(final GroovyJavaJointCompileSpec spec) {
-        final List<String> fileExtensions = CollectionUtils.collect(spec.getGroovyCompileOptions().getFileExtensions(), new Transformer<String, String>() {
-            @Override
-            public String transform(String extension) {
-                return '.' + extension;
-            }
-        });
-        Iterable<File> filtered = Iterables.filter(spec.getSourceFiles(), new Predicate<File>() {
-            @Override
-            public boolean apply(File element) {
-                for (String fileExtension : fileExtensions) {
-                    if (hasExtension(element, fileExtension)) {
-                        return true;
-                    }
+        final List<String> fileExtensions = CollectionUtils.collect(spec.getGroovyCompileOptions().getFileExtensions(), extension -> '.' + extension);
+        Iterable<File> filtered = Iterables.filter(spec.getSourceFiles(), element -> {
+            for (String fileExtension : fileExtensions) {
+                if (hasExtension(element, fileExtension)) {
+                    return true;
                 }
-                return false;
             }
+            return false;
         });
 
         spec.setSourceFiles(ImmutableSet.copyOf(filtered));

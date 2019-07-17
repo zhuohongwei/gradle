@@ -16,10 +16,11 @@
 
 package org.gradle.workers.internal;
 
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.internal.operations.BuildOperationExecutor;
 import org.gradle.internal.operations.BuildOperationRef;
 import org.gradle.workers.IsolationMode;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Controls the lifecycle of the worker daemon and provides access to it.
@@ -41,12 +42,7 @@ public class WorkerDaemonFactory implements WorkerFactory {
             public DefaultWorkResult execute(ActionExecutionSpec spec, BuildOperationRef parentBuildOperation) {
                 final WorkerDaemonClient client = reserveClient();
                 try {
-                    return executeWrappedInBuildOperation(spec, parentBuildOperation, new Work() {
-                        @Override
-                        public DefaultWorkResult execute(ActionExecutionSpec spec) {
-                            return client.execute(spec);
-                        }
-                    });
+                    return executeWrappedInBuildOperation(spec, parentBuildOperation, spec1 -> client.execute(spec1));
                 } finally {
                     clientsManager.release(client);
                 }

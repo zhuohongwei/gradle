@@ -45,12 +45,7 @@ public class StaticValue implements PropertyValue {
         if (value instanceof TaskDependencyContainer) {
             return (TaskDependencyContainer) value;
         } else if (value instanceof Buildable) {
-            return new TaskDependencyContainer() {
-                @Override
-                public void visitDependencies(TaskDependencyResolveContext context) {
-                    context.add(value);
-                }
-            };
+            return context -> context.add(value);
         }
 
         return TaskDependencyContainer.EMPTY;

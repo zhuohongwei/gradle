@@ -88,21 +88,13 @@ public class DefaultIdeArtifactRegistry implements IdeArtifactRegistry {
 
     @Override
     public FileCollection getIdeProjectFiles(final Class<? extends IdeProjectMetadata> type) {
-        return fileOperations.immutableFiles(new Callable<List<FileCollection>>() {
-            @Override
-            public List<FileCollection> call() {
-                return CollectionUtils.collect(
-                    getIdeProjects(type),
-                    new Transformer<FileCollection, Reference<?>>() {
-                        @Override
-                        public FileCollection transform(Reference<?> result) {
-                            ConfigurableFileCollection singleton = fileOperations.configurableFiles(result.get().getFile());
-                            singleton.builtBy(result.get().getGeneratorTasks());
-                            return singleton;
-                        }
-                    });
-            }
-        });
+        return fileOperations.immutableFiles((Callable<List<FileCollection>>) () -> CollectionUtils.collect(
+            getIdeProjects(type),
+            (Transformer<FileCollection, Reference<?>>) result -> {
+                ConfigurableFileCollection singleton = fileOperations.configurableFiles(result.get().getFile());
+                singleton.builtBy(result.get().getGeneratorTasks());
+                return singleton;
+            }));
     }
 
     private static class MetadataReference<T extends IdeProjectMetadata> implements Reference<T> {

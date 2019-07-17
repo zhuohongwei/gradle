@@ -54,11 +54,6 @@ public class TestExecutionRequest implements InternalTestExecutionRequest {
     }
 
     private Collection<InternalTestDescriptor> adaptDescriptors(Iterable<TestOperationDescriptor> operationDescriptors) {
-        return CollectionUtils.collect(operationDescriptors, new Transformer<InternalTestDescriptor, OperationDescriptor>() {
-            @Override
-            public InternalTestDescriptor transform(OperationDescriptor operationDescriptor) {
-                return (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor();
-            }
-        });
+        return CollectionUtils.collect(operationDescriptors, (Transformer<InternalTestDescriptor, OperationDescriptor>) operationDescriptor -> (InternalTestDescriptor) ((OperationDescriptorWrapper) operationDescriptor).getInternalOperationDescriptor());
     }
 }

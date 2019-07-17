@@ -330,22 +330,19 @@ public class BuildScriptBuilder {
     }
 
     public TemplateOperation create() {
-        return new TemplateOperation() {
-            @Override
-            public void generate() {
-                File target = getTargetFile();
+        return () -> {
+            File target = getTargetFile();
+            try {
+                PrintWriter writer = new PrintWriter(new FileWriter(target));
                 try {
-                    PrintWriter writer = new PrintWriter(new FileWriter(target));
-                    try {
-                        PrettyPrinter printer = new PrettyPrinter(syntaxFor(dsl), writer);
-                        printer.printFileHeader(headerLines);
-                        block.writeBodyTo(printer);
-                    } finally {
-                        writer.close();
-                    }
-                } catch (Exception e) {
-                    throw new GradleException("Could not generate file " + target + ".", e);
+                    PrettyPrinter printer = new PrettyPrinter(syntaxFor(dsl), writer);
+                    printer.printFileHeader(headerLines);
+                    block.writeBodyTo(printer);
+                } finally {
+                    writer.close();
                 }
+            } catch (Exception e) {
+                throw new GradleException("Could not generate file " + target + ".", e);
             }
         };
     }

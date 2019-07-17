@@ -62,7 +62,6 @@ import org.gradle.util.GUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,16 +72,13 @@ public class MavenPomFileGenerator {
 
     private static final String POM_FILE_ENCODING = "UTF-8";
     private static final String POM_VERSION = "4.0.0";
-    private static final Action<XmlProvider> ADD_GRADLE_METADATA_MARKER = new Action<XmlProvider>() {
-        @Override
-        public void execute(XmlProvider xmlProvider) {
-            StringBuilder builder = xmlProvider.asString();
-            int idx = builder.indexOf("<modelVersion");
-            builder.insert(idx, xmlComments(MetaDataParser.GRADLE_METADATA_MARKER_COMMENT_LINES)
-                    + "  "
-                    + xmlComment(MetaDataParser.GRADLE_METADATA_MARKER)
-                    + "  ");
-        }
+    private static final Action<XmlProvider> ADD_GRADLE_METADATA_MARKER = xmlProvider -> {
+        StringBuilder builder = xmlProvider.asString();
+        int idx = builder.indexOf("<modelVersion");
+        builder.insert(idx, xmlComments(MetaDataParser.GRADLE_METADATA_MARKER_COMMENT_LINES)
+                + "  "
+                + xmlComment(MetaDataParser.GRADLE_METADATA_MARKER)
+                + "  ");
     };
 
     private final Model model = new Model();
@@ -368,14 +364,11 @@ public class MavenPomFileGenerator {
     }
 
     public MavenPomFileGenerator writeTo(File file) {
-        xmlTransformer.transform(file, POM_FILE_ENCODING, new Action<Writer>() {
-            @Override
-            public void execute(Writer writer) {
-                try {
-                    new MavenXpp3Writer().write(writer, model);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
+        xmlTransformer.transform(file, POM_FILE_ENCODING, writer -> {
+            try {
+                new MavenXpp3Writer().write(writer, model);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         });
         return this;

@@ -17,13 +17,11 @@ package org.gradle.api.reporting;
 
 import org.gradle.api.Incubating;
 import org.gradle.api.Project;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.file.FileLookup;
 import org.gradle.api.internal.project.ProjectInternal;
 
 import java.io.File;
-import java.util.concurrent.Callable;
 
 /**
  * A project extension named "reporting" that provides basic reporting settings and utilities.
@@ -89,13 +87,10 @@ public class ReportingExtension {
      * @param baseDir The base directory to use for all reports
      */
     public void setBaseDir(final Object baseDir) {
-        this.baseDirectory.set(project.provider(new Callable<Directory>() {
-            @Override
-            public Directory call() throws Exception {
-                DirectoryProperty result = project.getObjects().directoryProperty();
-                result.set(project.file(baseDir));
-                return result.get();
-            }
+        this.baseDirectory.set(project.provider(() -> {
+            DirectoryProperty result = project.getObjects().directoryProperty();
+            result.set(project.file(baseDir));
+            return result.get();
         }));
     }
 

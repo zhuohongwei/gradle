@@ -109,15 +109,12 @@ public class DefaultProperty<T> extends AbstractProperty<T> implements Property<
         if (p.getType() != null && !type.isAssignableFrom(p.getType())) {
             throw new IllegalArgumentException(String.format("Cannot set the value of a property of type %s using a provider of type %s.", type.getName(), p.getType().getName()));
         } else if (p.getType() == null) {
-            p = p.map(new Transformer<T, T>() {
-                @Override
-                public T transform(T t) {
-                    t = sanitizer.sanitize(t);
-                    if (type.isInstance(t)) {
-                        return t;
-                    }
-                    throw new IllegalArgumentException(String.format("Cannot get the value of a property of type %s as the provider associated with this property returned a value of type %s.", type.getName(), t.getClass().getName()));
+            p = p.map((Transformer<T, T>) t -> {
+                t = sanitizer.sanitize(t);
+                if (type.isInstance(t)) {
+                    return t;
                 }
+                throw new IllegalArgumentException(String.format("Cannot get the value of a property of type %s as the provider associated with this property returned a value of type %s.", type.getName(), t.getClass().getName()));
             });
         }
 

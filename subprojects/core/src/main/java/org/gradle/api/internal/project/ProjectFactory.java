@@ -16,8 +16,6 @@
 
 package org.gradle.api.internal.project;
 
-import org.gradle.api.Action;
-import org.gradle.api.Project;
 import org.gradle.api.initialization.ProjectDescriptor;
 import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.internal.initialization.ClassLoaderScope;
@@ -57,12 +55,7 @@ public class ProjectFactory implements IProjectFactory {
                 selfClassLoaderScope,
                 baseClassLoaderScope
         );
-        project.beforeEvaluate(new Action<Project>() {
-            @Override
-            public void execute(Project project) {
-                NameValidator.validate(project.getName(), "project name", DefaultProjectDescriptor.INVALID_NAME_IN_INCLUDE_HINT);
-            }
-        });
+        project.beforeEvaluate(project1 -> NameValidator.validate(project1.getName(), "project name", DefaultProjectDescriptor.INVALID_NAME_IN_INCLUDE_HINT));
 
         if (parent != null) {
             parent.addChildProject(project);

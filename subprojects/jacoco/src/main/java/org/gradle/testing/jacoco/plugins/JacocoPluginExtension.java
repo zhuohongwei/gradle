@@ -25,7 +25,6 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskCollection;
@@ -36,7 +35,6 @@ import org.gradle.process.JavaForkOptions;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Collections;
-import java.util.concurrent.Callable;
 
 /**
  * Extension including common properties and methods for Jacoco.
@@ -109,34 +107,23 @@ public class JacocoPluginExtension {
         final String taskName = task.getName();
         LOGGER.debug("Applying Jacoco to " + taskName);
         final JacocoTaskExtension extension = task.getExtensions().create(TASK_EXTENSION_NAME, JacocoTaskExtension.class, project, agent, task);
-        extension.setDestinationFile(project.provider(new Callable<File>() {
-            @Override
-            public File call() {
-                return project.file(String.valueOf(project.getBuildDir()) + "/jacoco/" + taskName + ".exec");
-            }
-        }));
+        extension.setDestinationFile(project.provider(() -> project.file(String.valueOf(project.getBuildDir()) + "/jacoco/" + taskName + ".exec")));
 
         task.getJvmArgumentProviders().add(new JacocoAgent(extension));
-        task.doFirst(new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                if (extension.isEnabled() && extension.getOutput() == JacocoTaskExtension.Output.FILE) {
-                    // Delete the coverage file before the task executes, so we don't append to a leftover file from the last execution.
-                    // This makes the task cacheable even if multiple JVMs write to same destination file, e.g. when executing tests in parallel.
-                    // The JaCoCo agent supports writing in parallel to the same file, see https://github.com/jacoco/jacoco/pull/52.
-                    File coverageFile = extension.getDestinationFile();
-                    project.delete(coverageFile);
-                }
+        task.doFirst(task1 -> {
+            if (extension.isEnabled() && extension.getOutput() == JacocoTaskExtension.Output.FILE) {
+                // Delete the coverage file before the task executes, so we don't append to a leftover file from the last execution.
+                // This makes the task cacheable even if multiple JVMs write to same destination file, e.g. when executing tests in parallel.
+                // The JaCoCo agent supports writing in parallel to the same file, see https://github.com/jacoco/jacoco/pull/52.
+                File coverageFile = extension.getDestinationFile();
+                project.delete(coverageFile);
             }
         });
 
         // Do not cache the task if we are not writing execution data to a file
-        task.getOutputs().doNotCacheIf("JaCoCo configured to not produce its output as a file", new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task element) {
-                // Do not cache Test task if Jacoco doesn't produce its output as files
-                return extension.isEnabled() && extension.getOutput() != JacocoTaskExtension.Output.FILE;
-            }
+        task.getOutputs().doNotCacheIf("JaCoCo configured to not produce its output as a file", element -> {
+            // Do not cache Test task if Jacoco doesn't produce its output as files
+            return extension.isEnabled() && extension.getOutput() != JacocoTaskExtension.Output.FILE;
         });
     }
 
@@ -172,11 +159,6 @@ public class JacocoPluginExtension {
      * @param tasks the tasks to apply Jacoco to
      */
     public <T extends Task & JavaForkOptions> void applyTo(TaskCollection<T> tasks) {
-        ((TaskCollection) tasks).withType(JavaForkOptions.class, new Action<T>() {
-            @Override
-            public void execute(T task) {
-                applyTo(task);
-            }
-        });
+        ((TaskCollection) tasks).withType(JavaForkOptions.class, (Action<T>) task -> applyTo(task));
     }
 }

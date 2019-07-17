@@ -17,7 +17,6 @@
 package org.gradle.api.reporting.internal;
 
 import org.gradle.api.Task;
-import org.gradle.internal.Factory;
 
 public abstract class TaskGeneratedReport extends SimpleReport {
 
@@ -26,12 +25,7 @@ public abstract class TaskGeneratedReport extends SimpleReport {
     }
 
     public TaskGeneratedReport(final String name, OutputType outputType, final Task task) {
-        super(name, new Factory<String>() {
-            @Override
-            public String create() {
-                return getDisplayName(name, task);
-            }
-        }, outputType, task.getProject());
+        super(name, () -> getDisplayName(name, task), outputType, task.getProject());
     }
 
 }

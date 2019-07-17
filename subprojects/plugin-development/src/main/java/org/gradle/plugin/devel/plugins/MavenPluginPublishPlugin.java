@@ -16,10 +16,8 @@
 
 package org.gradle.plugin.devel.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.XmlProvider;
 import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.publish.PublicationContainer;
@@ -46,26 +44,18 @@ class MavenPluginPublishPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.afterEvaluate(new Action<Project>() {
-            @Override
-            public void execute(final Project project) {
-                configurePublishing(project);
-            }
-        });
+        project.afterEvaluate(project1 -> configurePublishing(project1));
     }
 
     private void configurePublishing(final Project project) {
-        project.getExtensions().configure(PublishingExtension.class, new Action<PublishingExtension>() {
-            @Override
-            public void execute(PublishingExtension publishing) {
-                final GradlePluginDevelopmentExtension pluginDevelopment = project.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
-                if (!pluginDevelopment.isAutomatedPublishing()) {
-                    return;
-                }
-                SoftwareComponent mainComponent = project.getComponents().getByName("java");
-                MavenPublication mainPublication = addMainPublication(publishing, mainComponent);
-                addMarkerPublications(mainPublication, publishing, pluginDevelopment);
+        project.getExtensions().configure(PublishingExtension.class, publishing -> {
+            final GradlePluginDevelopmentExtension pluginDevelopment = project.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
+            if (!pluginDevelopment.isAutomatedPublishing()) {
+                return;
             }
+            SoftwareComponent mainComponent = project.getComponents().getByName("java");
+            MavenPublication mainPublication = addMainPublication(publishing, mainComponent);
+            addMarkerPublications(mainPublication, publishing, pluginDevelopment);
         });
     }
 
@@ -87,20 +77,17 @@ class MavenPluginPublishPlugin implements Plugin<Project> {
         publication.setAlias(true);
         publication.setArtifactId(pluginId + PLUGIN_MARKER_SUFFIX);
         publication.setGroupId(pluginId);
-        publication.getPom().withXml(new Action<XmlProvider>() {
-            @Override
-            public void execute(XmlProvider xmlProvider) {
-                Element root = xmlProvider.asElement();
-                Document document = root.getOwnerDocument();
-                Node dependencies = root.appendChild(document.createElement("dependencies"));
-                Node dependency = dependencies.appendChild(document.createElement("dependency"));
-                Node groupId = dependency.appendChild(document.createElement("groupId"));
-                groupId.setTextContent(coordinates.getGroupId());
-                Node artifactId = dependency.appendChild(document.createElement("artifactId"));
-                artifactId.setTextContent(coordinates.getArtifactId());
-                Node version = dependency.appendChild(document.createElement("version"));
-                version.setTextContent(coordinates.getVersion());
-            }
+        publication.getPom().withXml(xmlProvider -> {
+            Element root = xmlProvider.asElement();
+            Document document = root.getOwnerDocument();
+            Node dependencies = root.appendChild(document.createElement("dependencies"));
+            Node dependency = dependencies.appendChild(document.createElement("dependency"));
+            Node groupId = dependency.appendChild(document.createElement("groupId"));
+            groupId.setTextContent(coordinates.getGroupId());
+            Node artifactId = dependency.appendChild(document.createElement("artifactId"));
+            artifactId.setTextContent(coordinates.getArtifactId());
+            Node version = dependency.appendChild(document.createElement("version"));
+            version.setTextContent(coordinates.getVersion());
         });
         publication.getPom().getName().set(declaration.getDisplayName());
         publication.getPom().getDescription().set(declaration.getDescription());

@@ -17,12 +17,12 @@ package org.gradle.execution;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.specs.Spec;
 import org.gradle.execution.taskpath.ResolvedTaskPath;
 import org.gradle.execution.taskpath.TaskPathResolver;
-import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.util.NameMatcher;
 
 import javax.annotation.Nullable;
@@ -64,12 +64,7 @@ public class TaskSelector {
         }
 
         final Set<Task> selectedTasks = getSelection(path, gradle.getDefaultProject()).getTasks();
-        return new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task element) {
-                return !selectedTasks.contains(element);
-            }
-        };
+        return element -> !selectedTasks.contains(element);
     }
 
     public TaskSelection getSelection(@Nullable String projectPath, @Nullable File root, String path) {

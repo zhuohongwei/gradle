@@ -46,12 +46,7 @@ import java.util.zip.ZipFile;
  * Determines the classpath for a module by looking for a '${module}-classpath.properties' resource with 'name' set to the name of the module.
  */
 public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore {
-    private static final Spec<File> SATISFY_ALL = new Spec<File>() {
-        @Override
-        public boolean isSatisfiedBy(File element) {
-            return true;
-        }
-    };
+    private static final Spec<File> SATISFY_ALL = element -> true;
 
     @Nullable
     private final GradleInstallation gradleInstallation;
@@ -150,12 +145,7 @@ public class DefaultModuleRegistry implements ModuleRegistry, CachedJarFileStore
     }
 
     private Module loadOptionalModule(final String moduleName) {
-        File jarFile = findJar(moduleName, new Spec<File>() {
-            @Override
-            public boolean isSatisfiedBy(File jarFile) {
-                return hasModuleProperties(moduleName, jarFile);
-            }
-        });
+        File jarFile = findJar(moduleName, jarFile1 -> hasModuleProperties(moduleName, jarFile1));
         if (jarFile != null) {
             Set<File> implementationClasspath = new LinkedHashSet<File>();
             implementationClasspath.add(jarFile);

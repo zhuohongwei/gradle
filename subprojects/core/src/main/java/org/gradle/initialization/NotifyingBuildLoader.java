@@ -50,12 +50,7 @@ public class NotifyingBuildLoader implements BuildLoader {
             @Override
             public BuildOperationDescriptor.Builder description() {
                 return BuildOperationDescriptor.displayName("Load projects").
-                    progressDisplayName("Loading projects").details(new LoadProjectsBuildOperationType.Details() {
-                    @Override
-                    public String getBuildPath() {
-                        return buildPath;
-                    }
-                });
+                    progressDisplayName("Loading projects").details((LoadProjectsBuildOperationType.Details) () -> buildPath);
             }
 
             @Override
@@ -75,12 +70,7 @@ public class NotifyingBuildLoader implements BuildLoader {
             @Override
             public BuildOperationDescriptor.Builder description() {
                 return BuildOperationDescriptor.displayName(gradle.contextualize("Notify projectsLoaded listeners"))
-                    .details(new NotifyProjectsLoadedBuildOperationType.Details() {
-                        @Override
-                        public String getBuildPath() {
-                            return buildPath;
-                        }
-                    });
+                    .details((NotifyProjectsLoadedBuildOperationType.Details) () -> buildPath);
             }
         });
     }
@@ -176,10 +166,5 @@ public class NotifyingBuildLoader implements BuildLoader {
         }
     }
 
-    private static final Comparator<LoadProjectsBuildOperationType.Result.Project> PROJECT_COMPARATOR = new Comparator<LoadProjectsBuildOperationType.Result.Project>() {
-        @Override
-        public int compare(LoadProjectsBuildOperationType.Result.Project o1, LoadProjectsBuildOperationType.Result.Project o2) {
-            return o1.getName().compareTo(o2.getName());
-        }
-    };
+    private static final Comparator<LoadProjectsBuildOperationType.Result.Project> PROJECT_COMPARATOR = (o1, o2) -> o1.getName().compareTo(o2.getName());
 }

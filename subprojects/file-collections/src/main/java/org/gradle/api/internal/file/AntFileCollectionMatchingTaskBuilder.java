@@ -16,14 +16,13 @@
 
 package org.gradle.api.internal.file;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 import groovy.lang.Closure;
-import org.gradle.internal.metaobject.BeanDynamicObject;
-import org.gradle.internal.metaobject.DynamicObject;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.tasks.AntBuilderAware;
+import org.gradle.internal.metaobject.BeanDynamicObject;
+import org.gradle.internal.metaobject.DynamicObject;
 
 import java.util.Collections;
 
@@ -42,12 +41,7 @@ public class AntFileCollectionMatchingTaskBuilder implements AntBuilderAware {
         final Iterable<DirectoryFileTree> existing = Lists.newLinkedList(
                 FluentIterable
                         .from(fileTrees)
-                        .filter(new Predicate<DirectoryFileTree>() {
-                            @Override
-                            public boolean apply(DirectoryFileTree input) {
-                                return input.getDir().exists();
-                            }
-                        })
+                        .filter(input -> input.getDir().exists())
         );
 
         for (DirectoryFileTree fileTree : existing) {

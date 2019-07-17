@@ -159,12 +159,9 @@ public class GradleBuild extends ConventionTask {
         // TODO: Allow us to inject plugins into GradleBuild nested builds too.
         BuildDefinition buildDefinition = BuildDefinition.fromStartParameter(getStartParameter(), getServices().get(PublicBuildPath.class));
         NestedRootBuild nestedBuild = buildStateRegistry.addNestedBuildTree(buildDefinition, currentBuild);
-        nestedBuild.run(new Transformer<Void, BuildController>() {
-            @Override
-            public Void transform(BuildController buildController) {
-                buildController.run();
-                return null;
-            }
+        nestedBuild.run((Transformer<Void, BuildController>) buildController -> {
+            buildController.run();
+            return null;
         });
     }
 }

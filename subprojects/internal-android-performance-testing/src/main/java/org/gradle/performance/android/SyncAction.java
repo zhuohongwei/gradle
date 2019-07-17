@@ -19,7 +19,6 @@ import com.android.builder.model.AndroidProject;
 import org.gradle.api.Action;
 import org.gradle.tooling.BuildActionExecuter;
 import org.gradle.tooling.ProjectConnection;
-import org.gradle.tooling.events.ProgressEvent;
 import org.gradle.tooling.events.ProgressListener;
 
 import java.util.Map;
@@ -61,12 +60,9 @@ public class SyncAction {
     }
 
     private static ProgressListener noOpListener() {
-        return new ProgressListener() {
-            @Override
-            public void statusChanged(ProgressEvent event) {
-                // Progress events have no expensive logic of their own, so we don't do anything
-                // with them. We only test the overhead of sending/receiving them
-            }
+        return event -> {
+            // Progress events have no expensive logic of their own, so we don't do anything
+            // with them. We only test the overhead of sending/receiving them
         };
     }
 }

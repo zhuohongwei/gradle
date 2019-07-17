@@ -76,20 +76,17 @@ public class WellKnownClassLoaderRegistry implements PayloadClassLoaderRegistry 
     @Override
     public DeserializeMap newDeserializeSession() {
         final DeserializeMap delegateSession = delegate.newDeserializeSession();
-        return new DeserializeMap() {
-            @Override
-            public Class<?> resolveClass(ClassLoaderDetails classLoaderDetails, String className) throws ClassNotFoundException {
-                if (classLoaderDetails.spec instanceof KnownClassLoaderSpec) {
-                    KnownClassLoaderSpec knownClassLoaderSpec = (KnownClassLoaderSpec) classLoaderDetails.spec;
-                    switch (knownClassLoaderSpec.id) {
-                        case PLATFORM_CLASS_LOADER_ID:
-                            return Class.forName(className, false, PLATFORM_CLASS_LOADER);
-                        default:
-                            throw new IllegalArgumentException("Unknown ClassLoader id specified.");
-                    }
+        return (classLoaderDetails, className) -> {
+            if (classLoaderDetails.spec instanceof KnownClassLoaderSpec) {
+                KnownClassLoaderSpec knownClassLoaderSpec = (KnownClassLoaderSpec) classLoaderDetails.spec;
+                switch (knownClassLoaderSpec.id) {
+                    case PLATFORM_CLASS_LOADER_ID:
+                        return Class.forName(className, false, PLATFORM_CLASS_LOADER);
+                    default:
+                        throw new IllegalArgumentException("Unknown ClassLoader id specified.");
                 }
-                return delegateSession.resolveClass(classLoaderDetails, className);
             }
+            return delegateSession.resolveClass(classLoaderDetails, className);
         };
     }
 

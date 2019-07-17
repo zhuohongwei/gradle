@@ -32,13 +32,10 @@ public class BuildProfileServices extends AbstractPluginServiceRegistry {
     public void registerBuildServices(ServiceRegistration registration) {
         registration.addProvider(new Object() {
             public BuildScopeListenerManagerAction createBuildProfileListeners(ServiceRegistry services, BuildDefinition buildDefinition) {
-                return new BuildScopeListenerManagerAction() {
-                    @Override
-                    public void execute(ListenerManager listenerManager) {
-                        if (buildDefinition.getStartParameter().isProfile()) {
-                            listenerManager.addListener(services.get(ProfileEventAdapter.class));
-                            listenerManager.addListener(services.get(ReportGeneratingProfileListener.class));
-                        }
+                return listenerManager -> {
+                    if (buildDefinition.getStartParameter().isProfile()) {
+                        listenerManager.addListener(services.get(ProfileEventAdapter.class));
+                        listenerManager.addListener(services.get(ReportGeneratingProfileListener.class));
                     }
                 };
             }

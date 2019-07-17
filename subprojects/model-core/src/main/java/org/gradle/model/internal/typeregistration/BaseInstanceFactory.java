@@ -260,16 +260,13 @@ public class BaseInstanceFactory<PUBLIC> implements InstanceFactory<PUBLIC> {
         }
 
         private <V> void validateManagedInternalView(final InternalViewRegistration<V> internalViewRegistration, final ModelType<?> delegateType) {
-            walkTypeHierarchy(internalViewRegistration.getInternalView().getConcreteClass(), new TypeVisitor<V>() {
-                @Override
-                public void visitType(Class<? super V> type) {
-                    if (!type.isAnnotationPresent(Managed.class)
-                        && !type.isAssignableFrom(delegateType.getConcreteClass())) {
-                        throw new IllegalStateException(String.format("Factory registration for '%s' is invalid because the default implementation type '%s' does not implement unmanaged internal view '%s', "
-                                + "internal view was registered by %s",
-                            publicType, delegateType, ModelType.of(type),
-                            internalViewRegistration.getSource()));
-                    }
+            walkTypeHierarchy(internalViewRegistration.getInternalView().getConcreteClass(), type -> {
+                if (!type.isAnnotationPresent(Managed.class)
+                    && !type.isAssignableFrom(delegateType.getConcreteClass())) {
+                    throw new IllegalStateException(String.format("Factory registration for '%s' is invalid because the default implementation type '%s' does not implement unmanaged internal view '%s', "
+                            + "internal view was registered by %s",
+                        publicType, delegateType, ModelType.of(type),
+                        internalViewRegistration.getSource()));
                 }
             });
         }

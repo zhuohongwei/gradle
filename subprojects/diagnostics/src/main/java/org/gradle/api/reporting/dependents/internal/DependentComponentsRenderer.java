@@ -17,7 +17,6 @@
 package org.gradle.api.reporting.dependents.internal;
 
 import com.google.common.collect.Sets;
-import org.gradle.api.Action;
 import org.gradle.api.tasks.diagnostics.internal.text.TextReportBuilder;
 import org.gradle.internal.graph.GraphRenderer;
 import org.gradle.internal.logging.text.StyledTextOutput;
@@ -32,7 +31,9 @@ import org.gradle.reporting.ReportRenderer;
 import javax.annotation.Nullable;
 import java.util.LinkedHashSet;
 
-import static org.gradle.internal.logging.text.StyledTextOutput.Style.*;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.Description;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.Identifier;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.Info;
 
 public class DependentComponentsRenderer extends ReportRenderer<ComponentSpec, TextReportBuilder> {
 
@@ -60,12 +61,9 @@ public class DependentComponentsRenderer extends ReportRenderer<ComponentSpec, T
         }
         StyledTextOutput output = builder.getOutput();
         GraphRenderer renderer = new GraphRenderer(output);
-        renderer.visit(new Action<StyledTextOutput>() {
-            @Override
-            public void execute(StyledTextOutput output) {
-                output.withStyle(Identifier).text(component.getName());
-                output.withStyle(Description).text(" - Components that depend on " + component.getDisplayName());
-            }
+        renderer.visit(output1 -> {
+            output1.withStyle(Identifier).text(component.getName());
+            output1.withStyle(Description).text(" - Components that depend on " + component.getDisplayName());
         }, true);
         DependentComponentsGraphRenderer dependentsGraphRenderer = new DependentComponentsGraphRenderer(renderer, showNonBuildable, showTestSuites);
         if (root.getChildren().isEmpty()) {

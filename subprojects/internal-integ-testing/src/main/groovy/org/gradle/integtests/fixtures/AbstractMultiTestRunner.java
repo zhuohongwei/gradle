@@ -199,12 +199,7 @@ public abstract class AbstractMultiTestRunner extends Runner implements Filterab
                             feature.setSkipped(feature.isSkipped() || !execution.isTestEnabled(new TestDescriptionBackedTestDetails(childDescription, feature.getDescription())));
                             final NameProvider<IterationInfo> provider = feature.getIterationNameProvider();
                             if (provider!=null) {
-                                feature.setIterationNameProvider(new NameProvider<IterationInfo>() {
-                                    @Override
-                                    public String getName(IterationInfo iterationInfo) {
-                                        return provider.getName(iterationInfo) + " [" + execution.getDisplayName() + "]";
-                                    }
-                                });
+                                feature.setIterationNameProvider(iterationInfo -> provider.getName(iterationInfo) + " [" + execution.getDisplayName() + "]");
                             }
                         }
                     } catch (IllegalAccessException e) {

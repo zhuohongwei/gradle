@@ -107,13 +107,10 @@ public class WriteProperties extends DefaultTask {
     public void property(final String name, final Object value) {
         checkForNullValue(name, value);
         if (DeferredUtil.isDeferred(value)) {
-            deferredProperties.put(name, new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    Object futureValue = DeferredUtil.unpack(value);
-                    checkForNullValue(name, futureValue);
-                    return String.valueOf(futureValue);
-                }
+            deferredProperties.put(name, () -> {
+                Object futureValue = DeferredUtil.unpack(value);
+                checkForNullValue(name, futureValue);
+                return String.valueOf(futureValue);
             });
         } else {
             properties.put(name, String.valueOf(value));

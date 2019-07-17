@@ -17,7 +17,6 @@
 package org.gradle.play.plugins;
 
 import org.apache.commons.lang.WordUtils;
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
@@ -57,43 +56,37 @@ public class PlayTestPlugin extends RuleSource {
             final File testSourceDir = fileResolver.resolve("test");
             final FileCollection testSources = ImmutableFileCollection.of(testSourceDir).getAsFileTree().matching(new PatternSet().include("**/*.scala", "**/*.java"));
             final File testClassesDir = new File(buildDir, binary.getProjectScopedName() + "/testClasses");
-            tasks.create(testCompileTaskName, PlatformScalaCompile.class, new Action<PlatformScalaCompile>() {
-                @Override
-                public void execute(PlatformScalaCompile scalaCompile) {
-                    scalaCompile.setDescription("Compiles the scala and java test sources for the " + binary.getDisplayName() + ".");
+            tasks.create(testCompileTaskName, PlatformScalaCompile.class, scalaCompile -> {
+                scalaCompile.setDescription("Compiles the scala and java test sources for the " + binary.getDisplayName() + ".");
 
-                    scalaCompile.setClasspath(testCompileClasspath);
+                scalaCompile.setClasspath(testCompileClasspath);
 
-                    scalaCompile.dependsOn(binary.getBuildTask());
-                    scalaCompile.setPlatform(binary.getTargetPlatform().getScalaPlatform());
-                    scalaCompile.setDestinationDir(testClassesDir);
-                    scalaCompile.setSource(testSources);
-                    String targetCompatibility = binary.getTargetPlatform().getJavaPlatform().getTargetCompatibility().getMajorVersion();
-                    scalaCompile.setSourceCompatibility(targetCompatibility);
-                    scalaCompile.setTargetCompatibility(targetCompatibility);
+                scalaCompile.dependsOn(binary.getBuildTask());
+                scalaCompile.setPlatform(binary.getTargetPlatform().getScalaPlatform());
+                scalaCompile.setDestinationDir(testClassesDir);
+                scalaCompile.setSource(testSources);
+                String targetCompatibility = binary.getTargetPlatform().getJavaPlatform().getTargetCompatibility().getMajorVersion();
+                scalaCompile.setSourceCompatibility(targetCompatibility);
+                scalaCompile.setTargetCompatibility(targetCompatibility);
 
-                    IncrementalCompileOptions incrementalOptions = scalaCompile.getScalaCompileOptions().getIncrementalOptions();
-                    incrementalOptions.getAnalysisFile().set(new File(buildDir, "tmp/scala/compilerAnalysis/" + testCompileTaskName + ".analysis"));
+                IncrementalCompileOptions incrementalOptions = scalaCompile.getScalaCompileOptions().getIncrementalOptions();
+                incrementalOptions.getAnalysisFile().set(new File(buildDir, "tmp/scala/compilerAnalysis/" + testCompileTaskName + ".analysis"));
 
-                }
             });
 
             final String testTaskName = binary.getTasks().taskName("test");
             final File binaryBuildDir = new File(buildDir, binary.getProjectScopedName());
-            tasks.create(testTaskName, Test.class, new Action<Test>() {
-                @Override
-                public void execute(Test test) {
-                    test.setDescription("Runs " + WordUtils.uncapitalize(binary.getDisplayName() + "."));
+            tasks.create(testTaskName, Test.class, test -> {
+                test.setDescription("Runs " + WordUtils.uncapitalize(binary.getDisplayName() + "."));
 
-                    test.setClasspath(getRuntimeClasspath(testClassesDir, testCompileClasspath));
+                test.setClasspath(getRuntimeClasspath(testClassesDir, testCompileClasspath));
 
-                    test.setTestClassesDirs(ImmutableFileCollection.of(testClassesDir));
-                    test.setBinResultsDir(new File(binaryBuildDir, "results/" + testTaskName + "/bin"));
-                    test.getReports().getJunitXml().setDestination(new File(binaryBuildDir, "reports/test/xml"));
-                    test.getReports().getHtml().setDestination(new File(binaryBuildDir, "reports/test"));
-                    test.dependsOn(testCompileTaskName);
-                    test.setWorkingDir(projectIdentifier.getProjectDir());
-                }
+                test.setTestClassesDirs(ImmutableFileCollection.of(testClassesDir));
+                test.setBinResultsDir(new File(binaryBuildDir, "results/" + testTaskName + "/bin"));
+                test.getReports().getJunitXml().setDestination(new File(binaryBuildDir, "reports/test/xml"));
+                test.getReports().getHtml().setDestination(new File(binaryBuildDir, "reports/test"));
+                test.dependsOn(testCompileTaskName);
+                test.setWorkingDir(projectIdentifier.getProjectDir());
             });
             binary.getTasks().add(tasks.get(testTaskName));
         }
@@ -110,13 +103,10 @@ public class PlayTestPlugin extends RuleSource {
     @Mutate
     void attachTestSuitesToCheckTask(ModelMap<Task> tasks, @Path("binaries") final ModelMap<PlayApplicationBinarySpec> playBinaries) {
         // TODO - binaries aren't an input to this rule, they're an input to the action
-        tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME, new Action<Task>() {
-            @Override
-            public void execute(Task checkTask) {
-                // TODO Need a better mechanism to wire tasks into lifecycle
-                for (PlayApplicationBinarySpec binary : playBinaries) {
-                    checkTask.dependsOn(binary.getTasks().withType(Test.class));
-                }
+        tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME, checkTask -> {
+            // TODO Need a better mechanism to wire tasks into lifecycle
+            for (PlayApplicationBinarySpec binary : playBinaries) {
+                checkTask.dependsOn(binary.getTasks().withType(Test.class));
             }
         });
     }

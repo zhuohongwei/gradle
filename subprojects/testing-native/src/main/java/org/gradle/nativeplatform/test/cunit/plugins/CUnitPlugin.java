@@ -16,7 +16,6 @@
 
 package org.gradle.nativeplatform.test.cunit.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -68,21 +67,13 @@ public class CUnitPlugin implements Plugin<Project> {
 
         @Mutate
         public void configureCUnitTestSuiteSources(@Each final CUnitTestSuiteSpec suite, @Path("buildDir") final File buildDir) {
-            suite.getSources().create(CUNIT_LAUNCHER_SOURCE_SET, CSourceSet.class, new Action<CSourceSet>() {
-                @Override
-                public void execute(CSourceSet launcherSources) {
-                    File baseDir = new File(buildDir, "src/" + suite.getName() + "/cunitLauncher");
-                    launcherSources.getSource().srcDir(new File(baseDir, "c"));
-                    launcherSources.getExportedHeaders().srcDir(new File(baseDir, "headers"));
-                }
+            suite.getSources().create(CUNIT_LAUNCHER_SOURCE_SET, CSourceSet.class, launcherSources -> {
+                File baseDir = new File(buildDir, "src/" + suite.getName() + "/cunitLauncher");
+                launcherSources.getSource().srcDir(new File(baseDir, "c"));
+                launcherSources.getExportedHeaders().srcDir(new File(baseDir, "headers"));
             });
 
-            suite.getSources().withType(CSourceSet.class).named("c", new Action<CSourceSet>() {
-                @Override
-                public void execute(CSourceSet cSourceSet) {
-                    cSourceSet.lib(suite.getSources().get(CUNIT_LAUNCHER_SOURCE_SET));
-                }
-            });
+            suite.getSources().withType(CSourceSet.class).named("c", cSourceSet -> cSourceSet.lib(suite.getSources().get(CUNIT_LAUNCHER_SOURCE_SET)));
         }
 
         @Mutate

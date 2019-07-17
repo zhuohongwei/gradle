@@ -21,10 +21,7 @@ import org.gradle.api.internal.tasks.TaskExecuter;
 import org.gradle.api.internal.tasks.TaskExecuterResult;
 import org.gradle.api.internal.tasks.TaskExecutionContext;
 import org.gradle.api.internal.tasks.TaskStateInternal;
-import org.gradle.internal.execution.history.AfterPreviousExecutionState;
 import org.gradle.internal.execution.history.ExecutionHistoryStore;
-
-import java.util.function.Consumer;
 
 public class ResolveAfterPreviousExecutionStateTaskExecuter implements TaskExecuter {
     private final ExecutionHistoryStore executionHistoryStore;
@@ -37,12 +34,7 @@ public class ResolveAfterPreviousExecutionStateTaskExecuter implements TaskExecu
 
     @Override
     public TaskExecuterResult execute(TaskInternal task, TaskStateInternal state, final TaskExecutionContext context) {
-        executionHistoryStore.load(task.getPath()).ifPresent(new Consumer<AfterPreviousExecutionState>() {
-            @Override
-            public void accept(AfterPreviousExecutionState execution) {
-                context.setAfterPreviousExecution(execution);
-            }
-        });
+        executionHistoryStore.load(task.getPath()).ifPresent(execution -> context.setAfterPreviousExecution(execution));
         return delegate.execute(task, state, context);
     }
 }

@@ -30,7 +30,6 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.gradle.internal.os.OperatingSystem;
 import org.gradle.plugins.ide.IdeWorkspace;
-import org.gradle.process.ExecSpec;
 
 import java.awt.*;
 import java.io.File;
@@ -75,18 +74,10 @@ public abstract class IdePlugin implements Plugin<Project> {
         project = target;
         String lifecycleTaskName = getLifecycleTaskName();
         lifecycleTask = target.getTasks().register(lifecycleTaskName);
-        cleanTask = target.getTasks().register(cleanName(lifecycleTaskName), Delete.class, new Action<Delete>() {
-            @Override
-            public void execute(Delete task) {
-                task.setGroup("IDE");
-            }
-        });
-        lifecycleTask.configure(new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.setGroup("IDE");
-                task.shouldRunAfter(cleanTask);
-            }
+        cleanTask = target.getTasks().register(cleanName(lifecycleTaskName), Delete.class, task -> task.setGroup("IDE"));
+        lifecycleTask.configure(task -> {
+            task.setGroup("IDE");
+            task.shouldRunAfter(cleanTask);
         });
         onApply(target);
     }
@@ -117,95 +108,49 @@ public abstract class IdePlugin implements Plugin<Project> {
 
     public void addWorker(final TaskProvider<? extends Task> worker, String workerName, boolean includeInClean) {
         lifecycleTask.configure(dependsOn(worker));
-        final TaskProvider<Delete> cleanWorker = project.getTasks().register(cleanName(workerName), Delete.class, new Action<Delete>() {
-            @Override
-            public void execute(Delete cleanWorker) {
-                cleanWorker.delete(worker);
-            }
-        });
+        final TaskProvider<Delete> cleanWorker = project.getTasks().register(cleanName(workerName), Delete.class, cleanWorker1 -> cleanWorker1.delete(worker));
 
         if (includeInClean) {
             cleanTask.configure(dependsOn(cleanWorker));
         }
 
         // Always schedule the generation task after the clean task
-        worker.configure(new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.shouldRunAfter(cleanWorker);
-            }
-        });
+        worker.configure((Action<Task>) task -> task.shouldRunAfter(cleanWorker));
     }
 
     protected static Action<? super Task> dependsOn(final Task taskDependency) {
-        return new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.dependsOn(taskDependency);
-            }
-        };
+        return (Action<Task>) task -> task.dependsOn(taskDependency);
     }
 
     protected static Action<? super Task> dependsOn(final TaskProvider<? extends Task> taskProvider) {
-        return new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.dependsOn(taskProvider);
-            }
-        };
+        return (Action<Task>) task -> task.dependsOn(taskProvider);
     }
 
     protected static Action<? super Task> withDescription(final String description) {
-        return new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.setDescription(description);
-            }
-        };
+        return (Action<Task>) task -> task.setDescription(description);
     }
 
     protected void onApply(Project target) {
     }
 
     protected void addWorkspace(final IdeWorkspace workspace) {
-        lifecycleTask.configure(new Action<Task>() {
-            @Override
-            public void execute(Task lifecycleTask) {
-                lifecycleTask.doLast(new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        LOGGER.lifecycle(String.format("Generated %s at %s", workspace.getDisplayName(), new ConsoleRenderer().asClickableFileUrl(workspace.getLocation().get().getAsFile())));
-                    }
-                });
-            }
-        });
+        lifecycleTask.configure(lifecycleTask -> lifecycleTask.doLast(task -> LOGGER.lifecycle(String.format("Generated %s at %s", workspace.getDisplayName(), new ConsoleRenderer().asClickableFileUrl(workspace.getLocation().get().getAsFile())))));
 
-        project.getTasks().register("open" + StringUtils.capitalize(getLifecycleTaskName()), new Action<Task>() {
-            @Override
-            public void execute(Task openTask) {
-                openTask.dependsOn(lifecycleTask);
-                openTask.setGroup("IDE");
-                openTask.setDescription("Opens the " + workspace.getDisplayName());
-                openTask.doLast(new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        if (OperatingSystem.current().isMacOsX()) {
-                            project.exec(new Action<ExecSpec>() {
-                                @Override
-                                public void execute(ExecSpec execSpec) {
-                                    execSpec.commandLine("open", workspace.getLocation().get());
-                                }
-                            });
-                        } else {
-                            try {
-                                Desktop.getDesktop().open(workspace.getLocation().get().getAsFile());
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        }
+        project.getTasks().register("open" + StringUtils.capitalize(getLifecycleTaskName()), openTask -> {
+            openTask.dependsOn(lifecycleTask);
+            openTask.setGroup("IDE");
+            openTask.setDescription("Opens the " + workspace.getDisplayName());
+            openTask.doLast(task -> {
+                if (OperatingSystem.current().isMacOsX()) {
+                    project.exec(execSpec -> execSpec.commandLine("open", workspace.getLocation().get()));
+                } else {
+                    try {
+                        Desktop.getDesktop().open(workspace.getLocation().get().getAsFile());
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
-                });
-            }
+                }
+            });
         });
     }
 

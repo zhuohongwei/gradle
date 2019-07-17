@@ -20,7 +20,6 @@ import org.gradle.api.plugins.buildcomparison.compare.internal.BuildOutcomeCompa
 import org.gradle.api.plugins.buildcomparison.compare.internal.ComparisonResultType;
 import org.gradle.api.plugins.buildcomparison.outcome.internal.BuildOutcomeAssociation;
 import org.gradle.api.plugins.buildcomparison.outcome.internal.archive.entry.ArchiveEntryComparison;
-import org.gradle.api.specs.Spec;
 import org.gradle.util.CollectionUtils;
 
 import java.util.SortedSet;
@@ -43,12 +42,7 @@ public class GeneratedArchiveBuildOutcomeComparisonResult extends BuildOutcomeCo
         boolean targetFileExists = getCompared().getTarget().getArchiveFile() != null;
 
         if (sourceFileExists && targetFileExists) {
-            if (CollectionUtils.every(getEntryComparisons(), new Spec<ArchiveEntryComparison>() {
-                @Override
-                public boolean isSatisfiedBy(ArchiveEntryComparison element) {
-                    return element.getComparisonResultType() == ComparisonResultType.EQUAL;
-                }
-            })) {
+            if (CollectionUtils.every(getEntryComparisons(), element -> element.getComparisonResultType() == ComparisonResultType.EQUAL)) {
                 return ComparisonResultType.EQUAL;
             } else {
                 return ComparisonResultType.UNEQUAL;

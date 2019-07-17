@@ -290,15 +290,12 @@ public class DaemonStateCoordinator implements Stoppable, DaemonStateControl {
     public void runCommand(final Runnable command, String commandDisplayName) throws DaemonUnavailableException {
         onStartCommand(commandDisplayName);
         try {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        command.run();
-                        onCommandSuccessful();
-                    } catch (Throwable t) {
-                        onCommandFailed(t);
-                    }
+            executor.execute(() -> {
+                try {
+                    command.run();
+                    onCommandSuccessful();
+                } catch (Throwable t) {
+                    onCommandFailed(t);
                 }
             });
             waitForCommandCompletion();

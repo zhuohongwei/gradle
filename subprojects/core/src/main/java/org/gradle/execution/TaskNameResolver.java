@@ -59,12 +59,7 @@ public class TaskNameResolver {
         } else {
             discoverTasks(project);
             if (hasTask(taskName, project)) {
-                return new TaskSelectionResult() {
-                    @Override
-                    public void collectTasks(Collection<? super Task> tasks) {
-                        tasks.add(getExistingTask(project, taskName));
-                    }
-                };
+                return tasks -> tasks.add(getExistingTask(project, taskName));
             }
         }
 

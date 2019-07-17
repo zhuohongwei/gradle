@@ -29,7 +29,6 @@ import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.Selec
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.artifact.VisitedArtifactSet;
 import org.gradle.api.internal.file.FileCollectionFactory;
 import org.gradle.api.internal.tasks.TaskDependencyContainer;
-import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.internal.tasks.WorkNodeAction;
 import org.gradle.api.specs.Specs;
 import org.gradle.internal.Factory;
@@ -99,22 +98,19 @@ public class DefaultExecutionGraphDependenciesResolver implements ExecutionGraph
         if (!transformationStep.requiresDependencies()) {
             return TaskDependencyContainer.EMPTY;
         } else {
-            return new TaskDependencyContainer() {
-                @Override
-                public void visitDependencies(TaskDependencyResolveContext context) {
-                    ResolverResults results = graphResults.create();
-                    if (buildDependencies == null) {
-                        buildDependencies = computeDependencies(componentIdentifier, ProjectComponentIdentifier.class, results.getResolutionResult().getAllComponents(), true);
-                    }
-                    VisitedArtifactSet visitedArtifacts = results.getVisitedArtifacts();
-                    if (!buildDependencies.isEmpty()) {
-                        SelectedArtifactSet projectArtifacts = visitedArtifacts.select(Specs.satisfyAll(), transformationStep.getFromAttributes(), element -> {
-                            return buildDependencies.contains(element);
-                        }, true);
-                        context.add(projectArtifacts);
-                    }
-                    context.add(graphResolveAction);
+            return context -> {
+                ResolverResults results = graphResults.create();
+                if (buildDependencies == null) {
+                    buildDependencies = computeDependencies(componentIdentifier, ProjectComponentIdentifier.class, results.getResolutionResult().getAllComponents(), true);
                 }
+                VisitedArtifactSet visitedArtifacts = results.getVisitedArtifacts();
+                if (!buildDependencies.isEmpty()) {
+                    SelectedArtifactSet projectArtifacts = visitedArtifacts.select(Specs.satisfyAll(), transformationStep.getFromAttributes(), element -> {
+                        return buildDependencies.contains(element);
+                    }, true);
+                    context.add(projectArtifacts);
+                }
+                context.add(graphResolveAction);
             };
         }
     }

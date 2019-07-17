@@ -21,7 +21,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.ssl.SSLInitializationException;
-import org.gradle.internal.Factory;
 import org.gradle.internal.SystemProperties;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -62,15 +61,12 @@ public class DefaultSslContextFactory implements SslContextFactory {
     }
 
     private Map<String, String> getCurrentProperties() {
-        return SystemProperties.getInstance().withSystemProperties(new Factory<Map<String, String>>() {
-            @Override
-            public Map<String, String> create() {
-                Map<String, String> currentProperties = new TreeMap<String, String>();
-                for (String prop : SSL_SYSTEM_PROPERTIES) {
-                    currentProperties.put(prop, System.getProperty(prop));
-                }
-                return currentProperties;
+        return SystemProperties.getInstance().withSystemProperties(() -> {
+            Map<String, String> currentProperties = new TreeMap<String, String>();
+            for (String prop : SSL_SYSTEM_PROPERTIES) {
+                currentProperties.put(prop, System.getProperty(prop));
             }
+            return currentProperties;
         });
     }
 
@@ -96,12 +92,7 @@ public class DefaultSslContextFactory implements SslContextFactory {
              * https://github.com/gradle/gradle/issues/7842
              * https://github.com/gradle/gradle/issues/2588
              */
-            return SystemProperties.getInstance().withSystemProperties(props, new Factory<SSLContext>() {
-                @Override
-                public SSLContext create() {
-                    return delegate.load(props);
-                }
-            });
+            return SystemProperties.getInstance().withSystemProperties(props, () -> delegate.load(props));
         }
     }
 

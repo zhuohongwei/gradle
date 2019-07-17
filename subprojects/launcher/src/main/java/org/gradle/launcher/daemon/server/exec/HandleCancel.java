@@ -28,12 +28,9 @@ public class HandleCancel implements DaemonCommandAction {
 
     @Override
     public void execute(final DaemonCommandExecution execution) {
-        execution.getConnection().onCancel(new Runnable() {
-            @Override
-            public void run() {
-                LOGGER.info("HandleCancel processing {}", execution.getCommand());
-                execution.getDaemonStateControl().cancelBuild();
-            }
+        execution.getConnection().onCancel(() -> {
+            LOGGER.info("HandleCancel processing {}", execution.getCommand());
+            execution.getDaemonStateControl().cancelBuild();
         });
         try {
             execution.proceed();

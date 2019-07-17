@@ -75,14 +75,11 @@ public class DefaultGradleRunner extends GradleRunner {
     }
 
     private static TestKitDirProvider calculateTestKitDirProvider(SystemProperties systemProperties) {
-        return systemProperties.withSystemProperties(new Factory<TestKitDirProvider>() {
-            @Override
-            public TestKitDirProvider create() {
-                if (System.getProperties().containsKey(TEST_KIT_DIR_SYS_PROP)) {
-                    return new ConstantTestKitDirProvider(new File(System.getProperty(TEST_KIT_DIR_SYS_PROP)));
-                } else {
-                    return new TempTestKitDirProvider(systemProperties);
-                }
+        return systemProperties.withSystemProperties((Factory<TestKitDirProvider>) () -> {
+            if (System.getProperties().containsKey(TEST_KIT_DIR_SYS_PROP)) {
+                return new ConstantTestKitDirProvider(new File(System.getProperty(TEST_KIT_DIR_SYS_PROP)));
+            } else {
+                return new TempTestKitDirProvider(systemProperties);
             }
         });
     }
@@ -248,24 +245,18 @@ public class DefaultGradleRunner extends GradleRunner {
 
     @Override
     public BuildResult build() {
-        return run(new Action<GradleExecutionResult>() {
-            @Override
-            public void execute(GradleExecutionResult gradleExecutionResult) {
-                if (!gradleExecutionResult.isSuccessful()) {
-                    throw new UnexpectedBuildFailure(createDiagnosticsMessage("Unexpected build execution failure", gradleExecutionResult), createBuildResult(gradleExecutionResult));
-                }
+        return run(gradleExecutionResult -> {
+            if (!gradleExecutionResult.isSuccessful()) {
+                throw new UnexpectedBuildFailure(createDiagnosticsMessage("Unexpected build execution failure", gradleExecutionResult), createBuildResult(gradleExecutionResult));
             }
         });
     }
 
     @Override
     public BuildResult buildAndFail() {
-        return run(new Action<GradleExecutionResult>() {
-            @Override
-            public void execute(GradleExecutionResult gradleExecutionResult) {
-                if (gradleExecutionResult.isSuccessful()) {
-                    throw new UnexpectedBuildSuccess(createDiagnosticsMessage("Unexpected build execution success", gradleExecutionResult), createBuildResult(gradleExecutionResult));
-                }
+        return run(gradleExecutionResult -> {
+            if (gradleExecutionResult.isSuccessful()) {
+                throw new UnexpectedBuildSuccess(createDiagnosticsMessage("Unexpected build execution success", gradleExecutionResult), createBuildResult(gradleExecutionResult));
             }
         });
     }

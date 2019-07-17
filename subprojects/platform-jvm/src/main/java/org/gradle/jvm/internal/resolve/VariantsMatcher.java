@@ -26,15 +26,15 @@ import org.gradle.model.internal.manage.schema.ModelSchemaStore;
 import org.gradle.platform.base.BinarySpec;
 import org.gradle.platform.base.internal.BinarySpecInternal;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
 
 public class VariantsMatcher {
-    private static final Comparator<VariantValue> SPEC_COMPARATOR = new Comparator<VariantValue>() {
-        @Override
-        public int compare(VariantValue o1, VariantValue o2) {
-            return o1.spec.getDisplayName().compareTo(o2.spec.getDisplayName());
-        }
-    };
+    private static final Comparator<VariantValue> SPEC_COMPARATOR = (o1, o2) -> o1.spec.getDisplayName().compareTo(o2.spec.getDisplayName());
 
     private final List<VariantAxisCompatibilityFactory> factories;
     private final Class<? extends BinarySpec> binarySpecType;
@@ -108,12 +108,7 @@ public class VariantsMatcher {
     }
 
     private static class VariantValue {
-        public static final Function<VariantValue, BinarySpec> SPEC_FUNCTION = new Function<VariantValue, BinarySpec>() {
-            @Override
-            public BinarySpec apply(VariantValue input) {
-                return input.spec;
-            }
-        };
+        public static final Function<VariantValue, BinarySpec> SPEC_FUNCTION = input -> input.spec;
 
         final Object value;
         final BinarySpec spec;

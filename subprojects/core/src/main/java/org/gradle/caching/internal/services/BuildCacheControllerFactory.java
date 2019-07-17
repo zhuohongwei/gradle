@@ -16,7 +16,6 @@
 
 package org.gradle.caching.internal.services;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
@@ -170,14 +169,11 @@ public final class BuildCacheControllerFactory {
                     configMap = description.config;
                 }
                 config.append(" (");
-                Joiner.on(", ").appendTo(config, Iterables.transform(configMap.entrySet(), new Function<Map.Entry<String, String>, String>() {
-                    @Override
-                    public String apply(Map.Entry<String, String> input) {
-                        if (input.getValue() == null) {
-                            return input.getKey();
-                        } else {
-                            return input.getKey() + " = " + input.getValue();
-                        }
+                Joiner.on(", ").appendTo(config, Iterables.transform(configMap.entrySet(), input -> {
+                    if (input.getValue() == null) {
+                        return input.getKey();
+                    } else {
+                        return input.getKey() + " = " + input.getValue();
                     }
                 }));
                 config.append(")");

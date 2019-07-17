@@ -18,7 +18,6 @@ package org.gradle.cache.internal;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.gradle.api.Transformer;
 import org.gradle.cache.AsyncCacheAccess;
 import org.gradle.cache.CacheDecorator;
 import org.gradle.cache.CrossProcessCacheAccess;
@@ -62,14 +61,11 @@ public class InMemoryCacheDecoratorFactory {
     }
 
     private CacheDetails getCache(final String cacheId, final int maxSize) {
-        CacheDetails cacheDetails = caches.get(cacheId, new Transformer<CacheDetails, String>() {
-            @Override
-            public CacheDetails transform(String cacheId) {
-                Cache<Object, Object> entries = createInMemoryCache(cacheId, maxSize);
-                CacheDetails cacheDetails = new CacheDetails(cacheId, maxSize, entries, new AtomicReference<FileLock.State>(null));
-                LOG.debug("Creating in-memory store for cache {} (max size: {})", cacheId, maxSize);
-                return cacheDetails;
-            }
+        CacheDetails cacheDetails = caches.get(cacheId, cacheId1 -> {
+            Cache<Object, Object> entries = createInMemoryCache(cacheId1, maxSize);
+            CacheDetails cacheDetails1 = new CacheDetails(cacheId1, maxSize, entries, new AtomicReference<FileLock.State>(null));
+            LOG.debug("Creating in-memory store for cache {} (max size: {})", cacheId1, maxSize);
+            return cacheDetails1;
         });
         if (cacheDetails.maxEntries != maxSize) {
             throw new IllegalStateException("Mismatched in-memory store size for cache " + cacheId + ", expected: " + maxSize + ", found: " + cacheDetails.maxEntries);

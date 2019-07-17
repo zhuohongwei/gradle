@@ -37,13 +37,13 @@ import org.gradle.groovy.scripts.ScriptCompiler;
 import org.gradle.groovy.scripts.ScriptCompilerFactory;
 import org.gradle.groovy.scripts.ScriptRunner;
 import org.gradle.groovy.scripts.ScriptSource;
-import org.gradle.groovy.scripts.internal.NoDataCompileOperation;
 import org.gradle.groovy.scripts.internal.BuildScriptData;
 import org.gradle.groovy.scripts.internal.BuildScriptDataSerializer;
 import org.gradle.groovy.scripts.internal.BuildScriptTransformer;
 import org.gradle.groovy.scripts.internal.CompileOperation;
 import org.gradle.groovy.scripts.internal.FactoryBackedCompileOperation;
 import org.gradle.groovy.scripts.internal.InitialPassStatementTransformer;
+import org.gradle.groovy.scripts.internal.NoDataCompileOperation;
 import org.gradle.groovy.scripts.internal.SubsetScriptTransformer;
 import org.gradle.internal.Actions;
 import org.gradle.internal.Factory;
@@ -221,12 +221,7 @@ public class DefaultScriptPluginFactory implements ScriptPluginFactory {
                 return;
             }
 
-            Runnable buildScriptRunner = new Runnable() {
-                @Override
-                public void run() {
-                    runner.run(target, services);
-                }
-            };
+            Runnable buildScriptRunner = () -> runner.run(target, services);
 
             boolean hasImperativeStatements = runner.getData().getHasImperativeStatements();
             scriptTarget.addConfiguration(buildScriptRunner, !hasImperativeStatements);

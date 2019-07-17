@@ -15,11 +15,14 @@
  */
 package org.gradle.internal.graph;
 
-import org.gradle.api.Action;
-import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.logging.text.StreamingStyledTextOutput;
+import org.gradle.internal.logging.text.StyledTextOutput;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.Info;
 
@@ -51,13 +54,10 @@ public class DirectedGraphRenderer<N> {
     private void renderTo(final N node, GraphRenderer graphRenderer, Collection<N> rendered, boolean lastChild) {
         final boolean alreadySeen = !rendered.add(node);
 
-        graphRenderer.visit(new Action<StyledTextOutput>() {
-            @Override
-            public void execute(StyledTextOutput output) {
-                nodeRenderer.renderTo(node, output);
-                if (alreadySeen) {
-                    output.text(" (*)");
-                }
+        graphRenderer.visit(output -> {
+            nodeRenderer.renderTo(node, output);
+            if (alreadySeen) {
+                output.text(" (*)");
             }
         }, lastChild);
 

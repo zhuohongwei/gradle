@@ -33,16 +33,13 @@ public class S3ResourceResolver {
 
     private static final Pattern FILENAME_PATTERN = Pattern.compile("[^/]+\\.*$");
 
-    private static final Function<S3ObjectSummary, String> EXTRACT_FILE_NAME = new Function<S3ObjectSummary, String>() {
-        @Override
-        public String apply(S3ObjectSummary input) {
-            Matcher matcher = FILENAME_PATTERN.matcher(input.getKey());
-            if (matcher.find()) {
-                String group = matcher.group(0);
-                return group.contains(".") ? group : null;
-            }
-            return null;
+    private static final Function<S3ObjectSummary, String> EXTRACT_FILE_NAME = input -> {
+        Matcher matcher = FILENAME_PATTERN.matcher(input.getKey());
+        if (matcher.find()) {
+            String group = matcher.group(0);
+            return group.contains(".") ? group : null;
         }
+        return null;
     };
 
     public List<String> resolveResourceNames(ObjectListing objectListing) {

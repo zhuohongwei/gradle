@@ -45,12 +45,7 @@ public class CompatibleDaemonExpirationStrategy implements DaemonExpirationStrat
 
     @Override
     public DaemonExpirationResult checkExpiration() {
-        Spec<DaemonInfo> spec = new Spec<DaemonInfo>() {
-            @Override
-            public boolean isSatisfiedBy(DaemonInfo daemonInfo) {
-                return compatibilitySpec.isSatisfiedBy(daemonInfo.getContext());
-            }
-        };
+        Spec<DaemonInfo> spec = daemonInfo -> compatibilitySpec.isSatisfiedBy(daemonInfo.getContext());
         Collection<DaemonInfo> compatibleIdleDaemons = CollectionUtils.filter(daemon.getDaemonRegistry().getIdle(), spec);
 
         if (compatibleIdleDaemons.size() > 1) {

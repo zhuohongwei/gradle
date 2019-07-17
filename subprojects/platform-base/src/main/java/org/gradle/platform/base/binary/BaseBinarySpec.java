@@ -16,7 +16,6 @@
 
 package org.gradle.platform.base.binary;
 
-import org.gradle.api.Action;
 import org.gradle.api.DomainObjectSet;
 import org.gradle.api.Incubating;
 import org.gradle.api.Task;
@@ -106,12 +105,7 @@ public class BaseBinarySpec extends AbstractBuildableComponentSpec implements Bi
         MutableModelNode modelNode = info.modelNode;
         sources = ModelMaps.addModelMapNode(modelNode, LANGUAGE_SOURCE_SET_MODELTYPE, "sources");
         ModelRegistration itemRegistration = ModelRegistrations.of(modelNode.getPath().child("tasks"))
-            .action(ModelActionRole.Create, new Action<MutableModelNode>() {
-                @Override
-                public void execute(MutableModelNode modelNode) {
-                    modelNode.setPrivateData(BINARY_TASKS_COLLECTION, tasks);
-                }
-            })
+            .action(ModelActionRole.Create, modelNode1 -> modelNode1.setPrivateData(BINARY_TASKS_COLLECTION, tasks))
             .withProjection(new UnmanagedModelProjection<BinaryTasksCollection>(BINARY_TASKS_COLLECTION))
             .descriptor(modelNode.getDescriptor())
             .build();

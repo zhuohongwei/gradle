@@ -16,13 +16,11 @@
 
 package org.gradle.plugins.javascript.envjs;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
@@ -60,53 +58,25 @@ public class EnvJsPlugin implements Plugin<Project> {
 
         final Configuration configuration = addConfiguration(project.getConfigurations(), project.getDependencies(), envJsExtension);
         final ConventionMapping conventionMapping = ((IConventionAware) envJsExtension).getConventionMapping();
-        conventionMapping.map("js", new Callable<Configuration>() {
-            @Override
-            public Configuration call() {
-                return configuration;
-            }
-
-        });
-        conventionMapping.map("version", new Callable<String>() {
-            @Override
-            public String call() {
-                return EnvJsExtension.DEFAULT_DEPENDENCY_VERSION;
-            }
-        });
+        conventionMapping.map("js", (Callable<Configuration>) () -> configuration);
+        conventionMapping.map("version", (Callable<String>) () -> EnvJsExtension.DEFAULT_DEPENDENCY_VERSION);
 
         final RhinoExtension rhinoExtension = ((ExtensionAware) jsExtension).getExtensions().getByType(RhinoExtension.class);
 
-        project.getTasks().withType(BrowserEvaluate.class, new Action<BrowserEvaluate>() {
-            @Override
-            public void execute(BrowserEvaluate task) {
-                ((IConventionAware) task).getConventionMapping().map("evaluator", new Callable<EnvJsBrowserEvaluator>() {
-                    @Override
-                    public EnvJsBrowserEvaluator call() {
-                        RhinoWorkerHandleFactory handleFactory = new DefaultRhinoWorkerHandleFactory(workerProcessBuilderFactory);
-                        File workDir = project.getProjectDir();
-                        Factory<File> envJsFactory = new Factory<File>() {
-                            @Override
-                            public File create() {
-                                return envJsExtension.getJs().getSingleFile();
-                            }
-                        };
-                        return new EnvJsBrowserEvaluator(handleFactory, rhinoExtension.getClasspath(), envJsFactory, project.getGradle().getStartParameter().getLogLevel(), workDir);
-                    }
-                });
-            }
-        });
+        project.getTasks().withType(BrowserEvaluate.class, task -> ((IConventionAware) task).getConventionMapping().map("evaluator", (Callable<EnvJsBrowserEvaluator>) () -> {
+            RhinoWorkerHandleFactory handleFactory = new DefaultRhinoWorkerHandleFactory(workerProcessBuilderFactory);
+            File workDir = project.getProjectDir();
+            Factory<File> envJsFactory = () -> envJsExtension.getJs().getSingleFile();
+            return new EnvJsBrowserEvaluator(handleFactory, rhinoExtension.getClasspath(), envJsFactory, project.getGradle().getStartParameter().getLogLevel(), workDir);
+        }));
     }
 
     public Configuration addConfiguration(ConfigurationContainer configurations, final DependencyHandler dependencies, final EnvJsExtension extension) {
         Configuration configuration = configurations.create(EnvJsExtension.CONFIGURATION_NAME);
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet configDependencies) {
-                String notation = EnvJsExtension.DEFAULT_DEPENDENCY_GROUP + ":" + EnvJsExtension.DEFAULT_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
-                Dependency dependency = dependencies.create(notation);
-                configDependencies.add(dependency);
-            }
-
+        configuration.defaultDependencies(configDependencies -> {
+            String notation = EnvJsExtension.DEFAULT_DEPENDENCY_GROUP + ":" + EnvJsExtension.DEFAULT_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
+            Dependency dependency = dependencies.create(notation);
+            configDependencies.add(dependency);
         });
         return configuration;
     }

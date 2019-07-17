@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,12 +243,7 @@ public class DefaultExternalResourceConnector implements ExternalResourceConnect
                 return;
             }
             List<Map.Entry<URI, Integer>> entries = new ArrayList<Map.Entry<URI, Integer>>(stats.entrySet());
-            Collections.sort(entries, new Comparator<Map.Entry<URI, Integer>>() {
-                @Override
-                public int compare(Map.Entry<URI, Integer> o1, Map.Entry<URI, Integer> o2) {
-                    return o2.getValue() - o1.getValue();
-                }
-            });
+            Collections.sort(entries, (o1, o2) -> o2.getValue() - o1.getValue());
             sb.append("Top ").append(max).append(" most ").append(label).append("\n");
             int cpt = 0;
             for (Map.Entry<URI, Integer> entry : entries) {

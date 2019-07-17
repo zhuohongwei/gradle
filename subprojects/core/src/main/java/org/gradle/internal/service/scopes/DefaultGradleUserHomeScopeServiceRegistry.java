@@ -81,12 +81,7 @@ public class DefaultGradleUserHomeScopeServiceRegistry implements GradleUserHome
                     .displayName("services for Gradle user home dir " + gradleUserHomeDir)
                     .provider(new Object() {
                         GradleUserHomeDirProvider createGradleUserHomeDirProvider() {
-                            return new GradleUserHomeDirProvider() {
-                                @Override
-                                public File getGradleUserHomeDirectory() {
-                                    return gradleUserHomeDir;
-                                }
-                            };
+                            return () -> gradleUserHomeDir;
                         }
                     })
                     .provider(provider)

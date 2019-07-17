@@ -91,12 +91,7 @@ public class GroovyCompile extends AbstractCompile {
     private ConfigurableFileCollection astTransformationClasspath;
     private final CompileOptions compileOptions;
     private final GroovyCompileOptions groovyCompileOptions = new GroovyCompileOptions();
-    private final FileCollection stableSources = getProject().files(new Callable<FileTree>() {
-        @Override
-        public FileTree call() {
-            return getSource();
-        }
-    });
+    private final FileCollection stableSources = getProject().files((Callable<FileTree>) () -> getSource());
     private File sourceClassesMappingFile;
 
     public GroovyCompile() {
@@ -106,12 +101,7 @@ public class GroovyCompile extends AbstractCompile {
         this.compileOptions = compileOptions;
         this.astTransformationClasspath = objectFactory.fileCollection();
         if (!experimentalCompilationAvoidanceEnabled()) {
-            this.astTransformationClasspath.from(new Callable<FileCollection>() {
-                @Override
-                public FileCollection call() {
-                    return getClasspath();
-                }
-            });
+            this.astTransformationClasspath.from((Callable<FileCollection>) () -> getClasspath());
         }
         CompilerForkUtils.doNotCacheIfForkingViaExecutable(compileOptions, getOutputs());
     }

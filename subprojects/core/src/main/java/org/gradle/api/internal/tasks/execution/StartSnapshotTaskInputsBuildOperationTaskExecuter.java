@@ -28,8 +28,6 @@ import org.gradle.internal.operations.BuildOperationDescriptor;
 import org.gradle.internal.operations.BuildOperationExecutor;
 import org.gradle.internal.operations.ExecutingBuildOperation;
 
-import java.util.function.Consumer;
-
 /**
  * The operation started here is finished in {@link MarkSnapshottingInputsFinishedStep}.
  *
@@ -62,12 +60,7 @@ public class StartSnapshotTaskInputsBuildOperationTaskExecuter implements TaskEx
             return delegate.execute(task, state, context);
         } finally {
             // If the operation hasn't finished normally (because of a shortcut or an error), we close it without a cache key
-            context.removeSnapshotTaskInputsBuildOperation().ifPresent(new Consumer<ExecutingBuildOperation>() {
-                @Override
-                public void accept(ExecutingBuildOperation operation) {
-                    operation.setResult(new SnapshotTaskInputsBuildOperationResult(CachingState.NOT_DETERMINED));
-                }
-            });
+            context.removeSnapshotTaskInputsBuildOperation().ifPresent(operation1 -> operation1.setResult(new SnapshotTaskInputsBuildOperationResult(CachingState.NOT_DETERMINED)));
         }
     }
 }

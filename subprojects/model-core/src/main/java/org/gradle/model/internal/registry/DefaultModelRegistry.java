@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import javax.annotation.concurrent.NotThreadSafe;
 import org.gradle.model.ConfigurationCycleException;
 import org.gradle.model.InvalidModelRuleDeclarationException;
 import org.gradle.model.RuleSource;
@@ -47,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +65,11 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static org.gradle.model.internal.core.ModelNode.State.*;
+import static org.gradle.model.internal.core.ModelNode.State.Created;
+import static org.gradle.model.internal.core.ModelNode.State.Discovered;
+import static org.gradle.model.internal.core.ModelNode.State.GraphClosed;
+import static org.gradle.model.internal.core.ModelNode.State.Registered;
+import static org.gradle.model.internal.core.ModelNode.State.SelfClosed;
 
 @NotThreadSafe
 public class DefaultModelRegistry implements ModelRegistryInternal {
@@ -479,12 +483,7 @@ public class DefaultModelRegistry implements ModelRegistryInternal {
         LOGGER.debug("Project {} - Mutating {} using {}", projectPath, node.getPath(), descriptor);
 
         try {
-            RuleContext.run(descriptor, new Runnable() {
-                @Override
-                public void run() {
-                    mutator.execute(node, inputs);
-                }
-            });
+            RuleContext.run(descriptor, () -> mutator.execute(node, inputs));
         } catch (Throwable e) {
             // TODO some representation of state of the inputs
             throw new ModelRuleExecutionException(descriptor, e);

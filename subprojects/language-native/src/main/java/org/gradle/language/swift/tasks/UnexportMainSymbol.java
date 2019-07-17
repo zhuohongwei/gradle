@@ -16,7 +16,6 @@
 
 package org.gradle.language.swift.tasks;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -33,7 +32,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.os.OperatingSystem;
 import org.gradle.language.swift.tasks.internal.SymbolHider;
-import org.gradle.process.ExecSpec;
 import org.gradle.work.ChangeType;
 import org.gradle.work.FileChange;
 import org.gradle.work.InputChanges;
@@ -110,24 +108,21 @@ public class UnexportMainSymbol extends DefaultTask {
                 throw UncheckedException.throwAsUncheckedException(e);
             }
         } else {
-            getProject().exec(new Action<ExecSpec>() {
-                @Override
-                public void execute(ExecSpec execSpec) {
-                    // TODO: should use target platform to make this decision
-                    if (OperatingSystem.current().isMacOsX()) {
-                        execSpec.executable("ld"); // TODO: Locate this tool from a tool provider
-                        execSpec.args(object);
-                        execSpec.args("-o", relocatedObject);
-                        execSpec.args("-r"); // relink, produce another object file
-                        execSpec.args("-unexported_symbol", "_main"); // hide _main symbol
-                    } else if (OperatingSystem.current().isLinux()) {
-                        execSpec.executable("objcopy"); // TODO: Locate this tool from a tool provider
-                        execSpec.args("-L", "main"); // hide main symbol
-                        execSpec.args(object);
-                        execSpec.args(relocatedObject);
-                    } else {
-                        throw new IllegalStateException("Do not know how to unexport a main symbol on " + OperatingSystem.current());
-                    }
+            getProject().exec(execSpec -> {
+                // TODO: should use target platform to make this decision
+                if (OperatingSystem.current().isMacOsX()) {
+                    execSpec.executable("ld"); // TODO: Locate this tool from a tool provider
+                    execSpec.args(object);
+                    execSpec.args("-o", relocatedObject);
+                    execSpec.args("-r"); // relink, produce another object file
+                    execSpec.args("-unexported_symbol", "_main"); // hide _main symbol
+                } else if (OperatingSystem.current().isLinux()) {
+                    execSpec.executable("objcopy"); // TODO: Locate this tool from a tool provider
+                    execSpec.args("-L", "main"); // hide main symbol
+                    execSpec.args(object);
+                    execSpec.args(relocatedObject);
+                } else {
+                    throw new IllegalStateException("Do not know how to unexport a main symbol on " + OperatingSystem.current());
                 }
             });
         }

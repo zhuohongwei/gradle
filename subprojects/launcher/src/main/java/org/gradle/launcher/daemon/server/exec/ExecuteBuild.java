@@ -58,12 +58,7 @@ public class ExecuteBuild extends BuildCommandOnly {
             BuildCancellationToken cancellationToken = execution.getDaemonStateControl().getCancellationToken();
             BuildRequestContext buildRequestContext = new DefaultBuildRequestContext(build.getBuildRequestMetaData(), cancellationToken, buildEventConsumer);
             if (!build.getParameters().isContinuous()) {
-                buildRequestContext.getCancellationToken().addCallback(new Runnable() {
-                    @Override
-                    public void run() {
-                        LOGGER.info(DaemonMessages.CANCELED_BUILD);
-                    }
-                });
+                buildRequestContext.getCancellationToken().addCallback(() -> LOGGER.info(DaemonMessages.CANCELED_BUILD));
             }
             BuildActionResult result = actionExecuter.execute(build.getAction(), buildRequestContext, build.getParameters(), contextServices);
             execution.setResult(result);

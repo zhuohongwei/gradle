@@ -43,12 +43,7 @@ public class BrowserEvaluate extends DefaultTask {
     private Object result;
 
     public BrowserEvaluate() {
-        dependsOn(new Callable<TaskDependency>() {
-            @Override
-            public TaskDependency call() throws Exception {
-                return getProject().files(BrowserEvaluate.this.content).getBuildDependencies();
-            }
-        });
+        dependsOn((Callable<TaskDependency>) () -> getProject().files(BrowserEvaluate.this.content).getBuildDependencies());
     }
 
     @InputDirectory

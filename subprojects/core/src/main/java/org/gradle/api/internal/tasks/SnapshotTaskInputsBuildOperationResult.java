@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.gradle.api.NonNullApi;
-import org.gradle.caching.BuildCacheKey;
 import org.gradle.internal.execution.caching.CachingInputs;
 import org.gradle.internal.execution.caching.CachingState;
 import org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep;
@@ -45,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 
 /**
  * This operation represents the work of analyzing the task's inputs plus the calculating the cache key.
@@ -76,12 +74,7 @@ public class SnapshotTaskInputsBuildOperationResult implements SnapshotTaskInput
                     if (inputValueFingerprints.isEmpty()) {
                         return null;
                     }
-                    return Maps.transformValues(inputValueFingerprints, new Function<HashCode, byte[]>() {
-                        @Override
-                        public byte[] apply(HashCode input) {
-                            return input.toByteArray();
-                        }
-                    });
+                    return Maps.transformValues(inputValueFingerprints, input -> input.toByteArray());
                 }
             })
             .orElse(null);
@@ -185,22 +178,19 @@ public class SnapshotTaskInputsBuildOperationResult implements SnapshotTaskInput
 
     @Override
     public void visitInputFileProperties(final InputFilePropertyVisitor visitor) {
-        cachingState.getInputs().ifPresent(new Consumer<CachingInputs>() {
-            @Override
-            public void accept(CachingInputs inputs) {
-                State state = new State(visitor);
-                for (Map.Entry<String, CurrentFileCollectionFingerprint> entry : inputs.getInputFileFingerprints().entrySet()) {
-                    CurrentFileCollectionFingerprint fingerprint = entry.getValue();
+        cachingState.getInputs().ifPresent(inputs -> {
+            State state = new State(visitor);
+            for (Map.Entry<String, CurrentFileCollectionFingerprint> entry : inputs.getInputFileFingerprints().entrySet()) {
+                CurrentFileCollectionFingerprint fingerprint = entry.getValue();
 
-                    state.propertyName = entry.getKey();
-                    state.propertyHash = fingerprint.getHash();
-                    state.propertyNormalizationStrategyIdentifier = fingerprint.getStrategyIdentifier();
-                    state.fingerprints = fingerprint.getFingerprints();
+                state.propertyName = entry.getKey();
+                state.propertyHash = fingerprint.getHash();
+                state.propertyNormalizationStrategyIdentifier = fingerprint.getStrategyIdentifier();
+                state.fingerprints = fingerprint.getFingerprints();
 
-                    visitor.preProperty(state);
-                    fingerprint.accept(state);
-                    visitor.postProperty();
-                }
+                visitor.preProperty(state);
+                fingerprint.accept(state);
+                visitor.postProperty();
             }
         });
     }
@@ -252,12 +242,7 @@ public class SnapshotTaskInputsBuildOperationResult implements SnapshotTaskInput
                     if (additionalImplementations.isEmpty()) {
                         return null;
                     }
-                    return Lists.transform(additionalImplementations, new Function<ImplementationSnapshot, byte[]>() {
-                        @Override
-                        public byte[] apply(ImplementationSnapshot input) {
-                            return input.getClassLoaderHash() == null ? null : input.getClassLoaderHash().toByteArray();
-                        }
-                    });
+                    return Lists.transform(additionalImplementations, input -> input.getClassLoaderHash() == null ? null : input.getClassLoaderHash().toByteArray());
                 }
             })
             .orElse(null);
@@ -275,12 +260,7 @@ public class SnapshotTaskInputsBuildOperationResult implements SnapshotTaskInput
                     if (additionalImplementations.isEmpty()) {
                         return null;
                     }
-                    return Lists.transform(additionalImplementations, new Function<ImplementationSnapshot, String>() {
-                        @Override
-                        public String apply(ImplementationSnapshot input) {
-                            return input.getTypeName();
-                        }
-                    });
+                    return Lists.transform(additionalImplementations, input -> input.getTypeName());
                 }
             })
             .orElse(null);
@@ -307,12 +287,7 @@ public class SnapshotTaskInputsBuildOperationResult implements SnapshotTaskInput
     @Override
     public byte[] getHashBytes() {
         return cachingState.getKey()
-            .map(new java.util.function.Function<BuildCacheKey, byte[]>() {
-                @Override
-                public byte[] apply(BuildCacheKey cacheKey) {
-                    return cacheKey.toByteArray();
-                }
-            })
+            .map(cacheKey -> cacheKey.toByteArray())
             .orElse(null);
     }
 

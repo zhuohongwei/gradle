@@ -17,8 +17,6 @@ package org.gradle.api.internal.artifacts.dsl.dependencies;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
-import org.gradle.api.Action;
-import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.AttributeDisambiguationRule;
 import org.gradle.api.attributes.AttributeMatchingStrategy;
 import org.gradle.api.attributes.AttributesSchema;
@@ -61,12 +59,7 @@ public class PlatformSupport {
     }
 
     public <T> void addPlatformAttribute(HasConfigurableAttributes<T> dependency, final Category category) {
-        dependency.attributes(new Action<AttributeContainer>() {
-            @Override
-            public void execute(AttributeContainer attributeContainer) {
-                attributeContainer.attribute(Category.CATEGORY_ATTRIBUTE, category);
-            }
-        });
+        dependency.attributes(attributeContainer -> attributeContainer.attribute(Category.CATEGORY_ATTRIBUTE, category));
     }
 
     /**

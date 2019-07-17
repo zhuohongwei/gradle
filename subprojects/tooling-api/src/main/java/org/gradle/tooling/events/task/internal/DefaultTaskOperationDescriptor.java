@@ -71,11 +71,8 @@ public final class DefaultTaskOperationDescriptor extends DefaultOperationDescri
     }
 
     private static <T> Supplier<T> unsupportedMethodExceptionThrowingSupplier(final String method) {
-        return new Supplier<T>() {
-            @Override
-            public T get() {
-                throw Exceptions.unsupportedMethod(method);
-            }
+        return () -> {
+            throw Exceptions.unsupportedMethod(method);
         };
     }
 

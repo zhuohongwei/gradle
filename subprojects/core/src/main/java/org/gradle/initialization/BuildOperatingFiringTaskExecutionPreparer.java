@@ -16,7 +16,6 @@
 
 package org.gradle.initialization;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSortedSet;
 import org.gradle.api.Task;
@@ -68,12 +67,7 @@ public class BuildOperatingFiringTaskExecutionPreparer implements TaskExecutionP
                 }
 
                 private List<String> toTaskPaths(Set<Task> tasks) {
-                    return ImmutableSortedSet.copyOf(Collections2.transform(tasks, new Function<Task, String>() {
-                        @Override
-                        public String apply(Task task) {
-                            return task.getPath();
-                        }
-                    })).asList();
+                    return ImmutableSortedSet.copyOf(Collections2.transform(tasks, task -> task.getPath())).asList();
                 }
             });
         }
@@ -86,12 +80,7 @@ public class BuildOperatingFiringTaskExecutionPreparer implements TaskExecutionP
         @Override
         public BuildOperationDescriptor.Builder description() {
             return BuildOperationDescriptor.displayName(gradle.contextualize("Calculate task graph"))
-                .details(new CalculateTaskGraphBuildOperationType.Details() {
-                    @Override
-                    public String getBuildPath() {
-                        return gradle.getIdentityPath().getPath();
-                    }
-                });
+                .details((CalculateTaskGraphBuildOperationType.Details) () -> gradle.getIdentityPath().getPath());
         }
     }
 }

@@ -25,7 +25,6 @@ import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.ArtifactCollection;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
@@ -88,20 +87,14 @@ public class PlayDistributionPlugin extends RuleSource {
 
     @Mutate
     void createLifecycleTasks(ModelMap<Task> tasks) {
-        tasks.create(DIST_LIFECYCLE_TASK_NAME, new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.setDescription("Assembles all Play distributions.");
-                task.setGroup(DISTRIBUTION_GROUP);
-            }
+        tasks.create(DIST_LIFECYCLE_TASK_NAME, task -> {
+            task.setDescription("Assembles all Play distributions.");
+            task.setGroup(DISTRIBUTION_GROUP);
         });
 
-        tasks.create(STAGE_LIFECYCLE_TASK_NAME, new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.setDescription("Stages all Play distributions.");
-                task.setGroup(DISTRIBUTION_GROUP);
-            }
+        tasks.create(STAGE_LIFECYCLE_TASK_NAME, task -> {
+            task.setDescription("Stages all Play distributions.");
+            task.setGroup(DISTRIBUTION_GROUP);
         });
     }
 
@@ -128,33 +121,27 @@ public class PlayDistributionPlugin extends RuleSource {
 
             final File distJarDir = new File(buildDir, "distributionJars/" + distribution.getName());
             final String jarTaskName = "create" +  StringUtils.capitalize(distribution.getName()) + "DistributionJar";
-            tasks.create(jarTaskName, Jar.class, new Action<Jar>() {
-                @Override
-                public void execute(Jar jar) {
-                    jar.setDescription("Assembles an application jar suitable for deployment for the " + binary + ".");
-                    jar.dependsOn(binary.getTasks().withType(Jar.class));
-                    jar.from(jar.getProject().zipTree(binary.getJarFile()));
-                    jar.getDestinationDirectory().set(distJarDir);
-                    jar.getArchiveFileName().set(binary.getJarFile().getName());
+            tasks.create(jarTaskName, Jar.class, jar -> {
+                jar.setDescription("Assembles an application jar suitable for deployment for the " + binary + ".");
+                jar.dependsOn(binary.getTasks().withType(Jar.class));
+                jar.from(jar.getProject().zipTree(binary.getJarFile()));
+                jar.getDestinationDirectory().set(distJarDir);
+                jar.getArchiveFileName().set(binary.getJarFile().getName());
 
-                    Map<String, Object> classpath = Maps.newHashMap();
-                    classpath.put("Class-Path", new PlayManifestClasspath(configurations.getPlayRun(), binary.getAssetsJarFile()));
-                    jar.getManifest().attributes(classpath);
-                }
+                Map<String, Object> classpath = Maps.newHashMap();
+                classpath.put("Class-Path", new PlayManifestClasspath(configurations.getPlayRun(), binary.getAssetsJarFile()));
+                jar.getManifest().attributes(classpath);
             });
             final Task distributionJar = tasks.get(jarTaskName);
 
             final File scriptsDir = new File(buildDir, "scripts/" + distribution.getName());
             String createStartScriptsTaskName = "create" + StringUtils.capitalize(distribution.getName() + "StartScripts");
-            tasks.create(createStartScriptsTaskName, CreateStartScripts.class, new Action<CreateStartScripts>() {
-                @Override
-                public void execute(CreateStartScripts createStartScripts) {
-                    createStartScripts.setDescription("Creates OS specific scripts to run the " + binary + ".");
-                    createStartScripts.setClasspath(distributionJar.getOutputs().getFiles());
-                    createStartScripts.setMainClassName(getMainClass(distribution));
-                    createStartScripts.setApplicationName(distribution.getName());
-                    createStartScripts.setOutputDir(scriptsDir);
-                }
+            tasks.create(createStartScriptsTaskName, CreateStartScripts.class, createStartScripts -> {
+                createStartScripts.setDescription("Creates OS specific scripts to run the " + binary + ".");
+                createStartScripts.setClasspath(distributionJar.getOutputs().getFiles());
+                createStartScripts.setMainClassName(getMainClass(distribution));
+                createStartScripts.setApplicationName(distribution.getName());
+                createStartScripts.setOutputDir(scriptsDir);
             });
             Task createStartScripts = tasks.get(createStartScriptsTaskName);
 
@@ -197,68 +184,44 @@ public class PlayDistributionPlugin extends RuleSource {
             final String stageTaskName = "stage" + capitalizedDistName + "Dist";
             final File stageDir = new File(buildDir, "stage");
             final String baseName = StringUtils.isNotEmpty(distribution.getBaseName()) ? distribution.getBaseName() : distribution.getName();
-            tasks.create(stageTaskName, Sync.class, new Action<Sync>() {
-                @Override
-                public void execute(Sync sync) {
-                    sync.setDescription("Copies the '" + distribution.getName() + "' distribution to a staging directory.");
-                    sync.setDestinationDir(stageDir);
+            tasks.create(stageTaskName, Sync.class, sync -> {
+                sync.setDescription("Copies the '" + distribution.getName() + "' distribution to a staging directory.");
+                sync.setDestinationDir(stageDir);
 
-                    CopySpecInternal baseSpec = sync.getRootSpec().addChild();
-                    baseSpec.into(baseName);
-                    baseSpec.with(distribution.getContents());
-                }
+                CopySpecInternal baseSpec = sync.getRootSpec().addChild();
+                baseSpec.into(baseName);
+                baseSpec.with(distribution.getContents());
             });
-            tasks.named(STAGE_LIFECYCLE_TASK_NAME, new Action<Task>() {
-                @Override
-                public void execute(Task task) {
-                    task.dependsOn(stageTaskName);
-                }
-            });
+            tasks.named(STAGE_LIFECYCLE_TASK_NAME, task -> task.dependsOn(stageTaskName));
 
             final Task stageTask = tasks.get(stageTaskName);
             final String distributionZipTaskName = "create" + capitalizedDistName + "ZipDist";
-            tasks.create(distributionZipTaskName, Zip.class, new Action<Zip>() {
-                @Override
-                public void execute(final Zip zip) {
-                    zip.setDescription("Packages the '" + distribution.getName() + "' distribution as a zip file.");
-                    zip.getArchiveBaseName().set(baseName);
-                    zip.getDestinationDirectory().set(new File(buildDir, "distributions"));
-                    zip.from(stageTask);
-                }
+            tasks.create(distributionZipTaskName, Zip.class, zip -> {
+                zip.setDescription("Packages the '" + distribution.getName() + "' distribution as a zip file.");
+                zip.getArchiveBaseName().set(baseName);
+                zip.getDestinationDirectory().set(new File(buildDir, "distributions"));
+                zip.from(stageTask);
             });
 
             final String distributionTarTaskName = "create" + capitalizedDistName + "TarDist";
-            tasks.create(distributionTarTaskName, Tar.class, new Action<Tar>() {
-                @Override
-                public void execute(final Tar tar) {
-                    tar.setDescription("Packages the '" + distribution.getName() + "' distribution as a tar file.");
-                    tar.getArchiveBaseName().set(baseName);
-                    tar.getDestinationDirectory().set(new File(buildDir, "distributions"));
-                    tar.from(stageTask);
-                }
+            tasks.create(distributionTarTaskName, Tar.class, tar -> {
+                tar.setDescription("Packages the '" + distribution.getName() + "' distribution as a tar file.");
+                tar.getArchiveBaseName().set(baseName);
+                tar.getDestinationDirectory().set(new File(buildDir, "distributions"));
+                tar.from(stageTask);
             });
 
             tasks.named(distributionTarTaskName, DistributionArchiveRules.class);
             tasks.named(distributionZipTaskName, DistributionArchiveRules.class);
 
-            tasks.named(DIST_LIFECYCLE_TASK_NAME, new Action<Task>() {
-                @Override
-                public void execute(Task task) {
-                    task.dependsOn(distributionZipTaskName, distributionTarTaskName);
-                }
-            });
+            tasks.named(DIST_LIFECYCLE_TASK_NAME, task -> task.dependsOn(distributionZipTaskName, distributionTarTaskName));
         }
     }
 
     static class DistributionArchiveRules extends RuleSource {
         @Finalize
         void fixupDistributionArchiveNames(final AbstractArchiveTask archiveTask) {
-            archiveTask.getArchiveFileName().set(archiveTask.getArchiveBaseName().map(new Transformer<String, String>() {
-                @Override
-                public String transform(String baseName) {
-                    return baseName + "." + archiveTask.getArchiveExtension().get();
-                }
-            }));
+            archiveTask.getArchiveFileName().set(archiveTask.getArchiveBaseName().map(baseName -> baseName + "." + archiveTask.getArchiveExtension().get()));
         }
     }
 

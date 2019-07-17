@@ -101,16 +101,13 @@ public class DefaultWorkerExecutor implements WorkerExecutor {
     private void submit(final ActionExecutionSpec spec, final IsolationMode isolationMode, final DaemonForkOptions daemonForkOptions) {
         final WorkerLease currentWorkerWorkerLease = getCurrentWorkerLease();
         final BuildOperationRef currentBuildOperation = buildOperationExecutor.getCurrentOperation();
-        WorkerExecution execution = new WorkerExecution(spec.getDisplayName(), currentWorkerWorkerLease, new Callable<DefaultWorkResult>() {
-            @Override
-            public DefaultWorkResult call() throws Exception {
-                try {
-                    WorkerFactory workerFactory = getWorkerFactory(isolationMode);
-                    BuildOperationAwareWorker worker = workerFactory.getWorker(daemonForkOptions);
-                    return worker.execute(spec, currentBuildOperation);
-                } catch (Throwable t) {
-                    throw new WorkExecutionException(spec.getDisplayName(), t);
-                }
+        WorkerExecution execution = new WorkerExecution(spec.getDisplayName(), currentWorkerWorkerLease, () -> {
+            try {
+                WorkerFactory workerFactory = getWorkerFactory(isolationMode);
+                BuildOperationAwareWorker worker = workerFactory.getWorker(daemonForkOptions);
+                return worker.execute(spec, currentBuildOperation);
+            } catch (Throwable t) {
+                throw new WorkExecutionException(spec.getDisplayName(), t);
             }
         });
         executionQueue.submit(execution);

@@ -15,7 +15,6 @@
  */
 package org.gradle.play.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
@@ -178,50 +177,44 @@ public class PlayApplicationPlugin implements Plugin<Project> {
                             final PlatformResolvers platforms, final PlayToolChainInternal playToolChainInternal, final PlayPluginConfigurations configurations,
                             @Path("buildDir") final File buildDir, final ProjectIdentifier projectIdentifier) {
 
-            binaries.create("binary", new Action<PlayApplicationBinarySpec>() {
-                @Override
-                public void execute(PlayApplicationBinarySpec playBinary) {
-                    PlayApplicationBinarySpecInternal playBinaryInternal = (PlayApplicationBinarySpecInternal) playBinary;
-                    final File binaryBuildDir = new File(buildDir, playBinaryInternal.getProjectScopedName());
+            binaries.create("binary", playBinary -> {
+                PlayApplicationBinarySpecInternal playBinaryInternal = (PlayApplicationBinarySpecInternal) playBinary;
+                final File binaryBuildDir = new File(buildDir, playBinaryInternal.getProjectScopedName());
 
-                    final PlayPlatform chosenPlatform = resolveTargetPlatform(componentSpec, platforms);
-                    initialiseConfigurations(configurations, chosenPlatform);
+                final PlayPlatform chosenPlatform = resolveTargetPlatform(componentSpec, platforms);
+                initialiseConfigurations(configurations, chosenPlatform);
 
-                    playBinaryInternal.setTargetPlatform(chosenPlatform);
-                    playBinaryInternal.setToolChain(playToolChainInternal);
+                playBinaryInternal.setTargetPlatform(chosenPlatform);
+                playBinaryInternal.setToolChain(playToolChainInternal);
 
-                    File mainJar = new File(binaryBuildDir, "lib/" + projectIdentifier.getName() + ".jar");
-                    File assetsJar = new File(binaryBuildDir, "lib/" + projectIdentifier.getName() + "-assets.jar");
-                    playBinaryInternal.setJarFile(mainJar);
-                    playBinaryInternal.setAssetsJarFile(assetsJar);
+                File mainJar = new File(binaryBuildDir, "lib/" + projectIdentifier.getName() + ".jar");
+                File assetsJar = new File(binaryBuildDir, "lib/" + projectIdentifier.getName() + "-assets.jar");
+                playBinaryInternal.setJarFile(mainJar);
+                playBinaryInternal.setAssetsJarFile(assetsJar);
 
-                    configurations.getPlay().addArtifact(new DefaultPublishArtifact(projectIdentifier.getName(), "jar", "jar", null, new Date(), mainJar, playBinaryInternal));
-                    configurations.getPlay().addArtifact(new DefaultPublishArtifact(projectIdentifier.getName(), "jar", "jar", "assets", new Date(), assetsJar, playBinaryInternal));
+                configurations.getPlay().addArtifact(new DefaultPublishArtifact(projectIdentifier.getName(), "jar", "jar", null, new Date(), mainJar, playBinaryInternal));
+                configurations.getPlay().addArtifact(new DefaultPublishArtifact(projectIdentifier.getName(), "jar", "jar", "assets", new Date(), assetsJar, playBinaryInternal));
 
-                    JvmAssembly jvmAssembly = ((PlayApplicationBinarySpecInternal) playBinary).getAssembly();
-                    jvmAssembly.getClassDirectories().add(new File(binaryBuildDir, "classes"));
-                    jvmAssembly.getResourceDirectories().add(new File(binaryBuildDir, "resources"));
+                JvmAssembly jvmAssembly = ((PlayApplicationBinarySpecInternal) playBinary).getAssembly();
+                jvmAssembly.getClassDirectories().add(new File(binaryBuildDir, "classes"));
+                jvmAssembly.getResourceDirectories().add(new File(binaryBuildDir, "resources"));
 
-                    PublicAssets assets = playBinary.getAssets();
-                    assets.addAssetDir(new File(projectIdentifier.getProjectDir(), "public"));
+                PublicAssets assets = playBinary.getAssets();
+                assets.addAssetDir(new File(projectIdentifier.getProjectDir(), "public"));
 
-                    playBinaryInternal.setClasspath(configurations.getPlay().getAllArtifacts());
-                }
+                playBinaryInternal.setClasspath(configurations.getPlay().getAllArtifacts());
             });
         }
 
         @Mutate
         // TODO:LPTR This should be like @Finalize void generatedSourcesAreInputs(@Each PlayApplicationBinarySpecInternal binary)
         void generatedSourcesAreInputs(@Path("binaries") ModelMap<PlayApplicationBinarySpecInternal> binaries, final ServiceRegistry serviceRegistry) {
-            binaries.afterEach(new Action<PlayApplicationBinarySpecInternal>() {
-                @Override
-                public void execute(PlayApplicationBinarySpecInternal playApplicationBinarySpec) {
-                    for (ScalaLanguageSourceSet generatedSources : playApplicationBinarySpec.getGeneratedScala().values()) {
-                        playApplicationBinarySpec.getInputs().add(generatedSources);
-                    }
-                    for (JavaScriptSourceSet generatedSources : playApplicationBinarySpec.getGeneratedJavaScript().values()) {
-                        playApplicationBinarySpec.getInputs().add(generatedSources);
-                    }
+            binaries.afterEach(playApplicationBinarySpec -> {
+                for (ScalaLanguageSourceSet generatedSources : playApplicationBinarySpec.getGeneratedScala().values()) {
+                    playApplicationBinarySpec.getInputs().add(generatedSources);
+                }
+                for (JavaScriptSourceSet generatedSources : playApplicationBinarySpec.getGeneratedJavaScript().values()) {
+                    playApplicationBinarySpec.getInputs().add(generatedSources);
                 }
             });
         }
@@ -256,44 +249,35 @@ public class PlayApplicationPlugin implements Plugin<Project> {
 
         @BinaryTasks
         void createScalaCompileTask(ModelMap<Task> tasks, final PlayApplicationBinarySpec binary, @Path("buildDir") final File buildDir) {
-            tasks.withType(PlatformScalaCompile.class).afterEach(new Action<PlatformScalaCompile>() {
-                @Override
-                public void execute(PlatformScalaCompile scalaCompile) {
-                    FileCollection classpath = ((PlayApplicationBinarySpecInternal) binary).getClasspath();
-                    scalaCompile.setClasspath(classpath);
-                    scalaCompile.getOptions().setAnnotationProcessorPath(classpath);
-                }
+            tasks.withType(PlatformScalaCompile.class).afterEach(scalaCompile -> {
+                FileCollection classpath = ((PlayApplicationBinarySpecInternal) binary).getClasspath();
+                scalaCompile.setClasspath(classpath);
+                scalaCompile.getOptions().setAnnotationProcessorPath(classpath);
             });
         }
 
         @BinaryTasks
         void createJarTasks(ModelMap<Task> tasks, final PlayApplicationBinarySpecInternal binary) {
             String jarTaskName = binary.getTasks().taskName("create", "Jar");
-            tasks.create(jarTaskName, Jar.class, new Action<Jar>() {
-                @Override
-                public void execute(Jar jar) {
-                    jar.setDescription("Assembles the application jar for the " + binary.getDisplayName() + ".");
-                    jar.getDestinationDirectory().set(binary.getJarFile().getParentFile());
-                    jar.getArchiveFileName().set(binary.getJarFile().getName());
-                    jar.from(binary.getAssembly().getClassDirectories());
-                    jar.from(binary.getAssembly().getResourceDirectories());
-                    jar.dependsOn(binary.getAssembly());
-                }
+            tasks.create(jarTaskName, Jar.class, jar -> {
+                jar.setDescription("Assembles the application jar for the " + binary.getDisplayName() + ".");
+                jar.getDestinationDirectory().set(binary.getJarFile().getParentFile());
+                jar.getArchiveFileName().set(binary.getJarFile().getName());
+                jar.from(binary.getAssembly().getClassDirectories());
+                jar.from(binary.getAssembly().getResourceDirectories());
+                jar.dependsOn(binary.getAssembly());
             });
 
             String assetsJarTaskName = binary.getTasks().taskName("create", "assetsJar");
-            tasks.create(assetsJarTaskName, Jar.class, new Action<Jar>() {
-                @Override
-                public void execute(Jar jar) {
-                    jar.setDescription("Assembles the assets jar for the " + binary.getDisplayName() + ".");
-                    jar.getDestinationDirectory().set(binary.getAssetsJarFile().getParentFile());
-                    jar.getArchiveFileName().set(binary.getAssetsJarFile().getName());
-                    jar.getArchiveClassifier().set("assets");
-                    CopySpecInternal newSpec = jar.getRootSpec().addChild();
-                    newSpec.from(binary.getAssets().getAssetDirs());
-                    newSpec.into("public");
-                    jar.dependsOn(binary.getAssets());
-                }
+            tasks.create(assetsJarTaskName, Jar.class, jar -> {
+                jar.setDescription("Assembles the assets jar for the " + binary.getDisplayName() + ".");
+                jar.getDestinationDirectory().set(binary.getAssetsJarFile().getParentFile());
+                jar.getArchiveFileName().set(binary.getAssetsJarFile().getName());
+                jar.getArchiveClassifier().set("assets");
+                CopySpecInternal newSpec = jar.getRootSpec().addChild();
+                newSpec.from(binary.getAssets().getAssetDirs());
+                newSpec.into("public");
+                jar.dependsOn(binary.getAssets());
             });
         }
 
@@ -303,71 +287,51 @@ public class PlayApplicationPlugin implements Plugin<Project> {
             for (final PlayApplicationBinarySpecInternal binary : playBinaries) {
                 String runTaskName = binary.getTasks().taskName("run");
 
-                tasks.create(runTaskName, PlayRun.class, new Action<PlayRun>() {
-                    @Override
-                    public void execute(PlayRun playRun) {
-                        playRun.setDescription("Runs the Play application for local development.");
-                        playRun.setGroup(RUN_GROUP);
-                        playRun.setHttpPort(DEFAULT_HTTP_PORT);
-                        playRun.getWorkingDir().set(projectIdentifier.getProjectDir());
-                        playRun.setPlayToolProvider(playToolChain.select(binary.getTargetPlatform()));
-                        playRun.setApplicationJar(binary.getJarFile());
-                        playRun.setAssetsJar(binary.getAssetsJarFile());
-                        playRun.setAssetsDirs(binary.getAssets().getAssetDirs());
-                        playRun.setRuntimeClasspath(configurations.getPlayRun().getNonChangingArtifacts());
-                        playRun.setChangingClasspath(configurations.getPlayRun().getChangingArtifacts());
-                        playRun.dependsOn(binary.getBuildTask());
-                    }
+                tasks.create(runTaskName, PlayRun.class, playRun -> {
+                    playRun.setDescription("Runs the Play application for local development.");
+                    playRun.setGroup(RUN_GROUP);
+                    playRun.setHttpPort(DEFAULT_HTTP_PORT);
+                    playRun.getWorkingDir().set(projectIdentifier.getProjectDir());
+                    playRun.setPlayToolProvider(playToolChain.select(binary.getTargetPlatform()));
+                    playRun.setApplicationJar(binary.getJarFile());
+                    playRun.setAssetsJar(binary.getAssetsJarFile());
+                    playRun.setAssetsDirs(binary.getAssets().getAssetDirs());
+                    playRun.setRuntimeClasspath(configurations.getPlayRun().getNonChangingArtifacts());
+                    playRun.setChangingClasspath(configurations.getPlayRun().getChangingArtifacts());
+                    playRun.dependsOn(binary.getBuildTask());
                 });
             }
         }
 
         @Defaults
         void createJvmSourceSets(@Each PlayApplicationSpec playComponent) {
-            playComponent.getSources().create("scala", ScalaLanguageSourceSet.class, new Action<ScalaLanguageSourceSet>() {
-                @Override
-                public void execute(ScalaLanguageSourceSet scalaSources) {
-                    scalaSources.getSource().srcDir("app");
-                    scalaSources.getSource().include("**/*.scala");
-                }
+            playComponent.getSources().create("scala", ScalaLanguageSourceSet.class, scalaSources -> {
+                scalaSources.getSource().srcDir("app");
+                scalaSources.getSource().include("**/*.scala");
             });
 
-            playComponent.getSources().create("java", JavaSourceSet.class, new Action<JavaSourceSet>() {
-                @Override
-                public void execute(JavaSourceSet javaSources) {
-                    javaSources.getSource().srcDir("app");
-                    javaSources.getSource().include("**/*.java");
-                }
+            playComponent.getSources().create("java", JavaSourceSet.class, javaSources -> {
+                javaSources.getSource().srcDir("app");
+                javaSources.getSource().include("**/*.java");
             });
 
-            playComponent.getSources().create("resources", JvmResourceSet.class, new Action<JvmResourceSet>() {
-                @Override
-                public void execute(JvmResourceSet appResources) {
-                    appResources.getSource().srcDirs("conf");
-                }
-            });
+            playComponent.getSources().create("resources", JvmResourceSet.class, appResources -> appResources.getSource().srcDirs("conf"));
         }
 
         @Defaults
         void createTwirlSourceSets(@Each PlayApplicationSpec playComponent) {
-            playComponent.getSources().create("twirlTemplates", TwirlSourceSet.class, new Action<TwirlSourceSet>() {
-                @Override
-                public void execute(TwirlSourceSet twirlSourceSet) {
-                    twirlSourceSet.getSource().srcDir("app");
-                    twirlSourceSet.getSource().include("**/*.scala.*");
-                }
+            playComponent.getSources().create("twirlTemplates", TwirlSourceSet.class, twirlSourceSet -> {
+                twirlSourceSet.getSource().srcDir("app");
+                twirlSourceSet.getSource().include("**/*.scala.*");
             });
         }
 
         @Defaults
         void createRoutesSourceSets(@Each PlayApplicationSpec playComponent) {
-            playComponent.getSources().create("routes", RoutesSourceSet.class, new Action<RoutesSourceSet>() {
-                @Override
-                public void execute(RoutesSourceSet routesSourceSet) {
-                    routesSourceSet.getSource().srcDir("conf");
-                    routesSourceSet.getSource().include("routes");
-                    routesSourceSet.getSource().include("*.routes");
-                }
+            playComponent.getSources().create("routes", RoutesSourceSet.class, routesSourceSet -> {
+                routesSourceSet.getSource().srcDir("conf");
+                routesSourceSet.getSource().include("routes");
+                routesSourceSet.getSource().include("*.routes");
             });
         }
     }

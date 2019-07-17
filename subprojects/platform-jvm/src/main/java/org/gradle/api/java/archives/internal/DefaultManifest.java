@@ -223,11 +223,8 @@ public class DefaultManifest implements ManifestInternal {
             if (parentFile != null) {
                 FileUtils.forceMkdir(parentFile);
             }
-            IoActions.withResource(new FileOutputStream(manifestFile), new Action<FileOutputStream>() {
-                @Override
-                public void execute(FileOutputStream fileOutputStream) {
-                    writeTo(fileOutputStream);
-                }
+            IoActions.withResource(new FileOutputStream(manifestFile), fileOutputStream -> {
+                writeTo(fileOutputStream);
             });
             return this;
         } catch (IOException e) {

@@ -16,14 +16,11 @@
 package org.gradle.api.plugins.quality;
 
 import com.google.common.util.concurrent.Callables;
-import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.file.Directory;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
 
@@ -55,22 +52,12 @@ public class CheckstylePlugin extends AbstractCodeQualityPlugin<Checkstyle> {
         extension = project.getExtensions().create("checkstyle", CheckstyleExtension.class, project);
         extension.setToolVersion(DEFAULT_CHECKSTYLE_VERSION);
         extension.getConfigDirectory().set(determineConfigurationDirectory());
-        extension.setConfig(project.getResources().getText().fromFile(new Callable<File>() {
-            @Override
-            public File call() {
-                return new File(extension.getConfigDir(), "checkstyle.xml");
-            }
-        }));
+        extension.setConfig(project.getResources().getText().fromFile((Callable<File>) () -> new File(extension.getConfigDir(), "checkstyle.xml")));
         return extension;
     }
 
     private Provider<Directory> determineConfigurationDirectory() {
-        return project.provider(new Callable<Directory>() {
-            @Override
-            public Directory call() {
-                return project.getRootProject().getLayout().getProjectDirectory().dir(CONFIG_DIR_NAME);
-            }
-        });
+        return project.provider(() -> project.getRootProject().getLayout().getProjectDirectory().dir(CONFIG_DIR_NAME));
     }
 
     @Override
@@ -86,75 +73,27 @@ public class CheckstylePlugin extends AbstractCodeQualityPlugin<Checkstyle> {
     }
 
     private void configureDefaultDependencies(Configuration configuration) {
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet dependencies) {
-                dependencies.add(project.getDependencies().create("com.puppycrawl.tools:checkstyle:" + extension.getToolVersion()));
-            }
-        });
+        configuration.defaultDependencies(dependencies -> dependencies.add(project.getDependencies().create("com.puppycrawl.tools:checkstyle:" + extension.getToolVersion())));
     }
 
     private void configureTaskConventionMapping(Configuration configuration, Checkstyle task) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("checkstyleClasspath", Callables.returning(configuration));
-        taskMapping.map("config", new Callable<TextResource>() {
-            @Override
-            public TextResource call() {
-                return extension.getConfig();
-            }
-        });
-        taskMapping.map("configProperties", new Callable<Map<String, Object>>() {
-            @Override
-            public Map<String, Object> call() {
-                return extension.getConfigProperties();
-            }
-        });
-        taskMapping.map("ignoreFailures", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return extension.isIgnoreFailures();
-            }
-        });
-        taskMapping.map("showViolations", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return extension.isShowViolations();
-            }
-        });
-        taskMapping.map("maxErrors", new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                return extension.getMaxErrors();
-            }
-        });
-        taskMapping.map("maxWarnings", new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                return extension.getMaxWarnings();
-            }
-        });
+        taskMapping.map("config", (Callable<TextResource>) () -> extension.getConfig());
+        taskMapping.map("configProperties", (Callable<Map<String, Object>>) () -> extension.getConfigProperties());
+        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
+        taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
+        taskMapping.map("maxErrors", (Callable<Integer>) () -> extension.getMaxErrors());
+        taskMapping.map("maxWarnings", (Callable<Integer>) () -> extension.getMaxWarnings());
 
-        task.setConfigDir(project.provider(new Callable<File>() {
-            @Override
-            public File call() {
-                return extension.getConfigDir();
-            }
-        }));
+        task.setConfigDir(project.provider(() -> extension.getConfigDir()));
     }
 
     private void configureReportsConventionMapping(Checkstyle task, final String baseName) {
-        task.getReports().all(new Action<SingleFileReport>() {
-            @Override
-            public void execute(final SingleFileReport report) {
-                ConventionMapping reportMapping = conventionMappingOf(report);
-                reportMapping.map("enabled", Callables.returning(true));
-                reportMapping.map("destination", new Callable<File>() {
-                    @Override
-                    public File call() {
-                        return new File(extension.getReportsDir(), baseName + "." + report.getName());
-                    }
-                });
-            }
+        task.getReports().all(report -> {
+            ConventionMapping reportMapping = conventionMappingOf(report);
+            reportMapping.map("enabled", Callables.returning(true));
+            reportMapping.map("destination", (Callable<File>) () -> new File(extension.getReportsDir(), baseName + "." + report.getName()));
         });
     }
 

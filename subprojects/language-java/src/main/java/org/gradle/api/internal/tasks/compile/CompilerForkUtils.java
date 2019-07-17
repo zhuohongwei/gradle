@@ -16,18 +16,11 @@
 
 package org.gradle.api.internal.tasks.compile;
 
-import org.gradle.api.Task;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.compile.CompileOptions;
 
 public class CompilerForkUtils {
     public static void doNotCacheIfForkingViaExecutable(final CompileOptions compileOptions, TaskOutputs outputs) {
-        outputs.doNotCacheIf("Forking compiler via ForkOptions.executable", new Spec<Task>() {
-            @Override
-            public boolean isSatisfiedBy(Task element) {
-                return compileOptions.isFork() && compileOptions.getForkOptions().getExecutable() != null;
-            }
-        });
+        outputs.doNotCacheIf("Forking compiler via ForkOptions.executable", element -> compileOptions.isFork() && compileOptions.getForkOptions().getExecutable() != null);
     }
 }

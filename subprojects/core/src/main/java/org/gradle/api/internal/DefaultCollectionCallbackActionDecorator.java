@@ -94,12 +94,7 @@ public class DefaultCollectionCallbackActionDecorator implements CollectionCallb
             buildOperationExecutor.run(new Operation(applicationId) {
                 @Override
                 public void run(final BuildOperationContext context) {
-                    userCodeApplicationContext.reapply(applicationId, new Runnable() {
-                        @Override
-                        public void run() {
-                            delegate.execute(arg);
-                        }
-                    });
+                    userCodeApplicationContext.reapply(applicationId, () -> delegate.execute(arg));
                     context.setResult(ExecuteDomainObjectCollectionCallbackBuildOperationType.RESULT);
                 }
             });

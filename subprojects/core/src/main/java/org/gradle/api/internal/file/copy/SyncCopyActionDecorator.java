@@ -19,7 +19,6 @@ import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.specs.Spec;
@@ -55,18 +54,10 @@ public class SyncCopyActionDecorator implements CopyAction {
     public WorkResult execute(final CopyActionProcessingStream stream) {
         final Set<RelativePath> visited = new HashSet<RelativePath>();
 
-        WorkResult didWork = delegate.execute(new CopyActionProcessingStream() {
-            @Override
-            public void process(final CopyActionProcessingStreamAction action) {
-                stream.process(new CopyActionProcessingStreamAction() {
-                    @Override
-                    public void processFile(FileCopyDetailsInternal details) {
-                        visited.add(details.getRelativePath());
-                        action.processFile(details);
-                    }
-                });
-            }
-        });
+        WorkResult didWork = delegate.execute(action -> stream.process(details -> {
+            visited.add(details.getRelativePath());
+            action.processFile(details);
+        }));
 
         SyncCopyActionDecoratorFileVisitor fileVisitor = new SyncCopyActionDecoratorFileVisitor(visited, preserveSpec);
 

@@ -104,24 +104,16 @@ class WatchPointsRegistry {
 
         private Iterable<? extends File> calculateStartingWatchPoints(final Iterable<? extends File> roots, final FileSystemSubset unfiltered) {
             // Turn the requested watch points into actual enclosing directories that exist
-            Iterable<File> enclosingDirsThatExist = Iterables.transform(roots, new Function<File, File>() {
-                @Override
-                public File apply(File input) {
-                    File target = input;
-                    while (!target.isDirectory()) {
-                        target = target.getParentFile();
-                    }
-                    return target;
+            Iterable<File> enclosingDirsThatExist = Iterables.transform(roots, (Function<File, File>) input -> {
+                File target = input;
+                while (!target.isDirectory()) {
+                    target = target.getParentFile();
                 }
+                return target;
             });
 
             // Collapse the set
-            return Iterables.filter(FileUtils.calculateRoots(enclosingDirsThatExist), new Predicate<File>() {
-                @Override
-                public boolean apply(File input) {
-                    return inCombinedRootsOrAncestorOfAnyRoot(input, roots, unfiltered);
-                }
-            });
+            return Iterables.filter(FileUtils.calculateRoots(enclosingDirsThatExist), (Predicate<File>) input -> inCombinedRootsOrAncestorOfAnyRoot(input, roots, unfiltered));
         }
 
         private boolean inCombinedRootsOrAncestorOfAnyRootThis(File file) {

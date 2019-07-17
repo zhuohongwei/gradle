@@ -16,15 +16,12 @@
 package org.gradle.api.plugins.quality;
 
 import com.google.common.util.concurrent.Callables;
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.plugins.GroovyBasePlugin;
 import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.internal.metaobject.DynamicObject;
@@ -80,68 +77,27 @@ public class CodeNarcPlugin extends AbstractCodeQualityPlugin<CodeNarc> {
     }
 
     private void configureDefaultDependencies(Configuration configuration) {
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet dependencies) {
-                dependencies.add(project.getDependencies().create("org.codenarc:CodeNarc:" + extension.getToolVersion()));
-            }
-        });
+        configuration.defaultDependencies(dependencies -> dependencies.add(project.getDependencies().create("org.codenarc:CodeNarc:" + extension.getToolVersion())));
     }
 
     private void configureTaskConventionMapping(Configuration configuration, CodeNarc task) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("codenarcClasspath", Callables.returning(configuration));
-        taskMapping.map("config", new Callable<TextResource>() {
-            @Override
-            public TextResource call() {
-                return extension.getConfig();
-            }
-        });
-        taskMapping.map("maxPriority1Violations", new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                return extension.getMaxPriority1Violations();
-            }
-        });
-        taskMapping.map("maxPriority2Violations", new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                return extension.getMaxPriority2Violations();
-            }
-        });
-        taskMapping.map("maxPriority3Violations", new Callable<Integer>() {
-            @Override
-            public Integer call() {
-                return extension.getMaxPriority3Violations();
-            }
-        });
-        taskMapping.map("ignoreFailures", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return extension.isIgnoreFailures();
-            }
-        });
+        taskMapping.map("config", (Callable<TextResource>) () -> extension.getConfig());
+        taskMapping.map("maxPriority1Violations", (Callable<Integer>) () -> extension.getMaxPriority1Violations());
+        taskMapping.map("maxPriority2Violations", (Callable<Integer>) () -> extension.getMaxPriority2Violations());
+        taskMapping.map("maxPriority3Violations", (Callable<Integer>) () -> extension.getMaxPriority3Violations());
+        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
     }
 
     private void configureReportsConventionMapping(CodeNarc task, final String baseName) {
-        task.getReports().all(new Action<SingleFileReport>() {
-            @Override
-            public void execute(final SingleFileReport report) {
-                ConventionMapping reportMapping = AbstractCodeQualityPlugin.conventionMappingOf(report);
-                reportMapping.map("enabled", new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return report.getName().equals(extension.getReportFormat());
-                    }
-                });
-                reportMapping.map("destination", new Callable<File>() {
-                    @Override
-                    public File call() {
-                        String fileSuffix = report.getName().equals("text") ? "txt" : report.getName();
-                        return new File(extension.getReportsDir(), baseName + "." + fileSuffix);
-                    }
-                });
-            }
+        task.getReports().all(report -> {
+            ConventionMapping reportMapping = AbstractCodeQualityPlugin.conventionMappingOf(report);
+            reportMapping.map("enabled", (Callable<Boolean>) () -> report.getName().equals(extension.getReportFormat()));
+            reportMapping.map("destination", (Callable<File>) () -> {
+                String fileSuffix = report.getName().equals("text") ? "txt" : report.getName();
+                return new File(extension.getReportsDir(), baseName + "." + fileSuffix);
+            });
         });
     }
 

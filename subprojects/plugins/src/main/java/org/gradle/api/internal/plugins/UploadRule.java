@@ -56,12 +56,7 @@ public class UploadRule extends AbstractRule {
         upload.setGroup(BasePlugin.UPLOAD_GROUP);
         upload.setConfiguration(configuration);
         upload.setUploadDescriptor(true);
-        upload.getConventionMapping().map("descriptorDestination", new Callable<File>() {
-            @Override
-            public File call() throws Exception {
-                return new File(project.getBuildDir(), "ivy.xml");
-            }
-        });
+        upload.getConventionMapping().map("descriptorDestination", (Callable<File>) () -> new File(project.getBuildDir(), "ivy.xml"));
         return upload;
     }
 

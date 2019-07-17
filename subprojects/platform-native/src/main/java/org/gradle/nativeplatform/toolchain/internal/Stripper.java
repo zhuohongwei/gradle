@@ -36,12 +36,9 @@ public class Stripper extends AbstractCompiler<StripperSpec> {
         final CommandLineToolInvocation invocation = newInvocation(
             "Stripping " + spec.getOutputFile().getName(), args, spec.getOperationLogger());
 
-        return new Action<BuildOperationQueue<CommandLineToolInvocation>>() {
-            @Override
-            public void execute(BuildOperationQueue<CommandLineToolInvocation> buildQueue) {
-                buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
-                buildQueue.add(invocation);
-            }
+        return buildQueue -> {
+            buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
+            buildQueue.add(invocation);
         };
     }
 

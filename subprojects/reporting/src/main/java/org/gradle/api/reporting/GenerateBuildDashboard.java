@@ -21,9 +21,6 @@ import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NamedDomainObjectSet;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
 import org.gradle.api.reporting.internal.BuildDashboardGenerator;
 import org.gradle.api.reporting.internal.DefaultBuildDashboardReports;
@@ -83,31 +80,18 @@ public class GenerateBuildDashboard extends DefaultTask implements Reporting<Bui
         allAggregatedReports.addAll(getAggregatedTasks());
 
         Set<NamedDomainObjectSet<? extends Report>> enabledReportSets = CollectionUtils.collect(allAggregatedReports,
-            new Transformer<NamedDomainObjectSet<? extends Report>, Reporting<? extends ReportContainer<?>>>() {
-            @Override
-            public NamedDomainObjectSet<? extends Report> transform(Reporting<? extends ReportContainer<?>> reporting) {
-                return reporting.getReports().getEnabled();
-            }
-        });
+            reporting -> reporting.getReports().getEnabled());
         return new LinkedHashSet<Report>(CollectionUtils.flattenCollections(Report.class, enabledReportSets));
     }
 
     private Set<Reporting<? extends ReportContainer<?>>> getAggregatedTasks() {
         final Set<Reporting<? extends ReportContainer<?>>> reports = Sets.newHashSet();
-        getProject().allprojects(new Action<Project>() {
-            @Override
-            public void execute(Project project) {
-                project.getTasks().all(new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        if (!(task instanceof Reporting)) {
-                            return;
-                        }
-                        reports.add((Reporting) task);
-                    }
-                });
+        getProject().allprojects(project -> project.getTasks().all(task -> {
+            if (!(task instanceof Reporting)) {
+                return;
             }
-        });
+            reports.add((Reporting) task);
+        }));
         return reports;
     }
 

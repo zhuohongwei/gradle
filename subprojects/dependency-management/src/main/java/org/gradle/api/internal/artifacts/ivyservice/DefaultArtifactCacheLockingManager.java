@@ -111,42 +111,22 @@ public class DefaultArtifactCacheLockingManager implements ArtifactCacheLockingM
         @Nullable
         @Override
         public V get(final K key) {
-            return cache.useCache(new Factory<V>() {
-                @Override
-                public V create() {
-                    return persistentCache.get(key);
-                }
-            });
+            return cache.useCache(() -> persistentCache.get(key));
         }
 
         @Override
         public V get(final K key, final Transformer<? extends V, ? super K> producer) {
-            return cache.useCache(new Factory<V>() {
-                @Override
-                public V create() {
-                    return persistentCache.get(key, producer);
-                }
-            });
+            return cache.useCache(() -> persistentCache.get(key, producer));
         }
 
         @Override
         public void put(final K key, final V value) {
-            cache.useCache(new Runnable() {
-                @Override
-                public void run() {
-                    persistentCache.put(key, value);
-                }
-            });
+            cache.useCache(() -> persistentCache.put(key, value));
         }
 
         @Override
         public void remove(final K key) {
-            cache.useCache(new Runnable() {
-                @Override
-                public void run() {
-                    persistentCache.remove(key);
-                }
-            });
+            cache.useCache(() -> persistentCache.remove(key));
         }
     }
 }

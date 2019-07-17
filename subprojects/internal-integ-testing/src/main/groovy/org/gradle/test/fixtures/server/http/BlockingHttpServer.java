@@ -188,12 +188,7 @@ public class BlockingHttpServer extends ExternalResource {
     }
 
     private void addNonBlockingHandler(final Collection<? extends ResourceExpectation> expectations) {
-        handler.addHandler(new ChainingHttpHandler.HandlerFactory<TrackingHttpHandler>() {
-            @Override
-            public TrackingHttpHandler create(WaitPrecondition previous) {
-                return new CyclicBarrierRequestHandler(lock, timeoutMs, previous, expectations);
-            }
-        });
+        handler.addHandler((ChainingHttpHandler.HandlerFactory<TrackingHttpHandler>) previous -> new CyclicBarrierRequestHandler(lock, timeoutMs, previous, expectations));
     }
 
     /**
@@ -293,21 +288,11 @@ public class BlockingHttpServer extends ExternalResource {
     }
 
     private BlockingHandler addBlockingHandler(final int concurrent, final Collection<? extends ResourceExpectation> expectations) {
-        return handler.addHandler(new ChainingHttpHandler.HandlerFactory<CyclicBarrierAnyOfRequestHandler>() {
-            @Override
-            public CyclicBarrierAnyOfRequestHandler create(WaitPrecondition previous) {
-                return new CyclicBarrierAnyOfRequestHandler(lock, serverId, timeoutMs, concurrent, previous, expectations);
-            }
-        });
+        return handler.addHandler(previous -> new CyclicBarrierAnyOfRequestHandler(lock, serverId, timeoutMs, concurrent, previous, expectations));
     }
 
     private BlockingHandler addBlockingOptionalHandler(final int concurrent, final Collection<? extends ResourceExpectation> expectations) {
-        return handler.addHandler(new ChainingHttpHandler.HandlerFactory<CyclicBarrierAnyOfRequestHandler>() {
-            @Override
-            public CyclicBarrierAnyOfRequestHandler create(WaitPrecondition previous) {
-                return new CyclicBarrierAnyOfOptionalRequestHandler(lock, serverId, timeoutMs, concurrent, previous, expectations);
-            }
-        });
+        return handler.addHandler((ChainingHttpHandler.HandlerFactory<CyclicBarrierAnyOfRequestHandler>) previous -> new CyclicBarrierAnyOfOptionalRequestHandler(lock, serverId, timeoutMs, concurrent, previous, expectations));
     }
 
     /**
@@ -347,12 +332,7 @@ public class BlockingHttpServer extends ExternalResource {
         handler.waitForCompletion();
         running = false;
         // Stop is very slow, clean it up later
-        EXECUTOR_SERVICE.execute(new Runnable() {
-            @Override
-            public void run() {
-                server.stop(10);
-            }
-        });
+        EXECUTOR_SERVICE.execute(() -> server.stop(10));
     }
 
     /**
@@ -479,12 +459,7 @@ public class BlockingHttpServer extends ExternalResource {
     }
 
     public interface FailureTracker {
-        FailureTracker NO_FAILURE_TRACKER = new FailureTracker() {
-            @Override
-            public RuntimeException getFailure() {
-                return null;
-            }
-        };
+        FailureTracker NO_FAILURE_TRACKER = () -> null;
 
         RuntimeException getFailure();
     }

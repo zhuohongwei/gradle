@@ -16,13 +16,10 @@
 package org.gradle.api.plugins.quality;
 
 import com.google.common.util.concurrent.Callables;
-import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.util.SingleMessageLogger;
@@ -96,105 +93,32 @@ public class FindBugsPlugin extends AbstractCodeQualityPlugin<FindBugs> {
     }
 
     private void configureDefaultDependencies(Configuration configuration) {
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet dependencies) {
-                dependencies.add(project.getDependencies().create("com.google.code.findbugs:findbugs:" + extension.getToolVersion()));
-            }
-        });
+        configuration.defaultDependencies(dependencies -> dependencies.add(project.getDependencies().create("com.google.code.findbugs:findbugs:" + extension.getToolVersion())));
     }
 
     private void configureTaskConventionMapping(Configuration configuration, FindBugs task) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("findbugsClasspath", Callables.returning(configuration));
-        taskMapping.map("ignoreFailures", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return extension.isIgnoreFailures();
-            }
-        });
-        taskMapping.map("effort", new Callable<String>() {
-            @Override
-            public String call() {
-                return extension.getEffort();
-            }
-        });
-        taskMapping.map("reportLevel", new Callable<String>() {
-            @Override
-            public String call() {
-                return extension.getReportLevel();
-            }
-        });
-        taskMapping.map("visitors", new Callable<Collection<String>>() {
-            @Override
-            public Collection<String> call() {
-                return extension.getVisitors();
-            }
-        });
-        taskMapping.map("omitVisitors", new Callable<Collection<String>>() {
-            @Override
-            public Collection<String> call() {
-                return extension.getOmitVisitors();
-            }
-        });
+        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
+        taskMapping.map("effort", (Callable<String>) () -> extension.getEffort());
+        taskMapping.map("reportLevel", (Callable<String>) () -> extension.getReportLevel());
+        taskMapping.map("visitors", (Callable<Collection<String>>) () -> extension.getVisitors());
+        taskMapping.map("omitVisitors", (Callable<Collection<String>>) () -> extension.getOmitVisitors());
 
-        taskMapping.map("excludeFilterConfig", new Callable<TextResource>() {
-            @Override
-            public TextResource call() {
-                return extension.getExcludeFilterConfig();
-            }
-        });
-        taskMapping.map("includeFilterConfig", new Callable<TextResource>() {
-            @Override
-            public TextResource call() {
-                return extension.getIncludeFilterConfig();
-            }
-        });
-        taskMapping.map("excludeBugsFilterConfig", new Callable<TextResource>() {
-            @Override
-            public TextResource call() {
-                return extension.getExcludeBugsFilterConfig();
-            }
-        });
+        taskMapping.map("excludeFilterConfig", (Callable<TextResource>) () -> extension.getExcludeFilterConfig());
+        taskMapping.map("includeFilterConfig", (Callable<TextResource>) () -> extension.getIncludeFilterConfig());
+        taskMapping.map("excludeBugsFilterConfig", (Callable<TextResource>) () -> extension.getExcludeBugsFilterConfig());
 
-        taskMapping.map("extraArgs", new Callable<Collection<String>>() {
-            @Override
-            public Collection<String> call() {
-                return extension.getExtraArgs();
-            }
-        });
-        taskMapping.map("jvmArgs", new Callable<Collection<String>>() {
-            @Override
-            public Collection<String> call() {
-                return extension.getJvmArgs();
-            }
-        });
-        taskMapping.map("showProgress", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return extension.isShowProgress();
-            }
-        });
+        taskMapping.map("extraArgs", (Callable<Collection<String>>) () -> extension.getExtraArgs());
+        taskMapping.map("jvmArgs", (Callable<Collection<String>>) () -> extension.getJvmArgs());
+        taskMapping.map("showProgress", (Callable<Boolean>) () -> extension.isShowProgress());
     }
 
     private void configureReportsConventionMapping(FindBugs task, final String baseName) {
-        task.getReports().all(new Action<SingleFileReport>() {
-            @Override
-            public void execute(final SingleFileReport report) {
-                ConventionMapping reportMapping = conventionMappingOf(report);
-                reportMapping.map("enabled", new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return report.getName().equals("xml");
-                    }
-                });
-                reportMapping.map("destination", new Callable<File>() {
-                    @Override
-                    public File call() {
-                        return new File(extension.getReportsDir(), baseName + "." + report.getName());
-                    }
-                });
-            }
+        task.getReports().all(report -> {
+            ConventionMapping reportMapping = conventionMappingOf(report);
+            reportMapping.map("enabled", (Callable<Boolean>) () -> report.getName().equals("xml"));
+            reportMapping.map("destination", (Callable<File>) () -> new File(extension.getReportsDir(), baseName + "." + report.getName()));
         });
     }
 
@@ -203,17 +127,7 @@ public class FindBugsPlugin extends AbstractCodeQualityPlugin<FindBugs> {
         task.setDescription("Run FindBugs analysis for " + sourceSet.getName() + " classes");
         task.setSource(sourceSet.getAllJava());
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("classes", new Callable<FileCollection>() {
-            @Override
-            public FileCollection call() {
-                return sourceSet.getOutput().getClassesDirs();
-            }
-        });
-        taskMapping.map("classpath", new Callable<FileCollection>() {
-            @Override
-            public FileCollection call() {
-                return sourceSet.getCompileClasspath();
-            }
-        });
+        taskMapping.map("classes", (Callable<FileCollection>) () -> sourceSet.getOutput().getClassesDirs());
+        taskMapping.map("classpath", (Callable<FileCollection>) () -> sourceSet.getCompileClasspath());
     }
 }

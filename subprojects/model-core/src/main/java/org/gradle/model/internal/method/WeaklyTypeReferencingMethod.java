@@ -51,12 +51,7 @@ public class WeaklyTypeReferencingMethod<T, R> {
         this.declaringType = declaringType;
         this.returnType = returnType;
         this.name = method.getName();
-        paramTypes = ImmutableList.copyOf(Iterables.transform(Arrays.asList(method.getGenericParameterTypes()), new Function<Type, ModelType<?>>() {
-            @Override
-            public ModelType<?> apply(Type type) {
-                return ModelType.of(type);
-            }
-        }));
+        paramTypes = ImmutableList.copyOf(Iterables.transform(Arrays.asList(method.getGenericParameterTypes()), (Function<Type, ModelType<?>>) type -> ModelType.of(type)));
         modifiers = method.getModifiers();
     }
 
@@ -108,12 +103,7 @@ public class WeaklyTypeReferencingMethod<T, R> {
     }
 
     public Method getMethod() {
-        Class<?>[] paramTypesArray = Iterables.toArray(Iterables.transform(paramTypes, new Function<ModelType<?>, Class<?>>() {
-            @Override
-            public Class<?> apply(ModelType<?> modelType) {
-                return modelType.getRawClass();
-            }
-        }), Class.class);
+        Class<?>[] paramTypesArray = Iterables.toArray(Iterables.transform(paramTypes, (Function<ModelType<?>, Class<?>>) modelType -> modelType.getRawClass()), Class.class);
         try {
             return declaringType.getRawClass().getDeclaredMethod(name, paramTypesArray);
         } catch (NoSuchMethodException e) {
@@ -161,12 +151,7 @@ public class WeaklyTypeReferencingMethod<T, R> {
         return String.format("%s.%s(%s)",
             declaringType.getDisplayName(),
             name,
-            Joiner.on(", ").join(Iterables.transform(paramTypes, new Function<ModelType<?>, String>() {
-                @Override
-                public String apply(ModelType<?> paramType) {
-                    return paramType.getDisplayName();
-                }
-            }))
+            Joiner.on(", ").join(Iterables.transform(paramTypes, paramType -> paramType.getDisplayName()))
         );
     }
 }

@@ -30,12 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 final class DefaultImmutableAttributes implements ImmutableAttributes, AttributeValue<Object> {
-    private static final Comparator<Attribute<?>> ATTRIBUTE_NAME_COMPARATOR = new Comparator<Attribute<?>>() {
-        @Override
-        public int compare(Attribute<?> o1, Attribute<?> o2) {
-            return o1.getName().compareTo(o2.getName());
-        }
-    };
+    private static final Comparator<Attribute<?>> ATTRIBUTE_NAME_COMPARATOR = (o1, o2) -> o1.getName().compareTo(o2.getName());
     // Coercion is an expensive process, so we cache the result of coercing to other attribute types.
     // We can afford using a hashmap here because attributes are interned, and their lifetime doesn't
     // exceed a build

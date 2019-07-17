@@ -29,8 +29,6 @@ import org.gradle.internal.execution.history.AfterPreviousExecutionState;
 import org.gradle.internal.fingerprint.FileCollectionFingerprint;
 import org.gradle.internal.snapshot.FileSystemSnapshot;
 
-import java.util.function.Consumer;
-
 /**
  * Snapshot the task's inputs before execution.
  *
@@ -57,12 +55,7 @@ public class ResolveBeforeExecutionOutputsTaskExecuter implements TaskExecuter {
             ? afterPreviousExecutionState.getOutputFileProperties()
             : ImmutableSortedMap.<String, FileCollectionFingerprint>of();
         OverlappingOutputs.detect(outputsAfterPreviousExecution, outputsBeforeExecution)
-            .ifPresent(new Consumer<OverlappingOutputs>() {
-                @Override
-                public void accept(OverlappingOutputs overlappingOutputs) {
-                    context.setOverlappingOutputs(overlappingOutputs);
-                }
-            });
+            .ifPresent(overlappingOutputs -> context.setOverlappingOutputs(overlappingOutputs));
 
         return delegate.execute(task, state, context);
     }

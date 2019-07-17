@@ -16,7 +16,6 @@
 package org.gradle.api.tasks.diagnostics;
 
 import org.apache.commons.lang.StringUtils;
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.tasks.diagnostics.internal.TextReportRenderer;
@@ -29,7 +28,9 @@ import org.gradle.util.GUtil;
 import java.io.IOException;
 import java.util.List;
 
-import static org.gradle.internal.logging.text.StyledTextOutput.Style.*;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.Description;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.Info;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style.UserInput;
 
 /**
  * <p>Displays a list of projects in the build. An instance of this type is used when you execute the {@code projects}
@@ -77,13 +78,10 @@ public class ProjectReportTask extends AbstractReportTask {
 
     private void render(final Project project, GraphRenderer renderer, boolean lastChild,
                         final StyledTextOutput textOutput) {
-        renderer.visit(new Action<StyledTextOutput>() {
-            @Override
-            public void execute(StyledTextOutput styledTextOutput) {
-                styledTextOutput.text(StringUtils.capitalize(project.toString()));
-                if (GUtil.isTrue(project.getDescription())) {
-                    textOutput.withStyle(Description).format(" - %s", project.getDescription());
-                }
+        renderer.visit(styledTextOutput -> {
+            styledTextOutput.text(StringUtils.capitalize(project.toString()));
+            if (GUtil.isTrue(project.getDescription())) {
+                textOutput.withStyle(Description).format(" - %s", project.getDescription());
             }
         }, lastChild);
         renderer.startChildren();

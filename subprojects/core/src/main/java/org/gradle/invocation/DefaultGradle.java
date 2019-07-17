@@ -247,12 +247,7 @@ public class DefaultGradle extends AbstractPluginAware implements GradleInternal
 
     @Override
     public void allprojects(final Action<? super Project> action) {
-        rootProject("Gradle.allprojects", new Action<Project>() {
-            @Override
-            public void execute(Project project) {
-                project.allprojects(action);
-            }
-        });
+        rootProject("Gradle.allprojects", project -> project.allprojects(action));
     }
 
     @Override

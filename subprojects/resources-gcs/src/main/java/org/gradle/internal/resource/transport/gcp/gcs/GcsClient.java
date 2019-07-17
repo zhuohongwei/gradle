@@ -170,16 +170,13 @@ public class GcsClient {
     }
 
     private static Supplier<Credential> getCredentialSupplier(final HttpTransport transport, final JsonFactory jsonFactory) {
-        return Suppliers.memoize(new Supplier<Credential>() {
-            @Override
-            public Credential get() {
-                try {
-                    GoogleCredential googleCredential = GoogleCredential.getApplicationDefault(transport, jsonFactory);
-                    // Ensure we have a scope
-                    return googleCredential.createScoped(singletonList("https://www.googleapis.com/auth/devstorage.read_write"));
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Failed to get Google credentials for GCS connection", e);
-                }
+        return Suppliers.memoize(() -> {
+            try {
+                GoogleCredential googleCredential = GoogleCredential.getApplicationDefault(transport, jsonFactory);
+                // Ensure we have a scope
+                return googleCredential.createScoped(singletonList("https://www.googleapis.com/auth/devstorage.read_write"));
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to get Google credentials for GCS connection", e);
             }
         });
     }

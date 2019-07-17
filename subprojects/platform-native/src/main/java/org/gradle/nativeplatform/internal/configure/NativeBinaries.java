@@ -16,12 +16,22 @@
 package org.gradle.nativeplatform.internal.configure;
 
 import org.gradle.api.internal.file.FileCollectionFactory;
-import org.gradle.internal.BiAction;
 import org.gradle.model.ModelMap;
-import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.DirectNodeNoInputsModelAction;
+import org.gradle.model.internal.core.ModelActionRole;
+import org.gradle.model.internal.core.ModelPath;
+import org.gradle.model.internal.core.ModelReference;
+import org.gradle.model.internal.core.MutableModelNode;
 import org.gradle.model.internal.core.rule.describe.SimpleModelRuleDescriptor;
 import org.gradle.model.internal.manage.instance.ManagedInstance;
-import org.gradle.nativeplatform.*;
+import org.gradle.nativeplatform.BuildType;
+import org.gradle.nativeplatform.Flavor;
+import org.gradle.nativeplatform.NativeBinarySpec;
+import org.gradle.nativeplatform.NativeComponentSpec;
+import org.gradle.nativeplatform.NativeExecutableBinarySpec;
+import org.gradle.nativeplatform.NativeLibrarySpec;
+import org.gradle.nativeplatform.SharedLibraryBinarySpec;
+import org.gradle.nativeplatform.StaticLibraryBinarySpec;
 import org.gradle.nativeplatform.internal.NativeBinarySpecInternal;
 import org.gradle.nativeplatform.internal.resolve.NativeDependencyResolver;
 import org.gradle.nativeplatform.platform.NativePlatform;
@@ -74,12 +84,7 @@ public class NativeBinaries {
         backingNode.applyToLink(ModelActionRole.Defaults, DirectNodeNoInputsModelAction.of(
             ModelReference.of(binaryPath, NativeBinarySpec.class),
             new SimpleModelRuleDescriptor("initialize binary " + binaryPath),
-            new BiAction<MutableModelNode, NativeBinarySpec>() {
-                @Override
-                public void execute(MutableModelNode mutableModelNode, NativeBinarySpec nativeBinarySpec) {
-                    initialize(nativeBinarySpec, namingScheme, resolver, fileCollectionFactory, platform, buildType, flavor);
-                }
-            }
+            (mutableModelNode, nativeBinarySpec) -> initialize(nativeBinarySpec, namingScheme, resolver, fileCollectionFactory, platform, buildType, flavor)
         ));
         binaries.named(name, NativeBinaryRules.class);
     }

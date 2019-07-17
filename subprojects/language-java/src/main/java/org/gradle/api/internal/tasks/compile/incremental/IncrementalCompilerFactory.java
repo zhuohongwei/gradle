@@ -35,7 +35,6 @@ import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnap
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationOutputAnalyzer;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationStore;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.RecompilationSpecProvider;
-import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.StreamHasher;
 import org.gradle.internal.operations.BuildOperationExecutor;
@@ -94,12 +93,9 @@ public class IncrementalCompilerFactory {
     }
 
     private <T extends JavaCompileSpec> Compiler<T> createRebuildAllCompiler(final CleaningJavaCompilerSupport<T> cleaningJavaCompiler, final FileTree sourceFiles) {
-        return new Compiler<T>() {
-            @Override
-            public WorkResult execute(T spec) {
-                spec.setSourceFiles(sourceFiles);
-                return cleaningJavaCompiler.execute(spec);
-            }
+        return spec -> {
+            spec.setSourceFiles(sourceFiles);
+            return cleaningJavaCompiler.execute(spec);
         };
     }
 }

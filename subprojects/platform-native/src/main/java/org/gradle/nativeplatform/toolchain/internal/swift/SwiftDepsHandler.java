@@ -16,15 +16,12 @@
 
 package org.gradle.nativeplatform.toolchain.internal.swift;
 
-import org.gradle.api.Action;
-import org.gradle.api.Transformer;
 import org.gradle.internal.IoActions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -60,12 +57,9 @@ class SwiftDepsHandler {
     static final List RESET_TIMESTAMP = Arrays.asList(0L, 0L);
 
     SwiftDeps parse(File moduleSwiftDeps) throws FileNotFoundException {
-        return IoActions.withResource(new FileInputStream(moduleSwiftDeps), new Transformer<SwiftDeps, FileInputStream>() {
-            @Override
-            public SwiftDeps transform(FileInputStream fileInputStream) {
-                Yaml yaml = new Yaml(new Constructor(SwiftDeps.class));
-                return yaml.loadAs(fileInputStream, SwiftDeps.class);
-            }
+        return IoActions.withResource(new FileInputStream(moduleSwiftDeps), fileInputStream -> {
+            Yaml yaml = new Yaml(new Constructor(SwiftDeps.class));
+            return yaml.loadAs(fileInputStream, SwiftDeps.class);
         });
     }
 
@@ -80,12 +74,9 @@ class SwiftDepsHandler {
     }
 
     private void write(File moduleSwiftDeps, final SwiftDeps swiftDeps) {
-        IoActions.writeTextFile(moduleSwiftDeps, new Action<BufferedWriter>() {
-            @Override
-            public void execute(BufferedWriter bufferedWriter) {
-                Yaml yaml = new Yaml();
-                yaml.dump(swiftDeps, bufferedWriter);
-            }
+        IoActions.writeTextFile(moduleSwiftDeps, bufferedWriter -> {
+            Yaml yaml = new Yaml();
+            yaml.dump(swiftDeps, bufferedWriter);
         });
     }
 

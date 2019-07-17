@@ -37,8 +37,6 @@ import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.codehaus.plexus.configuration.PlexusConfigurationException;
-import org.gradle.api.Transformer;
-import org.gradle.internal.Factory;
 import org.gradle.internal.SystemProperties;
 import org.gradle.util.CollectionUtils;
 import org.sonatype.aether.RepositorySystemSession;
@@ -71,13 +69,10 @@ public class MavenProjectsCreator {
         DefaultPlexusContainer container = new DefaultPlexusContainer(containerConfiguration);
         ProjectBuilder builder = container.lookup(ProjectBuilder.class);
         MavenExecutionRequest executionRequest = new DefaultMavenExecutionRequest();
-        final Properties properties = SystemProperties.getInstance().withSystemProperties(new Factory<Properties>() {
-            @Override
-            public Properties create() {
-                final Properties properties = new Properties();
-                properties.putAll(System.getProperties());
-                return properties;
-            }
+        final Properties properties = SystemProperties.getInstance().withSystemProperties(() -> {
+            final Properties properties1 = new Properties();
+            properties1.putAll(System.getProperties());
+            return properties1;
         });
 
         executionRequest.setSystemProperties(properties);
@@ -94,12 +89,7 @@ public class MavenProjectsCreator {
         //we should add coverage for nested multi-project builds with multiple parents.
         reactorProjects.add(mavenProject);
         List<ProjectBuildingResult> allProjects = builder.build(ImmutableList.of(pomFile), true, buildingRequest);
-        CollectionUtils.collect(allProjects, reactorProjects, new Transformer<MavenProject, ProjectBuildingResult>() {
-            @Override
-            public MavenProject transform(ProjectBuildingResult original) {
-                return original.getProject();
-            }
-        });
+        CollectionUtils.collect(allProjects, reactorProjects, original -> original.getProject());
 
         MavenExecutionResult result = new DefaultMavenExecutionResult();
         result.setProject(mavenProject);

@@ -21,7 +21,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
-import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.project.IsolatedAntBuilder;
 import org.gradle.internal.reflect.JavaMethod;
@@ -38,12 +37,7 @@ import static com.google.common.collect.Iterables.filter;
 public class AntJacocoCheck extends AbstractAntJacocoReport<JacocoViolationRulesContainer> {
 
     private static final String VIOLATIONS_ANT_PROPERTY = "jacocoViolations";
-    private static final Predicate<JacocoViolationRule> RULE_ENABLED_PREDICATE = new Predicate<JacocoViolationRule>() {
-        @Override
-        public boolean apply(JacocoViolationRule rule) {
-            return rule.isEnabled();
-        }
-    };
+    private static final Predicate<JacocoViolationRule> RULE_ENABLED_PREDICATE = rule -> rule.isEnabled();
 
     public AntJacocoCheck(IsolatedAntBuilder ant) {
         super(ant);
@@ -54,16 +48,13 @@ public class AntJacocoCheck extends AbstractAntJacocoReport<JacocoViolationRules
                                      final FileCollection executionData, final JacocoViolationRulesContainer violationRules) {
         final JacocoCheckResult jacocoCheckResult = new JacocoCheckResult();
 
-        configureAntReportTask(classpath, new Action<GroovyObjectSupport>() {
-            @Override
-            public void execute(GroovyObjectSupport antBuilder) {
-                try {
-                    invokeJacocoReport(antBuilder, projectName, allClassesDirs, allSourcesDirs, executionData, violationRules);
-                } catch (Exception e) {
-                    String violations = getViolations(antBuilder);
-                    jacocoCheckResult.setSuccess(false);
-                    jacocoCheckResult.setFailureMessage(violations != null ? violations : e.getMessage());
-                }
+        configureAntReportTask(classpath, antBuilder -> {
+            try {
+                invokeJacocoReport(antBuilder, projectName, allClassesDirs, allSourcesDirs, executionData, violationRules);
+            } catch (Exception e) {
+                String violations = getViolations(antBuilder);
+                jacocoCheckResult.setSuccess(false);
+                jacocoCheckResult.setFailureMessage(violations != null ? violations : e.getMessage());
             }
         });
 

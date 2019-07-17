@@ -16,14 +16,12 @@
 
 package org.gradle.model.internal.core;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import org.gradle.api.Action;
 import org.gradle.api.Transformer;
 import org.gradle.api.specs.Spec;
@@ -106,37 +104,24 @@ public class NodeBackedModelMap<T> extends ModelMapGroovyView<T> implements Mana
     }
 
     public static <T> ChildNodeInitializerStrategy<T> createUsingParentNode(final ModelType<T> baseItemModelType) {
-        return createUsingParentNode(new Transformer<NamedEntityInstantiator<T>, MutableModelNode>() {
-            @Override
-            public NamedEntityInstantiator<T> transform(MutableModelNode modelNode) {
-                return modelNode.getPrivateData(instantiatorTypeOf(baseItemModelType));
-            }
-        });
+        return createUsingParentNode(modelNode -> modelNode.getPrivateData(instantiatorTypeOf(baseItemModelType)));
     }
 
     public static <T> ChildNodeInitializerStrategy<T> createUsingParentNode(final Transformer<? extends NamedEntityInstantiator<T>, ? super MutableModelNode> instantiatorTransform) {
         return new ChildNodeInitializerStrategy<T>() {
             @Override
             public <S extends T> NodeInitializer initializer(final ModelType<S> type, Spec<ModelType<?>> constraints) {
-                return new NodeInitializer() {
-                    @Override
-                    public Multimap<ModelActionRole, ModelAction> getActions(ModelReference<?> subject, ModelRuleDescriptor descriptor) {
-                        return ImmutableSetMultimap.<ModelActionRole, ModelAction>builder()
-                            .put(ModelActionRole.Discover, AddProjectionsAction.of(subject, descriptor,
-                                UnmanagedModelProjection.of(type),
-                                new ModelElementProjection(type)
-                            ))
-                            .put(ModelActionRole.Create, DirectNodeNoInputsModelAction.of(subject, descriptor, new Action<MutableModelNode>() {
-                                @Override
-                                public void execute(MutableModelNode modelNode) {
-                                    NamedEntityInstantiator<T> instantiator = instantiatorTransform.transform(modelNode.getParent());
-                                    S item = instantiator.create(modelNode.getPath().getName(), type.getConcreteClass());
-                                    modelNode.setPrivateData(type, item);
-                                }
-                            }))
-                            .build();
-                    }
-                };
+                return (subject, descriptor) -> ImmutableSetMultimap.<ModelActionRole, ModelAction>builder()
+                    .put(ModelActionRole.Discover, AddProjectionsAction.of(subject, descriptor,
+                        UnmanagedModelProjection.of(type),
+                        new ModelElementProjection(type)
+                    ))
+                    .put(ModelActionRole.Create, DirectNodeNoInputsModelAction.of(subject, descriptor, modelNode -> {
+                        NamedEntityInstantiator<T> instantiator = instantiatorTransform.transform(modelNode.getParent());
+                        S item = instantiator.create(modelNode.getPath().getName(), type.getConcreteClass());
+                        modelNode.setPrivateData(type, item);
+                    }))
+                    .build();
             }
         };
     }
@@ -293,12 +278,7 @@ public class NodeBackedModelMap<T> extends ModelMapGroovyView<T> implements Mana
 
     private <S extends T> void doCreate(String name, ModelType<S> type, final DeferredModelAction action) {
         ModelPath childPath = modelNode.getPath().child(name);
-        doCreate(childPath, type, action.getDescriptor(), DirectNodeNoInputsModelAction.of(ModelReference.of(childPath, type), action.getDescriptor(), new Action<MutableModelNode>() {
-            @Override
-            public void execute(MutableModelNode node) {
-                action.execute(node, ModelActionRole.Initialize);
-            }
-        }));
+        doCreate(childPath, type, action.getDescriptor(), DirectNodeNoInputsModelAction.of(ModelReference.of(childPath, type), action.getDescriptor(), node -> action.execute(node, ModelActionRole.Initialize)));
     }
 
     private <S extends T> void doCreate(String name, ModelType<S> type, @Nullable Action<? super S> initAction) {
@@ -401,24 +381,14 @@ public class NodeBackedModelMap<T> extends ModelMapGroovyView<T> implements Mana
 
     @Override
     public Collection<T> values() {
-        Iterable<T> values = Iterables.transform(keySet(), new Function<String, T>() {
-            @Override
-            public T apply(@Nullable String name) {
-                return get(name);
-            }
-        });
+        Iterable<T> values = Iterables.transform(keySet(), name -> get(name));
         return Lists.newArrayList(values);
     }
 
     @Override
     public Iterator<T> iterator() {
         viewState.assertCanReadChildren();
-        return Iterators.transform(keySet().iterator(), new Function<String, T>() {
-            @Override
-            public T apply(@Nullable String name) {
-                return get(name);
-            }
-        });
+        return Iterators.transform(keySet().iterator(), name -> get(name));
     }
 
     @Override

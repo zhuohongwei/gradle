@@ -79,12 +79,7 @@ public class PBXProject extends PBXContainer {
 
         s.addField("mainGroup", mainGroup);
 
-        Collections.sort(targets, Ordering.natural().onResultOf(new Function<PBXTarget, String>() {
-            @Override
-            public String apply(PBXTarget input) {
-                return input.getName();
-            }
-        }));
+        Collections.sort(targets, Ordering.natural().onResultOf((Function<PBXTarget, String>) input -> input.getName()));
         s.addField("targets", targets);
         s.addField("buildConfigurationList", buildConfigurationList);
         s.addField("compatibilityVersion", compatibilityVersion);

@@ -16,10 +16,8 @@
 
 package org.gradle.api.plugins.announce.internal;
 
-import org.gradle.api.Action;
 import org.gradle.api.internal.ProcessOperations;
 import org.gradle.internal.os.OperatingSystem;
-import org.gradle.process.ExecSpec;
 
 import java.io.File;
 
@@ -39,17 +37,14 @@ public class GrowlNotifyBackedAnnouncer extends Growl {
             throw new AnnouncerUnavailableException("Could not find 'growlnotify' in path.");
         }
 
-        processOperations.exec(new Action<ExecSpec>() {
-            @Override
-            public void execute(ExecSpec execSpec) {
-                execSpec.executable(exe);
-                execSpec.args("-m", message);
-                File icon = iconProvider.getIcon(48, 48);
-                if (icon != null) {
-                    execSpec.args("--image", icon.getAbsolutePath());
-                }
-                execSpec.args("-t", title);
+        processOperations.exec(execSpec -> {
+            execSpec.executable(exe);
+            execSpec.args("-m", message);
+            File icon = iconProvider.getIcon(48, 48);
+            if (icon != null) {
+                execSpec.args("--image", icon.getAbsolutePath());
             }
+            execSpec.args("-t", title);
         });
     }
 }

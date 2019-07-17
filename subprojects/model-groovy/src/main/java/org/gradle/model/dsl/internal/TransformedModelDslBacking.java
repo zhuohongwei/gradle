@@ -17,16 +17,24 @@
 package org.gradle.model.dsl.internal;
 
 import groovy.lang.Closure;
-import javax.annotation.concurrent.ThreadSafe;
-import org.gradle.api.Action;
 import org.gradle.internal.file.RelativeFilePathResolver;
 import org.gradle.model.InvalidModelRuleDeclarationException;
 import org.gradle.model.dsl.internal.transform.ClosureBackedRuleFactory;
 import org.gradle.model.dsl.internal.transform.RulesBlock;
-import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.DeferredModelAction;
+import org.gradle.model.internal.core.DirectNodeNoInputsModelAction;
+import org.gradle.model.internal.core.ModelActionRole;
+import org.gradle.model.internal.core.ModelPath;
+import org.gradle.model.internal.core.ModelReference;
+import org.gradle.model.internal.core.ModelRegistrations;
+import org.gradle.model.internal.core.ModelTypeInitializationException;
+import org.gradle.model.internal.core.NodeInitializer;
+import org.gradle.model.internal.core.NodeInitializerRegistry;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.registry.ModelRegistry;
 import org.gradle.model.internal.type.ModelType;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 import static org.gradle.model.internal.core.DefaultNodeInitializerRegistry.DEFAULT_REFERENCE;
 import static org.gradle.model.internal.core.NodeInitializerContext.forType;
@@ -70,12 +78,7 @@ public class TransformedModelDslBacking {
 
     private <T> void registerAction(ModelPath modelPath, ModelType<T> viewType, final ModelActionRole role, final DeferredModelAction action) {
         ModelReference<T> reference = ModelReference.of(modelPath, viewType);
-        modelRegistry.configure(ModelActionRole.Initialize, DirectNodeNoInputsModelAction.of(reference, action.getDescriptor(), new Action<MutableModelNode>() {
-            @Override
-            public void execute(MutableModelNode node) {
-                action.execute(node, role);
-            }
-        }));
+        modelRegistry.configure(ModelActionRole.Initialize, DirectNodeNoInputsModelAction.of(reference, action.getDescriptor(), node -> action.execute(node, role)));
     }
 
     public static boolean isTransformedBlock(Closure<?> closure) {

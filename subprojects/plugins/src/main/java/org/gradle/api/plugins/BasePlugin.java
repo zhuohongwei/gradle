@@ -16,15 +16,12 @@
 
 package org.gradle.api.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
 import org.gradle.api.internal.artifacts.Module;
@@ -85,43 +82,25 @@ public class BasePlugin implements Plugin<Project> {
     }
 
     private void configureArchiveDefaults(final Project project, final BasePluginConvention pluginConvention) {
-        project.getTasks().withType(AbstractArchiveTask.class).configureEach(new Action<AbstractArchiveTask>() {
-            @Override
-            public void execute(AbstractArchiveTask task) {
+        project.getTasks().withType(AbstractArchiveTask.class).configureEach(task -> {
 
-                Callable<String> destinationDir;
-                if (task instanceof Jar) {
-                    destinationDir = new Callable<String>() {
-                        @Override
-                        public String call() {
-                            return pluginConvention.getLibsDirName();
-                        }
-                    };
-                } else {
-                    destinationDir = new Callable<String>() {
-                        @Override
-                        public String call() {
-                            return pluginConvention.getDistsDirName();
-                        }
-                    };
-                }
-                task.getDestinationDirectory().convention(project.getLayout().getBuildDirectory().dir(project.provider(destinationDir)));
-
-                task.getArchiveVersion().convention(project.provider(new Callable<String>() {
-                    @Override
-                    @Nullable
-                    public String call() {
-                        return project.getVersion() == Project.DEFAULT_VERSION ? null : project.getVersion().toString();
-                    }
-                }));
-
-                task.getArchiveBaseName().convention(project.provider(new Callable<String>() {
-                    @Override
-                    public String call() {
-                        return pluginConvention.getArchivesBaseName();
-                    }
-                }));
+            Callable<String> destinationDir;
+            if (task instanceof Jar) {
+                destinationDir = () -> pluginConvention.getLibsDirName();
+            } else {
+                destinationDir = () -> pluginConvention.getDistsDirName();
             }
+            task.getDestinationDirectory().convention(project.getLayout().getBuildDirectory().dir(project.provider(destinationDir)));
+
+            task.getArchiveVersion().convention(project.provider(new Callable<String>() {
+                @Override
+                @Nullable
+                public String call() {
+                    return project.getVersion() == Project.DEFAULT_VERSION ? null : project.getVersion().toString();
+                }
+            }));
+
+            task.getArchiveBaseName().convention(project.provider(() -> pluginConvention.getArchivesBaseName()));
         });
     }
 
@@ -134,24 +113,21 @@ public class BasePlugin implements Plugin<Project> {
     }
 
     private void configureUploadArchivesTask() {
-        configurationActionContainer.add(new Action<ProjectInternal>() {
-            @Override
-            public void execute(ProjectInternal project) {
-                Upload uploadArchives = project.getTasks().withType(Upload.class).findByName(UPLOAD_ARCHIVES_TASK_NAME);
-                if (uploadArchives == null) {
-                    return;
-                }
-
-                boolean hasIvyRepo = !uploadArchives.getRepositories().withType(IvyArtifactRepository.class).isEmpty();
-                if (!hasIvyRepo) {
-                    return;
-                } // Maven repos are handled by MavenPlugin
-
-                ConfigurationInternal configuration = (ConfigurationInternal) uploadArchives.getConfiguration();
-                Module module = configuration.getModule();
-                ModuleVersionIdentifier publicationId = moduleIdentifierFactory.moduleWithVersion(module.getGroup(), module.getName(), module.getVersion());
-                publicationRegistry.registerPublication(project, new DefaultProjectPublication(Describables.of("Ivy publication"), publicationId, true));
+        configurationActionContainer.add(project -> {
+            Upload uploadArchives = project.getTasks().withType(Upload.class).findByName(UPLOAD_ARCHIVES_TASK_NAME);
+            if (uploadArchives == null) {
+                return;
             }
+
+            boolean hasIvyRepo = !uploadArchives.getRepositories().withType(IvyArtifactRepository.class).isEmpty();
+            if (!hasIvyRepo) {
+                return;
+            } // Maven repos are handled by MavenPlugin
+
+            ConfigurationInternal configuration = (ConfigurationInternal) uploadArchives.getConfiguration();
+            Module module = configuration.getModule();
+            ModuleVersionIdentifier publicationId = moduleIdentifierFactory.moduleWithVersion(module.getGroup(), module.getName(), module.getVersion());
+            publicationRegistry.registerPublication(project, new DefaultProjectPublication(Describables.of("Ivy publication"), publicationId, true));
         });
     }
 
@@ -169,29 +145,18 @@ public class BasePlugin implements Plugin<Project> {
                 "defaultArtifacts", DefaultArtifactPublicationSet.class, archivesConfiguration.getArtifacts()
         );
 
-        configurations.all(new Action<Configuration>() {
-            @Override
-            public void execute(final Configuration configuration) {
-                if (!configuration.equals(archivesConfiguration)) {
-                    configuration.getArtifacts().configureEach(new Action<PublishArtifact>() {
-                        @Override
-                        public void execute(PublishArtifact artifact) {
-                            if (configuration.isVisible()) {
-                                defaultArtifacts.addCandidate(artifact);
-                            }
-                        }
-                    });
-                }
+        configurations.all(configuration -> {
+            if (!configuration.equals(archivesConfiguration)) {
+                configuration.getArtifacts().configureEach(artifact -> {
+                    if (configuration.isVisible()) {
+                        defaultArtifacts.addCandidate(artifact);
+                    }
+                });
             }
         });
     }
 
     private void configureAssemble(final ProjectInternal project) {
-        project.getTasks().named(ASSEMBLE_TASK_NAME, new Action<Task>() {
-            @Override
-            public void execute(Task task) {
-                task.dependsOn(project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION).getAllArtifacts().getBuildDependencies());
-            }
-        });
+        project.getTasks().named(ASSEMBLE_TASK_NAME, task -> task.dependsOn(project.getConfigurations().getByName(Dependency.ARCHIVES_CONFIGURATION).getAllArtifacts().getBuildDependencies()));
     }
 }

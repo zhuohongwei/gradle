@@ -227,19 +227,16 @@ class VisualCppPlatformToolProvider extends AbstractPlatformToolProvider {
     }
 
     private <T extends NativeCompileSpec> Transformer<T, T> pchSpecTransforms(final Class<T> type) {
-        return new Transformer<T, T>() {
-            @Override
-            public T transform(T original) {
-                List<Transformer<T, T>> transformers = Lists.newArrayList();
-                transformers.add(PCHUtils.getHeaderToSourceFileTransformer(type));
-                transformers.add(addDefinitions(type));
+        return original -> {
+            List<Transformer<T, T>> transformers = Lists.newArrayList();
+            transformers.add(PCHUtils.getHeaderToSourceFileTransformer(type));
+            transformers.add(addDefinitions(type));
 
-                T next = original;
-                for (Transformer<T, T> transformer : transformers) {
-                    next = transformer.transform(next);
-                }
-                return next;
+            T next = original;
+            for (Transformer<T, T> transformer : transformers) {
+                next = transformer.transform(next);
             }
+            return next;
         };
     }
 
@@ -249,24 +246,18 @@ class VisualCppPlatformToolProvider extends AbstractPlatformToolProvider {
     }
 
     private <T extends NativeCompileSpec> Transformer<T, T> addDefinitions(Class<T> type) {
-        return new Transformer<T, T>() {
-            @Override
-            public T transform(T original) {
-                for (Map.Entry<String, String> definition : libraries.getPreprocessorMacros().entrySet()) {
-                    original.define(definition.getKey(), definition.getValue());
-                }
-                return original;
+        return original -> {
+            for (Map.Entry<String, String> definition : libraries.getPreprocessorMacros().entrySet()) {
+                original.define(definition.getKey(), definition.getValue());
             }
+            return original;
         };
     }
 
     private Transformer<LinkerSpec, LinkerSpec> addLibraryPath() {
-        return new Transformer<LinkerSpec, LinkerSpec>() {
-            @Override
-            public LinkerSpec transform(LinkerSpec original) {
-                original.libraryPath(libraries.getLibDirs());
-                return original;
-            }
+        return original -> {
+            original.libraryPath(libraries.getLibDirs());
+            return original;
         };
     }
 

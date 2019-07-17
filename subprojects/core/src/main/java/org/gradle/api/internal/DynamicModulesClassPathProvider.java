@@ -21,10 +21,8 @@ import org.gradle.api.JavaVersion;
 import org.gradle.api.internal.classpath.Module;
 import org.gradle.api.internal.classpath.ModuleRegistry;
 import org.gradle.api.internal.classpath.PluginModuleRegistry;
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.classpath.ClassPath;
 
-import java.io.File;
 import java.util.Set;
 
 import static java.util.Collections.emptySet;
@@ -80,12 +78,7 @@ public class DynamicModulesClassPathProvider implements ClassPathProvider {
 
     private ClassPath removeJaxbIfIncludedInCurrentJdk(ClassPath classpath) {
         if (!javaVersion.isJava9Compatible()) {
-            return classpath.removeIf(new Spec<File>() {
-                @Override
-                public boolean isSatisfiedBy(File file) {
-                    return file.getName().startsWith("jaxb-impl-");
-                }
-            });
+            return classpath.removeIf(file -> file.getName().startsWith("jaxb-impl-"));
         }
         return classpath;
     }

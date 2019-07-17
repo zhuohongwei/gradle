@@ -76,31 +76,13 @@ public class PatternSetAntBuilderDelegate implements AntBuilderAware {
 
     @Override
     public Object addToAntBuilder(Object node, String childNodeName) {
-        return and(node, new Action<Object>() {
-            @Override
-            public void execute(Object node) {
-                if (!includes.isEmpty()) {
-                    or(node, new Action<Object>() {
-                        @Override
-                        public void execute(Object node) {
-                            addFilenames(node, includes, caseSensitive);
-                        }
-                    });
-                }
+        return and(node, node14 -> {
+            if (!includes.isEmpty()) {
+                or(node14, node13 -> addFilenames(node13, includes, caseSensitive));
+            }
 
-                if (!excludes.isEmpty()) {
-                    not(node, new Action<Object>() {
-                        @Override
-                        public void execute(Object node) {
-                            or(node, new Action<Object>() {
-                                @Override
-                                public void execute(Object node) {
-                                    addFilenames(node, excludes, caseSensitive);
-                                }
-                            });
-                        }
-                    });
-                }
+            if (!excludes.isEmpty()) {
+                not(node14, node12 -> or(node12, node1 -> addFilenames(node1, excludes, caseSensitive)));
             }
         });
     }

@@ -16,7 +16,6 @@
 
 package org.gradle.play.internal.run;
 
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.UncheckedException;
 import org.gradle.util.CollectionUtils;
 
@@ -43,12 +42,7 @@ class AssetsClassLoader extends ClassLoader {
     }
 
     private AssetDir findResourceInAssetDir(final String name) {
-        return CollectionUtils.findFirst(assetDirs, new Spec<AssetDir>() {
-            @Override
-            public boolean isSatisfiedBy(AssetDir assetDir) {
-                return assetDir.exists(name);
-            }
-        });
+        return CollectionUtils.findFirst(assetDirs, assetDir -> assetDir.exists(name));
     }
 
     public static class AssetDir {

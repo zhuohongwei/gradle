@@ -24,7 +24,6 @@ import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
-import org.gradle.api.Transformer;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.internal.initialization.DefaultClassLoaderScope;
 import org.gradle.api.logging.Logger;
@@ -483,12 +482,7 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
 
         if (isUseDaemon() && !gradleInvocation.buildJvmArgs.isEmpty()) {
             // Pass build JVM args through to daemon via system property on the launcher JVM
-            String quotedArgs = join(" ", collect(gradleInvocation.buildJvmArgs, new Transformer<String, String>() {
-                @Override
-                public String transform(String input) {
-                    return String.format("'%s'", input);
-                }
-            }));
+            String quotedArgs = join(" ", collect(gradleInvocation.buildJvmArgs, input -> String.format("'%s'", input)));
             gradleInvocation.implicitLauncherJvmArgs.add("-Dorg.gradle.jvmargs=" + quotedArgs);
         } else {
             // Have to pass build JVM args directly to launcher JVM
@@ -786,36 +780,23 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
 
     @Override
     public GradleExecuter withRepositoryMirrors() {
-        beforeExecute(new Action<GradleExecuter>() {
-            @Override
-            public void execute(GradleExecuter gradleExecuter) {
-                usingInitScript(RepoScriptBlockUtil.createMirrorInitScript());
-            }
-        });
+        beforeExecute(gradleExecuter -> usingInitScript(RepoScriptBlockUtil.createMirrorInitScript()));
         return this;
     }
 
     @Override
     public GradleExecuter withGlobalRepositoryMirrors() {
-        beforeExecute(new Action<GradleExecuter>() {
-            @Override
-            public void execute(GradleExecuter gradleExecuter) {
-                TestFile userHome = testDirectoryProvider.getTestDirectory().file("user-home");
-                withGradleUserHomeDir(userHome);
-                userHome.file("init.d/mirrors.gradle").write(RepoScriptBlockUtil.mirrorInitScript());
-            }
+        beforeExecute(gradleExecuter -> {
+            TestFile userHome = testDirectoryProvider.getTestDirectory().file("user-home");
+            withGradleUserHomeDir(userHome);
+            userHome.file("init.d/mirrors.gradle").write(RepoScriptBlockUtil.mirrorInitScript());
         });
         return this;
     }
 
     @Override
     public GradleExecuter withPluginRepositoryMirror() {
-        beforeExecute(new Action<GradleExecuter>() {
-            @Override
-            public void execute(GradleExecuter gradleExecuter) {
-                withArgument("-D" + PLUGIN_PORTAL_OVERRIDE_URL_PROPERTY + "=" + gradlePluginRepositoryMirrorUrl());
-            }
-        });
+        beforeExecute(gradleExecuter -> withArgument("-D" + PLUGIN_PORTAL_OVERRIDE_URL_PROPERTY + "=" + gradlePluginRepositoryMirrorUrl()));
         return this;
     }
 

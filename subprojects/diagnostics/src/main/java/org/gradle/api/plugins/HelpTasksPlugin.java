@@ -34,8 +34,6 @@ import org.gradle.api.tasks.diagnostics.PropertyReportTask;
 import org.gradle.api.tasks.diagnostics.TaskReportTask;
 import org.gradle.configuration.Help;
 
-import java.util.concurrent.Callable;
-
 /**
  * Adds various reporting tasks that provide information about the project.
  */
@@ -141,12 +139,9 @@ public class HelpTasksPlugin implements Plugin<ProjectInternal> {
             task.setDescription("Displays the insight into a specific dependency in " + projectName + ".");
             task.setGroup(HELP_GROUP);
             task.setImpliesSubProjects(true);
-            new DslObject(task).getConventionMapping().map("configuration", new Callable<Object>() {
-                @Override
-                public Object call() {
-                    BuildableJavaComponent javaProject = ((ProjectInternal) task.getProject()).getServices().get(ComponentRegistry.class).getMainComponent();
-                    return javaProject == null ? null : javaProject.getCompileDependencies();
-                }
+            new DslObject(task).getConventionMapping().map("configuration", () -> {
+                BuildableJavaComponent javaProject = ((ProjectInternal) task.getProject()).getServices().get(ComponentRegistry.class).getMainComponent();
+                return javaProject == null ? null : javaProject.getCompileDependencies();
             });
         }
     }

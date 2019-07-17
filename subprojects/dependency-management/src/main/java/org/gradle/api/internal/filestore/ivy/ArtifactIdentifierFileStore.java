@@ -41,12 +41,7 @@ public class ArtifactIdentifierFileStore extends GroupedAndNamedUniqueFileStore<
         }
     };
 
-    private static final Namer<ModuleComponentArtifactIdentifier> NAMER = new Namer<ModuleComponentArtifactIdentifier>() {
-        @Override
-        public String determineName(ModuleComponentArtifactIdentifier artifactId) {
-            return artifactId.getFileName();
-        }
-    };
+    private static final Namer<ModuleComponentArtifactIdentifier> NAMER = artifactId -> artifactId.getFileName();
 
     public ArtifactIdentifierFileStore(File baseDir, TemporaryFileProvider temporaryFileProvider, FileAccessTimeJournal fileAccessTimeJournal) {
         super(baseDir, temporaryFileProvider, fileAccessTimeJournal, GROUPER, NAMER);

@@ -16,13 +16,11 @@
 
 package org.gradle.plugins.javascript.coffeescript;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionMapping;
@@ -47,49 +45,23 @@ public class CoffeeScriptBasePlugin implements Plugin<Project> {
         final Configuration jsConfiguration = addJsConfiguration(project.getConfigurations(), project.getDependencies(), csExtension);
 
         ConventionMapping conventionMapping = ((IConventionAware) csExtension).getConventionMapping();
-        conventionMapping.map("js", new Callable<Configuration>() {
-            @Override
-            public Configuration call() {
-                return jsConfiguration;
-            }
-        });
-        conventionMapping.map("version", new Callable<String>() {
-            @Override
-            public String call() {
-                return CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_VERSION;
-            }
-        });
+        conventionMapping.map("js", (Callable<Configuration>) () -> jsConfiguration);
+        conventionMapping.map("version", (Callable<String>) () -> CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_VERSION);
 
         final RhinoExtension rhinoExtension = extensionContainer.getByType(RhinoExtension.class);
 
-        project.getTasks().withType(CoffeeScriptCompile.class, new Action<CoffeeScriptCompile>() {
-            @Override
-            public void execute(CoffeeScriptCompile task) {
-                task.getConventionMapping().map("rhinoClasspath", new Callable<FileCollection>() {
-                    @Override
-                    public FileCollection call() {
-                        return rhinoExtension.getClasspath();
-                    }
-                });
-                task.getConventionMapping().map("coffeeScriptJs", new Callable<FileCollection>() {
-                    @Override
-                    public FileCollection call() {
-                        return csExtension.getJs();
-                    }
-                });
-            }
+        project.getTasks().withType(CoffeeScriptCompile.class, task -> {
+            task.getConventionMapping().map("rhinoClasspath", (Callable<FileCollection>) () -> rhinoExtension.getClasspath());
+            task.getConventionMapping().map("coffeeScriptJs", (Callable<FileCollection>) () -> csExtension.getJs());
         });
     }
 
     private Configuration addJsConfiguration(ConfigurationContainer configurations, final DependencyHandler dependencies, final CoffeeScriptExtension extension) {
         Configuration configuration = configurations.create(CoffeeScriptExtension.JS_CONFIGURATION_NAME);
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet configDependencies) {
-                String notation = CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_GROUP + ":" + CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
-                Dependency dependency = dependencies.create(notation);
-                configDependencies.add(dependency);
-            }
+        configuration.defaultDependencies(configDependencies -> {
+            String notation = CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_GROUP + ":" + CoffeeScriptExtension.DEFAULT_JS_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
+            Dependency dependency = dependencies.create(notation);
+            configDependencies.add(dependency);
         });
         return configuration;
     }

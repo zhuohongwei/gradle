@@ -48,12 +48,7 @@ public abstract class AbstractOptions implements Serializable {
         while (currClass != AbstractOptions.class) {
             for (final Field field : currClass.getDeclaredFields()) {
                 if (isOptionField(field)) {
-                    DeprecationLogger.whileDisabled(new Runnable() {
-                        @Override
-                        public void run() {
-                            addValueToMapIfNotNull(map, field);
-                        }
-                    });
+                    DeprecationLogger.whileDisabled(() -> addValueToMapIfNotNull(map, field));
                 }
             }
             currClass = currClass.getSuperclass();

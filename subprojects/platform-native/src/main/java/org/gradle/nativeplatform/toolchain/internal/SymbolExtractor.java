@@ -37,12 +37,9 @@ public class SymbolExtractor extends AbstractCompiler<SymbolExtractorSpec> {
         final CommandLineToolInvocation invocation = newInvocation(
             "Extracting symbols from " + spec.getBinaryFile().getName(), args, spec.getOperationLogger());
 
-        return new Action<BuildOperationQueue<CommandLineToolInvocation>>() {
-            @Override
-            public void execute(BuildOperationQueue<CommandLineToolInvocation> buildQueue) {
-                buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
-                buildQueue.add(invocation);
-            }
+        return buildQueue -> {
+            buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
+            buildQueue.add(invocation);
         };
     }
 

@@ -15,7 +15,6 @@
  */
 package org.gradle.api.plugins.osgi;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
@@ -25,7 +24,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.bundling.Jar;
-import org.gradle.internal.Factory;
 import org.gradle.util.DeprecationLogger;
 import org.gradle.util.SingleMessageLogger;
 
@@ -41,34 +39,26 @@ public class OsgiPlugin implements Plugin<Project> {
         project.getPluginManager().apply(JavaBasePlugin.class);
 
         SingleMessageLogger.nagUserOfPluginReplacedWithExternalOne("osgi", "biz.aQute.bnd");
-        final OsgiPluginConvention osgiConvention = DeprecationLogger.whileDisabled(new Factory<OsgiPluginConvention>() {
-            @Override
-            public OsgiPluginConvention create() {
-                return new OsgiPluginConvention((ProjectInternal) project);
-            }
-        });
+        final OsgiPluginConvention osgiConvention = DeprecationLogger.whileDisabled(() -> new OsgiPluginConvention((ProjectInternal) project));
         project.getConvention().getPlugins().put("osgi", osgiConvention);
 
-        project.getPlugins().withType(JavaPlugin.class, new Action<JavaPlugin>() {
-            @Override
-            public void execute(JavaPlugin javaPlugin) {
+        project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
 
-                // When creating the OSGi manifest, we must have a single view of all of the classes included in the jar.
-                Sync prepareOsgiClasses = project.getTasks().create("osgiClasses", Sync.class);
-                FileCollection classes = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main").getOutput().getClassesDirs();
-                File singleClassesDirectory = new File(project.getBuildDir(), "osgi-classes");
-                prepareOsgiClasses.setDescription("Prepares a single classes directory required for OSGi analysis.");
-                prepareOsgiClasses.from(classes);
-                prepareOsgiClasses.into(singleClassesDirectory);
+            // When creating the OSGi manifest, we must have a single view of all of the classes included in the jar.
+            Sync prepareOsgiClasses = project.getTasks().create("osgiClasses", Sync.class);
+            FileCollection classes = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main").getOutput().getClassesDirs();
+            File singleClassesDirectory = new File(project.getBuildDir(), "osgi-classes");
+            prepareOsgiClasses.setDescription("Prepares a single classes directory required for OSGi analysis.");
+            prepareOsgiClasses.from(classes);
+            prepareOsgiClasses.into(singleClassesDirectory);
 
-                Jar jarTask = (Jar) project.getTasks().getByName("jar");
-                jarTask.dependsOn(prepareOsgiClasses);
-                OsgiManifest osgiManifest = osgiConvention.osgiManifest();
-                osgiManifest.setClassesDir(singleClassesDirectory);
-                osgiManifest.setClasspath(project.getConfigurations().getByName("runtime"));
+            Jar jarTask = (Jar) project.getTasks().getByName("jar");
+            jarTask.dependsOn(prepareOsgiClasses);
+            OsgiManifest osgiManifest = osgiConvention.osgiManifest();
+            osgiManifest.setClassesDir(singleClassesDirectory);
+            osgiManifest.setClasspath(project.getConfigurations().getByName("runtime"));
 
-                jarTask.setManifest(osgiManifest);
-            }
+            jarTask.setManifest(osgiManifest);
         });
     }
 }

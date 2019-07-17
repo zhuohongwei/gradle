@@ -105,18 +105,8 @@ public class CompositeDomainObjectSet<T> extends DelegatingDomainObjectSet<T> im
     public void addCollection(DomainObjectCollection<? extends T> collection) {
         if (!getStore().containsCollection(collection)) {
             getStore().addComposited(collection);
-            collection.all(new InternalAction<T>() {
-                @Override
-                public void execute(T t) {
-                    backingSet.getEventRegister().fireObjectAdded(t);
-                }
-            });
-            collection.whenObjectRemoved(new Action<T>() {
-                @Override
-                public void execute(T t) {
-                    backingSet.getEventRegister().fireObjectRemoved(t);
-                }
-            });
+            collection.all((InternalAction<T>) t -> backingSet.getEventRegister().fireObjectAdded(t));
+            collection.whenObjectRemoved((Action<T>) t -> backingSet.getEventRegister().fireObjectRemoved(t));
         }
     }
 

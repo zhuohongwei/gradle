@@ -17,7 +17,6 @@ package org.gradle.cache.internal;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.cache.AsyncCacheAccess;
@@ -43,6 +42,7 @@ import org.gradle.util.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,11 +58,8 @@ import static org.gradle.cache.FileLockManager.LockMode.Exclusive;
 @ThreadSafe
 public class DefaultCacheAccess implements CacheCoordinator {
     private final static Logger LOG = LoggerFactory.getLogger(DefaultCacheAccess.class);
-    private final static Runnable NO_OP = new Runnable() {
-        @Override
-        public void run() {
-            // Empty initial operation to trigger onStartWork calls
-        }
+    private final static Runnable NO_OP = () -> {
+        // Empty initial operation to trigger onStartWork calls
     };
 
     private final String cacheDisplayName;
@@ -93,18 +90,8 @@ public class DefaultCacheAccess implements CacheCoordinator {
         this.executorFactory = executorFactory;
         this.operations = new CacheAccessOperationsStack();
 
-        Action<FileLock> onFileLockAcquireAction = new Action<FileLock>() {
-            @Override
-            public void execute(FileLock fileLock) {
-                afterLockAcquire(fileLock);
-            }
-        };
-        Action<FileLock> onFileLockReleaseAction = new Action<FileLock>() {
-            @Override
-            public void execute(FileLock fileLock) {
-                beforeLockRelease(fileLock);
-            }
-        };
+        Action<FileLock> onFileLockAcquireAction = fileLock -> afterLockAcquire(fileLock);
+        Action<FileLock> onFileLockReleaseAction = fileLock -> beforeLockRelease(fileLock);
 
         switch (lockOptions.getMode()) {
             case Shared:
@@ -285,12 +272,7 @@ public class DefaultCacheAccess implements CacheCoordinator {
             if (entry == null) {
                 final File cacheFile = new File(baseDir, parameters.getCacheName() + ".bin");
                 LOG.debug("Creating new cache for {}, path {}, access {}", parameters.getCacheName(), cacheFile, this);
-                Factory<BTreePersistentIndexedCache<K, V>> indexedCacheFactory = new Factory<BTreePersistentIndexedCache<K, V>>() {
-                    @Override
-                    public BTreePersistentIndexedCache<K, V> create() {
-                        return doCreateCache(cacheFile, parameters.getKeySerializer(), parameters.getValueSerializer());
-                    }
-                };
+                Factory<BTreePersistentIndexedCache<K, V>> indexedCacheFactory = () -> doCreateCache(cacheFile, parameters.getKeySerializer(), parameters.getValueSerializer());
 
                 MultiProcessSafePersistentIndexedCache<K, V> indexedCache = new DefaultMultiProcessSafePersistentIndexedCache<K, V>(indexedCacheFactory, fileAccess);
                 CacheDecorator decorator = parameters.getCacheDecorator();

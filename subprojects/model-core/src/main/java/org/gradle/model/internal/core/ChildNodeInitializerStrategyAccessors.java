@@ -25,20 +25,10 @@ public class ChildNodeInitializerStrategyAccessors {
         Cast.uncheckedCast(ModelType.of(ChildNodeInitializerStrategy.class));
 
     public static <T> ChildNodeInitializerStrategyAccessor<T> fromPrivateData() {
-        return new ChildNodeInitializerStrategyAccessor<T>() {
-            @Override
-            public ChildNodeInitializerStrategy<T> getStrategy(MutableModelNode node) {
-                return Cast.uncheckedCast(node.getPrivateData(CHILD_NODE_INITIALIZER_STRATEGY_MODEL_TYPE));
-            }
-        };
+        return node -> Cast.uncheckedCast(node.getPrivateData(CHILD_NODE_INITIALIZER_STRATEGY_MODEL_TYPE));
     }
 
     public static <T> ChildNodeInitializerStrategyAccessor<T> of(final ChildNodeInitializerStrategy<T> strategy) {
-        return new ChildNodeInitializerStrategyAccessor<T>() {
-            @Override
-            public ChildNodeInitializerStrategy<T> getStrategy(MutableModelNode node) {
-                return strategy;
-            }
-        };
+        return node -> strategy;
     }
 }

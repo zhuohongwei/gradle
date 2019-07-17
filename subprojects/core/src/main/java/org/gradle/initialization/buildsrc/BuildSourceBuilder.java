@@ -17,7 +17,6 @@
 package org.gradle.initialization.buildsrc;
 
 import org.gradle.StartParameter;
-import org.gradle.api.Transformer;
 import org.gradle.api.internal.BuildDefinition;
 import org.gradle.api.internal.initialization.ClassLoaderScope;
 import org.gradle.cache.FileLock;
@@ -30,7 +29,6 @@ import org.gradle.internal.build.PublicBuildPath;
 import org.gradle.internal.build.StandAloneNestedBuild;
 import org.gradle.internal.classpath.CachedClasspathTransformer;
 import org.gradle.internal.classpath.ClassPath;
-import org.gradle.internal.invocation.BuildController;
 import org.gradle.internal.operations.BuildOperationContext;
 import org.gradle.internal.operations.BuildOperationDescriptor;
 import org.gradle.internal.operations.BuildOperationExecutor;
@@ -102,29 +100,20 @@ public class BuildSourceBuilder {
             public BuildOperationDescriptor.Builder description() {
                 return BuildOperationDescriptor.displayName("Build buildSrc").
                     progressDisplayName("Building buildSrc").
-                    details(new BuildBuildSrcBuildOperationType.Details() {
-
-                        @Override
-                        public String getBuildPath() {
-                            return publicBuildPath.getBuildPath().toString();
-                        }
-                    });
+                    details((BuildBuildSrcBuildOperationType.Details) () -> publicBuildPath.getBuildPath().toString());
             }
         });
     }
 
     private ClassPath buildBuildSrc(final BuildDefinition buildDefinition) {
         StandAloneNestedBuild nestedBuild = buildRegistry.addNestedBuild(buildDefinition, currentBuild);
-        return nestedBuild.run(new Transformer<ClassPath, BuildController>() {
-            @Override
-            public ClassPath transform(BuildController buildController) {
-                File lockTarget = new File(buildDefinition.getBuildRootDir(), ".gradle/noVersion/buildSrc");
-                FileLock lock = fileLockManager.lock(lockTarget, LOCK_OPTIONS, "buildSrc build lock");
-                try {
-                    return new BuildSrcUpdateFactory(buildController, buildSrcBuildListenerFactory, cachedClasspathTransformer).create();
-                } finally {
-                    lock.close();
-                }
+        return nestedBuild.run(buildController -> {
+            File lockTarget = new File(buildDefinition.getBuildRootDir(), ".gradle/noVersion/buildSrc");
+            FileLock lock = fileLockManager.lock(lockTarget, LOCK_OPTIONS, "buildSrc build lock");
+            try {
+                return new BuildSrcUpdateFactory(buildController, buildSrcBuildListenerFactory, cachedClasspathTransformer).create();
+            } finally {
+                lock.close();
             }
         });
     }

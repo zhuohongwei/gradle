@@ -16,7 +16,6 @@
 
 package org.gradle.platform.base.internal.registry;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.gradle.model.ModelMap;
@@ -41,21 +40,11 @@ public abstract class ModelMapBasedRule<T, C> extends AbstractMethodRuleAction<C
                 ruleDefinition.getReferences().subList(1, ruleDefinition.getReferences().size()),
                 Arrays.asList(additionalInputs)
         );
-        this.baseTypeParameterIndex = 1 + Iterables.indexOf(ruleDefinition.getReferences().subList(1, ruleDefinition.getReferences().size()), new Predicate<ModelReference<?>>() {
-            @Override
-            public boolean apply(ModelReference<?> element) {
-                return element.getType().equals(baseType);
-            }
-        });
+        this.baseTypeParameterIndex = 1 + Iterables.indexOf(ruleDefinition.getReferences().subList(1, ruleDefinition.getReferences().size()), element -> element.getType().equals(baseType));
     }
 
     private static ImmutableList<ModelReference<?>> calculateInputs(final ModelType<?> baseType, final List<ModelReference<?>> references, List<ModelReference<?>> modelReferences) {
-        Iterable<ModelReference<?>> filteredReferences = Iterables.filter(references, new Predicate<ModelReference<?>>() {
-            @Override
-            public boolean apply(ModelReference<?> element) {
-                return !element.getType().equals(baseType);
-            }
-        });
+        Iterable<ModelReference<?>> filteredReferences = Iterables.filter(references, element -> !element.getType().equals(baseType));
 
         ImmutableList.Builder<ModelReference<?>> allInputs = ImmutableList.builder();
         allInputs.addAll(modelReferences);

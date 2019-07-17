@@ -36,12 +36,7 @@ public class BuildScriptTransformer implements Transformer, Factory<BuildScriptD
 
     public BuildScriptTransformer(ScriptSource scriptSource, ScriptTarget scriptTarget) {
         final List<String> blocksToIgnore = Arrays.asList(scriptTarget.getClasspathBlockName(), InitialPassStatementTransformer.PLUGINS, InitialPassStatementTransformer.PLUGIN_MANAGEMENT);
-        this.filter = new Spec<Statement>() {
-            @Override
-            public boolean isSatisfiedBy(Statement statement) {
-                return AstUtils.detectScriptBlock(statement, blocksToIgnore) != null;
-            }
-        };
+        this.filter = (Spec<Statement>) statement -> AstUtils.detectScriptBlock(statement, blocksToIgnore) != null;
         this.scriptSource = scriptSource;
     }
 

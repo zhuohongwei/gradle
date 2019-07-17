@@ -69,14 +69,11 @@ public class ClasspathSnapshotFactory {
     private Set<CreateSnapshot> snapshotAll(final Iterable<File> entries) {
         final Set<CreateSnapshot> snapshotOperations = Sets.newLinkedHashSet();
 
-        buildOperationExecutor.runAll(new Action<BuildOperationQueue<CreateSnapshot>>() {
-            @Override
-            public void execute(BuildOperationQueue<CreateSnapshot> buildOperationQueue) {
-                for (File entry : entries) {
-                    CreateSnapshot operation = new CreateSnapshot(entry);
-                    snapshotOperations.add(operation);
-                    buildOperationQueue.add(operation);
-                }
+        buildOperationExecutor.runAll((Action<BuildOperationQueue<CreateSnapshot>>) buildOperationQueue -> {
+            for (File entry : entries) {
+                CreateSnapshot operation = new CreateSnapshot(entry);
+                snapshotOperations.add(operation);
+                buildOperationQueue.add(operation);
             }
         });
         return snapshotOperations;

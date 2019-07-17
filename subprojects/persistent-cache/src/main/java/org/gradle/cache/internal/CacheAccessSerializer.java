@@ -29,12 +29,7 @@ public class CacheAccessSerializer<K, V> implements Cache<K, V> {
 
     @Override
     public V get(final K key, final Factory<V> factory) {
-        return synchronizer.synchronize(new Factory<V>() {
-            @Override
-            public V create() {
-                return cache.get(key, factory);
-            }
-        });
+        return synchronizer.synchronize(() -> cache.get(key, factory));
     }
 
 }

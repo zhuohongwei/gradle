@@ -19,13 +19,22 @@ package org.gradle.launcher.daemon.server;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.concurrent.ExecutorFactory;
-import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.concurrent.ManagedExecutor;
-import org.gradle.launcher.daemon.protocol.*;
-import org.gradle.launcher.daemon.server.api.DaemonConnection;
-import org.gradle.launcher.daemon.server.api.StdinHandler;
+import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.logging.events.OutputEvent;
 import org.gradle.internal.remote.internal.RemoteConnection;
+import org.gradle.launcher.daemon.protocol.BuildEvent;
+import org.gradle.launcher.daemon.protocol.BuildStarted;
+import org.gradle.launcher.daemon.protocol.Cancel;
+import org.gradle.launcher.daemon.protocol.CloseInput;
+import org.gradle.launcher.daemon.protocol.DaemonUnavailable;
+import org.gradle.launcher.daemon.protocol.ForwardInput;
+import org.gradle.launcher.daemon.protocol.InputMessage;
+import org.gradle.launcher.daemon.protocol.Message;
+import org.gradle.launcher.daemon.protocol.OutputMessage;
+import org.gradle.launcher.daemon.protocol.Result;
+import org.gradle.launcher.daemon.server.api.DaemonConnection;
+import org.gradle.launcher.daemon.server.api.StdinHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,44 +63,41 @@ public class DefaultDaemonConnection implements DaemonConnection {
         cancelQueue = new CancelQueue(executorFactory);
         receiveQueue = new ReceiveQueue();
         executor = executorFactory.create("Handler for " + connection.toString());
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                Throwable failure = null;
-                try {
-                    while (true) {
-                        Object message;
-                        try {
-                            message = connection.receive();
-                        } catch (Exception e) {
-                            if (!stopping && LOGGER.isDebugEnabled()) {
-                                LOGGER.debug(String.format("thread %s: Could not receive message from client.", Thread.currentThread().getId()), e);
-                            }
-                            failure = e;
-                            return;
+        executor.execute(() -> {
+            Throwable failure = null;
+            try {
+                while (true) {
+                    Object message;
+                    try {
+                        message = connection.receive();
+                    } catch (Exception e) {
+                        if (!stopping && LOGGER.isDebugEnabled()) {
+                            LOGGER.debug(String.format("thread %s: Could not receive message from client.", Thread.currentThread().getId()), e);
                         }
-                        if (message == null) {
-                            LOGGER.debug("thread {}: Received end-of-input from client.", Thread.currentThread().getId());
-                            return;
-                        }
-
-                        if (message instanceof InputMessage) {
-                            LOGGER.debug("thread {}: Received IO message from client: {}", Thread.currentThread().getId(), message);
-                            stdinQueue.add((InputMessage) message);
-                        } else if (message instanceof Cancel) {
-                            LOGGER.debug("thread {}: Received cancel message from client: {}", Thread.currentThread().getId(), message);
-                            cancelQueue.add((Cancel) message);
-                        } else {
-                            LOGGER.debug("thread {}: Received non-IO message from client: {}", Thread.currentThread().getId(), message);
-                            receiveQueue.add(message);
-                        }
+                        failure = e;
+                        return;
                     }
-                } finally {
-                    stdinQueue.disconnect();
-                    cancelQueue.disconnect();
-                    disconnectQueue.disconnect();
-                    receiveQueue.disconnect(failure);
+                    if (message == null) {
+                        LOGGER.debug("thread {}: Received end-of-input from client.", Thread.currentThread().getId());
+                        return;
+                    }
+
+                    if (message instanceof InputMessage) {
+                        LOGGER.debug("thread {}: Received IO message from client: {}", Thread.currentThread().getId(), message);
+                        stdinQueue.add((InputMessage) message);
+                    } else if (message instanceof Cancel) {
+                        LOGGER.debug("thread {}: Received cancel message from client: {}", Thread.currentThread().getId(), message);
+                        cancelQueue.add((Cancel) message);
+                    } else {
+                        LOGGER.debug("thread {}: Received non-IO message from client: {}", Thread.currentThread().getId(), message);
+                        receiveQueue.add(message);
+                    }
                 }
+            } finally {
+                stdinQueue.disconnect();
+                cancelQueue.disconnect();
+                disconnectQueue.disconnect();
+                receiveQueue.disconnect(failure);
             }
         });
     }
@@ -232,30 +238,27 @@ public class DefaultDaemonConnection implements DaemonConnection {
                     throw new UnsupportedOperationException("More instances of " + name + " not supported.");
                 }
                 executor = executorFactory.create(name);
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (true) {
-                            C command;
-                            lock.lock();
-                            try {
-                                while (!removed && queue.isEmpty()) {
-                                    try {
-                                        condition.await();
-                                    } catch (InterruptedException e) {
-                                        throw UncheckedException.throwAsUncheckedException(e);
-                                    }
+                executor.execute(() -> {
+                    while (true) {
+                        C command;
+                        lock.lock();
+                        try {
+                            while (!removed && queue.isEmpty()) {
+                                try {
+                                    condition.await();
+                                } catch (InterruptedException e) {
+                                    throw UncheckedException.throwAsUncheckedException(e);
                                 }
-                                if (removed) {
-                                    return;
-                                }
-                                command = queue.removeFirst();
-                            } finally {
-                                lock.unlock();
                             }
-                            if (doHandleCommand(handler, command)) {
+                            if (removed) {
                                 return;
                             }
+                            command = queue.removeFirst();
+                        } finally {
+                            lock.unlock();
+                        }
+                        if (doHandleCommand(handler, command)) {
+                            return;
                         }
                     }
                 });

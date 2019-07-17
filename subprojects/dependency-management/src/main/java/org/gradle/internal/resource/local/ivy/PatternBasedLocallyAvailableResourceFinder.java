@@ -18,12 +18,12 @@ package org.gradle.internal.resource.local.ivy;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.EmptyFileVisitor;
 import org.gradle.api.file.FileVisitDetails;
-import org.gradle.internal.component.external.model.ModuleComponentArtifactMetadata;
 import org.gradle.api.internal.artifacts.repositories.resolver.ResourcePattern;
-import org.gradle.internal.resource.local.AbstractLocallyAvailableResourceFinder;
 import org.gradle.api.internal.file.collections.MinimalFileTree;
 import org.gradle.api.internal.file.collections.SingleIncludePatternFileTree;
 import org.gradle.internal.Factory;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactMetadata;
+import org.gradle.internal.resource.local.AbstractLocallyAvailableResourceFinder;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -39,20 +39,17 @@ public class PatternBasedLocallyAvailableResourceFinder extends AbstractLocallyA
         return new Transformer<Factory<List<File>>, ModuleComponentArtifactMetadata>() {
             @Override
             public Factory<List<File>> transform(final ModuleComponentArtifactMetadata artifact) {
-                return new Factory<List<File>>() {
-                    @Override
-                    public List<File> create() {
-                        final List<File> files = new LinkedList<File>();
-                        if (artifact != null) {
-                            getMatchingFiles(artifact).visit(new EmptyFileVisitor() {
-                                @Override
-                                public void visitFile(FileVisitDetails fileDetails) {
-                                    files.add(fileDetails.getFile());
-                                }
-                            });
-                        }
-                        return files;
+                return () -> {
+                    final List<File> files = new LinkedList<File>();
+                    if (artifact != null) {
+                        getMatchingFiles(artifact).visit(new EmptyFileVisitor() {
+                            @Override
+                            public void visitFile(FileVisitDetails fileDetails) {
+                                files.add(fileDetails.getFile());
+                            }
+                        });
                     }
+                    return files;
                 };
             }
 

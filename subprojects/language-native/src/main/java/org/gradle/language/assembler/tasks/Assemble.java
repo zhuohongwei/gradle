@@ -66,13 +66,10 @@ public class Assemble extends DefaultTask {
         includes = getProject().files();
         this.targetPlatform = objectFactory.property(NativePlatform.class);
         this.toolChain = objectFactory.property(NativeToolChain.class);
-        getInputs().property("outputType", new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                NativeToolChainInternal nativeToolChain = (NativeToolChainInternal) toolChain.get();
-                NativePlatformInternal nativePlatform = (NativePlatformInternal) targetPlatform.get();
-                return NativeToolChainInternal.Identifier.identify(nativeToolChain, nativePlatform);
-            }
+        getInputs().property("outputType", (Callable<String>) () -> {
+            NativeToolChainInternal nativeToolChain = (NativeToolChainInternal) toolChain.get();
+            NativePlatformInternal nativePlatform = (NativePlatformInternal) targetPlatform.get();
+            return NativeToolChainInternal.Identifier.identify(nativeToolChain, nativePlatform);
         });
     }
 

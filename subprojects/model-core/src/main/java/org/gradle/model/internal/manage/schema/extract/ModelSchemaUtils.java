@@ -17,7 +17,6 @@
 package org.gradle.model.internal.manage.schema.extract;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSortedMap;
@@ -26,7 +25,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import groovy.lang.GroovyObject;
 import org.gradle.internal.reflect.GroovyMethods;
-import org.gradle.internal.reflect.Types.TypeVisitor;
 import org.gradle.model.Managed;
 
 import java.lang.reflect.Method;
@@ -61,30 +59,22 @@ public class ModelSchemaUtils {
      */
     public static <T> CandidateMethods getCandidateMethods(Class<T> clazz) {
         final ImmutableListMultimap.Builder<String, Method> methodsByNameBuilder = ImmutableListMultimap.builder();
-        walkTypeHierarchy(clazz, IGNORED_OBJECT_TYPES, new TypeVisitor<T>() {
-            @Override
-            public void visitType(Class<? super T> type) {
-                Method[] declaredMethods = type.getDeclaredMethods();
-                // Sort of determinism
-                Arrays.sort(declaredMethods, Ordering.usingToString());
-                for (Method method : declaredMethods) {
-                    if (ModelSchemaUtils.isIgnoredMethod(method)) {
-                        continue;
-                    }
-                    methodsByNameBuilder.put(method.getName(), method);
+        walkTypeHierarchy(clazz, IGNORED_OBJECT_TYPES, type -> {
+            Method[] declaredMethods = type.getDeclaredMethods();
+            // Sort of determinism
+            Arrays.sort(declaredMethods, Ordering.usingToString());
+            for (Method method : declaredMethods) {
+                if (ModelSchemaUtils.isIgnoredMethod(method)) {
+                    continue;
                 }
+                methodsByNameBuilder.put(method.getName(), method);
             }
         });
         ImmutableListMultimap<String, Method> methodsByName = methodsByNameBuilder.build();
         ImmutableSortedMap.Builder<String, Map<Equivalence.Wrapper<Method>, Collection<Method>>> candidatesBuilder = ImmutableSortedMap.naturalOrder();
         for (String methodName : methodsByName.keySet()) {
             ImmutableList<Method> methodsWithSameName = methodsByName.get(methodName);
-            ListMultimap<Equivalence.Wrapper<Method>, Method> equivalenceIndex = Multimaps.index(methodsWithSameName, new Function<Method, Equivalence.Wrapper<Method>>() {
-                @Override
-                public Equivalence.Wrapper<Method> apply(Method method) {
-                    return SIGNATURE_EQUIVALENCE.wrap(method);
-                }
-            });
+            ListMultimap<Equivalence.Wrapper<Method>, Method> equivalenceIndex = Multimaps.index(methodsWithSameName, method -> SIGNATURE_EQUIVALENCE.wrap(method));
             candidatesBuilder.put(methodName, equivalenceIndex.asMap());
         }
         return new CandidateMethods(candidatesBuilder.build());

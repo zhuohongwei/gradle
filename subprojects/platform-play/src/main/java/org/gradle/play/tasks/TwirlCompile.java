@@ -17,7 +17,6 @@
 package org.gradle.play.tasks;
 
 import com.google.common.collect.Lists;
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileVisitDetails;
@@ -33,7 +32,6 @@ import org.gradle.api.tasks.SourceTask;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.compile.BaseForkOptions;
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs;
-import org.gradle.api.tasks.incremental.InputFileDetails;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.language.twirl.TwirlImports;
 import org.gradle.language.twirl.TwirlTemplateFormat;
@@ -148,19 +146,9 @@ public class TwirlCompile extends SourceTask {
             new CleaningPlayToolCompiler<TwirlCompileSpec>(getCompiler(), getOutputs()).execute(spec);
         } else {
             final Set<File> sourcesToCompile = new HashSet<File>();
-            inputs.outOfDate(new Action<InputFileDetails>() {
-                @Override
-                public void execute(InputFileDetails inputFileDetails) {
-                    sourcesToCompile.add(inputFileDetails.getFile());
-                }
-            });
+            inputs.outOfDate(inputFileDetails -> sourcesToCompile.add(inputFileDetails.getFile()));
             final Set<File> staleOutputFiles = new HashSet<File>();
-            inputs.removed(new Action<InputFileDetails>() {
-                @Override
-                public void execute(InputFileDetails inputFileDetails) {
-                    staleOutputFiles.add(inputFileDetails.getFile());
-                }
-            });
+            inputs.removed(inputFileDetails -> staleOutputFiles.add(inputFileDetails.getFile()));
             if (cleaner == null) {
                 cleaner = new TwirlStaleOutputCleaner(getOutputDirectory());
             }

@@ -36,12 +36,7 @@ public class VisualStudioVersionDeterminer implements VisualStudioMetaDataProvid
     @Override
     public VisualStudioInstallCandidate getVisualStudioMetadataFromInstallDir(final File installDir) {
         // Check the normal metadata first
-        VisualStudioInstallCandidate install = getVisualStudioMetadata(new Spec<VisualStudioInstallCandidate>() {
-            @Override
-            public boolean isSatisfiedBy(VisualStudioInstallCandidate install) {
-                return install.getInstallDir().equals(installDir);
-            }
-        });
+        VisualStudioInstallCandidate install = getVisualStudioMetadata(install1 -> install1.getInstallDir().equals(installDir));
 
         // If we can't discover the version from the normal metadata, make some assumptions
         if (install == null) {
@@ -69,20 +64,17 @@ public class VisualStudioVersionDeterminer implements VisualStudioMetaDataProvid
     @Override
     public VisualStudioInstallCandidate getVisualStudioMetadataFromCompiler(final File compilerFile) {
         // Check the normal metadata first
-        VisualStudioInstallCandidate install = getVisualStudioMetadata(new Spec<VisualStudioInstallCandidate>() {
-            @Override
-            public boolean isSatisfiedBy(VisualStudioInstallCandidate install) {
-                if (install.getVersion().getMajor() >= 15) {
-                    File compilerRoot = getNthParent(compilerFile, 4);
-                    return compilerRoot.equals(install.getVisualCppDir());
+        VisualStudioInstallCandidate install = getVisualStudioMetadata(install1 -> {
+            if (install1.getVersion().getMajor() >= 15) {
+                File compilerRoot = getNthParent(compilerFile, 4);
+                return compilerRoot.equals(install1.getVisualCppDir());
+            } else {
+                File compilerRoot = getNthParent(compilerFile, 2);
+                if (compilerRoot.equals(install1.getVisualCppDir())) {
+                    return true;
                 } else {
-                    File compilerRoot = getNthParent(compilerFile, 2);
-                    if (compilerRoot.equals(install.getVisualCppDir())) {
-                        return true;
-                    } else {
-                        compilerRoot = getNthParent(compilerFile, 3);
-                        return compilerRoot.equals(install.getVisualCppDir());
-                    }
+                    compilerRoot = getNthParent(compilerFile, 3);
+                    return compilerRoot.equals(install1.getVisualCppDir());
                 }
             }
         });

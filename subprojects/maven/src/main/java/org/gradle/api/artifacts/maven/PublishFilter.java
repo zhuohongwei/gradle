@@ -24,12 +24,7 @@ import java.io.File;
  * A filter for artifacts to be published.
  */
 public interface PublishFilter {
-    PublishFilter ALWAYS_ACCEPT = new PublishFilter() {
-        @Override
-        public boolean accept(Artifact artifact, File src) {
-            return true;
-        }
-    };
+    PublishFilter ALWAYS_ACCEPT = (artifact, src) -> true;
 
     boolean accept(Artifact artifact, File src);
 }

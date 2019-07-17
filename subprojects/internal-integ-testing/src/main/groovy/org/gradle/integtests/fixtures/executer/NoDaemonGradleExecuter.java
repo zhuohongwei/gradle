@@ -149,44 +149,41 @@ public class NoDaemonGradleExecuter extends AbstractGradleExecuter {
     }
 
     protected Factory<? extends AbstractExecHandleBuilder> getExecHandleFactory() {
-        return new Factory<DefaultExecHandleBuilder>() {
-            @Override
-            public DefaultExecHandleBuilder create() {
-                TestFile gradleHomeDir = getDistribution().getGradleHomeDir();
-                if (!gradleHomeDir.isDirectory()) {
-                    fail(gradleHomeDir + " is not a directory.\n"
-                        + "If you are running tests from IDE make sure that gradle tasks that prepare the test image were executed. Last time it was 'intTestImage' task.");
-                }
-
-                NativeServicesTestFixture.initialize();
-                DefaultExecHandleBuilder builder = new DefaultExecHandleBuilder(TestFiles.pathToFileResolver(), Executors.newCachedThreadPool()) {
-                    @Override
-                    public File getWorkingDir() {
-                        // Override this, so that the working directory is not canonicalised. Some int tests require that
-                        // the working directory is not canonicalised
-                        return NoDaemonGradleExecuter.this.getWorkingDir();
-                    }
-                };
-
-                // Clear the user's environment
-                builder.environment("GRADLE_HOME", "");
-                builder.environment("JAVA_HOME", "");
-                builder.environment("GRADLE_OPTS", "");
-                builder.environment("JAVA_OPTS", "");
-
-                GradleInvocation invocation = buildInvocation();
-
-                builder.environment(invocation.environmentVars);
-                builder.workingDir(getWorkingDir());
-                builder.setStandardInput(connectStdIn());
-
-                builder.args(invocation.args);
-
-                ExecHandlerConfigurer configurer = OperatingSystem.current().isWindows() ? new WindowsConfigurer() : new UnixConfigurer();
-                configurer.configure(builder);
-                getLogger().debug(String.format("Execute in %s with: %s %s", builder.getWorkingDir(), builder.getExecutable(), builder.getArgs()));
-                return builder;
+        return (Factory<DefaultExecHandleBuilder>) () -> {
+            TestFile gradleHomeDir = getDistribution().getGradleHomeDir();
+            if (!gradleHomeDir.isDirectory()) {
+                fail(gradleHomeDir + " is not a directory.\n"
+                    + "If you are running tests from IDE make sure that gradle tasks that prepare the test image were executed. Last time it was 'intTestImage' task.");
             }
+
+            NativeServicesTestFixture.initialize();
+            DefaultExecHandleBuilder builder = new DefaultExecHandleBuilder(TestFiles.pathToFileResolver(), Executors.newCachedThreadPool()) {
+                @Override
+                public File getWorkingDir() {
+                    // Override this, so that the working directory is not canonicalised. Some int tests require that
+                    // the working directory is not canonicalised
+                    return NoDaemonGradleExecuter.this.getWorkingDir();
+                }
+            };
+
+            // Clear the user's environment
+            builder.environment("GRADLE_HOME", "");
+            builder.environment("JAVA_HOME", "");
+            builder.environment("GRADLE_OPTS", "");
+            builder.environment("JAVA_OPTS", "");
+
+            GradleInvocation invocation = buildInvocation();
+
+            builder.environment(invocation.environmentVars);
+            builder.workingDir(getWorkingDir());
+            builder.setStandardInput(connectStdIn());
+
+            builder.args(invocation.args);
+
+            ExecHandlerConfigurer configurer = OperatingSystem.current().isWindows() ? new WindowsConfigurer() : new UnixConfigurer();
+            configurer.configure(builder);
+            getLogger().debug(String.format("Execute in %s with: %s %s", builder.getWorkingDir(), builder.getExecutable(), builder.getArgs()));
+            return builder;
         };
     }
 

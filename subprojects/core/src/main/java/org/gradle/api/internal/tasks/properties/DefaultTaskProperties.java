@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.tasks.properties;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import org.gradle.api.NonNullApi;
@@ -128,13 +127,7 @@ public class DefaultTaskProperties implements TaskProperties {
                 }
             }
         };
-        this.hasSourceFiles = Iterables.any(inputFileProperties, new Predicate<InputFilePropertySpec>() {
-            @Override
-            @SuppressWarnings("NullableProblems")
-            public boolean apply(InputFilePropertySpec property) {
-                return property.isSkipWhenEmpty();
-            }
-        });
+        this.hasSourceFiles = Iterables.any(inputFileProperties, property -> property.isSkipWhenEmpty());
         this.outputFiles = new CompositeFileCollection() {
             @Override
             public String getDisplayName() {

@@ -16,7 +16,6 @@
 
 package org.gradle.model.internal.core;
 
-import org.gradle.internal.BiAction;
 import org.gradle.internal.Cast;
 import org.gradle.model.ModelMap;
 import org.gradle.model.internal.registry.RuleContext;
@@ -32,13 +31,10 @@ public class ModelMaps {
     public static <T> MutableModelNode addModelMapNode(MutableModelNode modelNode, ModelType<T> elementModelType, String name) {
         modelNode.addLink(
             ModelRegistrations.of(modelNode.getPath().child(name))
-                .action(ModelActionRole.Create, NODE_INITIALIZER_REGISTRY_MODEL_REFERENCE, new BiAction<MutableModelNode, NodeInitializerRegistry>() {
-                    @Override
-                    public void execute(MutableModelNode node, NodeInitializerRegistry nodeInitializerRegistry) {
-                        ChildNodeInitializerStrategy<T> childFactory =
-                            NodeBackedModelMap.createUsingRegistry(nodeInitializerRegistry);
-                        node.setPrivateData(CHILD_NODE_INITIALIZER_STRATEGY_MODEL_TYPE, childFactory);
-                    }
+                .action(ModelActionRole.Create, NODE_INITIALIZER_REGISTRY_MODEL_REFERENCE, (node, nodeInitializerRegistry) -> {
+                    ChildNodeInitializerStrategy<T> childFactory =
+                        NodeBackedModelMap.createUsingRegistry(nodeInitializerRegistry);
+                    node.setPrivateData(CHILD_NODE_INITIALIZER_STRATEGY_MODEL_TYPE, childFactory);
                 })
                 .descriptor(modelNode.getDescriptor())
                 .withProjection(

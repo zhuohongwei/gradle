@@ -26,11 +26,8 @@ public interface CleanupAction {
 
     void clean(CleanableStore cleanableStore, CleanupProgressMonitor progressMonitor);
 
-    CleanupAction NO_OP = new CleanupAction() {
-        @Override
-        public void clean(CleanableStore cleanableStore, CleanupProgressMonitor progressMonitor) {
-            // no-op
-        }
+    CleanupAction NO_OP = (cleanableStore, progressMonitor) -> {
+        // no-op
     };
 
 }

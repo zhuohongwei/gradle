@@ -18,7 +18,6 @@ package org.gradle.tooling.internal.provider.runner;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.testing.Test;
@@ -31,7 +30,12 @@ import org.gradle.tooling.internal.protocol.test.InternalJvmTestRequest;
 import org.gradle.tooling.internal.provider.TestExecutionRequestAction;
 import org.gradle.tooling.internal.provider.events.DefaultTestDescriptor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 class TestExecutionBuildConfigurationAction implements BuildConfigurationAction {
     private final GradleInternal gradle;
@@ -63,12 +67,7 @@ class TestExecutionBuildConfigurationAction implements BuildConfigurationAction 
     private List<Test> configureBuildForTestDescriptors(GradleInternal gradle, TestExecutionRequestAction testExecutionRequest) {
         final Collection<InternalTestDescriptor> testDescriptors = testExecutionRequest.getTestExecutionDescriptors();
 
-        final List<String> testTaskPaths = org.gradle.util.CollectionUtils.collect(testDescriptors, new Transformer<String, InternalTestDescriptor>() {
-            @Override
-            public String transform(InternalTestDescriptor testDescriptor) {
-                return ((DefaultTestDescriptor) testDescriptor).getTaskPath();
-            }
-        });
+        final List<String> testTaskPaths = org.gradle.util.CollectionUtils.collect(testDescriptors, testDescriptor -> ((DefaultTestDescriptor) testDescriptor).getTaskPath());
 
         List<Test> testTasksToRun = new ArrayList<Test>();
         for (final String testTaskPath : testTaskPaths) {

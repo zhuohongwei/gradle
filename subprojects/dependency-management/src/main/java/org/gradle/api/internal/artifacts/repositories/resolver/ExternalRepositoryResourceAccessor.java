@@ -19,8 +19,8 @@ import com.google.common.base.Objects;
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.repositories.RepositoryResourceAccessor;
 import org.gradle.internal.resolve.caching.ImplicitInputRecord;
-import org.gradle.internal.resolve.caching.ImplicitInputsProvidingService;
 import org.gradle.internal.resolve.caching.ImplicitInputRecorder;
+import org.gradle.internal.resolve.caching.ImplicitInputsProvidingService;
 import org.gradle.internal.resource.ExternalResourceName;
 import org.gradle.internal.resource.local.FileStore;
 import org.gradle.internal.resource.local.LocallyAvailableExternalResource;
@@ -54,15 +54,12 @@ public class ExternalRepositoryResourceAccessor implements RepositoryResourceAcc
 
     @Override
     public RepositoryResourceAccessor withImplicitInputRecorder(final ImplicitInputRecorder registrar) {
-        return new RepositoryResourceAccessor() {
-            @Override
-            public void withResource(String relativePath, Action<? super InputStream> action) {
-                ExternalResourceName location = new ExternalResourceName(rootUri, relativePath);
-                LocallyAvailableExternalResource resource = resourceResolver.resolveResource(location);
-                registrar.register(SERVICE_TYPE, new ServiceCall(rootUriAsString + ";" + relativePath, hashFor(resource)));
-                if (resource != null) {
-                    resource.withContent(action);
-                }
+        return (relativePath, action) -> {
+            ExternalResourceName location = new ExternalResourceName(rootUri, relativePath);
+            LocallyAvailableExternalResource resource = resourceResolver.resolveResource(location);
+            registrar.register(SERVICE_TYPE, new ServiceCall(rootUriAsString + ";" + relativePath, hashFor(resource)));
+            if (resource != null) {
+                resource.withContent(action);
             }
         };
     }

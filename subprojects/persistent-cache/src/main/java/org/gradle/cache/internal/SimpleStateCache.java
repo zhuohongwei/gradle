@@ -46,22 +46,12 @@ public class SimpleStateCache<T> implements PersistentStateCache<T> {
 
     @Override
     public T get() {
-        return fileAccess.readFile(new Factory<T>() {
-            @Override
-            public T create() {
-                return deserialize();
-            }
-        });
+        return fileAccess.readFile((Factory<T>) () -> deserialize());
     }
 
     @Override
     public void set(final T newValue) {
-        fileAccess.writeFile(new Runnable() {
-            @Override
-            public void run() {
-                serialize(newValue);
-            }
-        });
+        fileAccess.writeFile(() -> serialize(newValue));
     }
 
     @Override

@@ -66,14 +66,11 @@ public class DefaultResolvedArtifact implements ResolvedArtifact, ResolvableArti
         context.add(new FinalizeAction() {
             @Override
             public TaskDependencyContainer getDependencies() {
-                return new TaskDependencyContainer() {
-                    @Override
-                    public void visitDependencies(TaskDependencyResolveContext context) {
-                        if (buildDependencies != null) {
-                            context.add(buildDependencies);
-                        } else if (sourceArtifact != null) {
-                            context.add(sourceArtifact);
-                        }
+                return context1 -> {
+                    if (buildDependencies != null) {
+                        context1.add(buildDependencies);
+                    } else if (sourceArtifact != null) {
+                        context1.add(sourceArtifact);
                     }
                 };
             }

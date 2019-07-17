@@ -70,12 +70,7 @@ public class DefaultBinaryCollection<T extends SoftwareComponent> implements Bin
 
     @Override
     public BinaryProvider<T> getByName(final String name) {
-        return get(elementType, new Spec<T>() {
-            @Override
-            public boolean isSatisfiedBy(T element) {
-                return element.getName().equals(name);
-            }
-        });
+        return get(elementType, element -> element.getName().equals(name));
     }
 
     @Override
@@ -208,24 +203,18 @@ public class DefaultBinaryCollection<T extends SoftwareComponent> implements Bin
 
         @Override
         public void configure(final Action<? super S> action) {
-            configureEach(new Action<T>() {
-                @Override
-                public void execute(T t) {
-                    if (match == t) {
-                        action.execute(match);
-                    }
+            configureEach(t -> {
+                if (match == t) {
+                    action.execute(match);
                 }
             });
         }
 
         @Override
         public void whenFinalized(final Action<? super S> action) {
-            whenElementFinalized(new Action<T>() {
-                @Override
-                public void execute(T t) {
-                    if (match == t) {
-                        action.execute(match);
-                    }
+            whenElementFinalized(t -> {
+                if (match == t) {
+                    action.execute(match);
                 }
             });
         }

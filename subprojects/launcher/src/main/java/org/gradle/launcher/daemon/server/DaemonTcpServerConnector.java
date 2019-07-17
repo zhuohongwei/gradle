@@ -69,18 +69,15 @@ public class DaemonTcpServerConnector implements DaemonServerConnector {
             // Hold the lock until we actually start accepting connections for the case when stop is called from another
             // thread while we are in the middle here.
 
-            Action<ConnectCompletion> connectEvent = new Action<ConnectCompletion>() {
-                @Override
-                public void execute(ConnectCompletion completion) {
-                    RemoteConnection<Message> remoteConnection;
-                    try {
-                        remoteConnection = completion.create(Serializers.stateful(serializer));
-                    } catch (UncheckedIOException e) {
-                        connectionErrorHandler.run();
-                        throw e;
-                    }
-                    handler.handle(new SynchronizedDispatchConnection<Message>(remoteConnection));
+            Action<ConnectCompletion> connectEvent = completion -> {
+                RemoteConnection<Message> remoteConnection;
+                try {
+                    remoteConnection = completion.create(Serializers.stateful(serializer));
+                } catch (UncheckedIOException e) {
+                    connectionErrorHandler.run();
+                    throw e;
                 }
+                handler.handle(new SynchronizedDispatchConnection<Message>(remoteConnection));
             };
 
             acceptor = incomingConnector.accept(connectEvent, false);

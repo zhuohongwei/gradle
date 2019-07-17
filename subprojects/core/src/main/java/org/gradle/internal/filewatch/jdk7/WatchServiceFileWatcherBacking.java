@@ -82,26 +82,23 @@ public class WatchServiceFileWatcherBacking {
 
     public FileWatcher start(ListeningExecutorService executorService) {
         if (started.compareAndSet(false, true)) {
-            final ListenableFuture<?> runLoopFuture = executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    if (!stopped.get()) {
-                        pollerThreadReference.set(new SoftReference<Thread>(Thread.currentThread()));
-                        running.set(true);
+            final ListenableFuture<?> runLoopFuture = executorService.submit(() -> {
+                if (!stopped.get()) {
+                    pollerThreadReference.set(new SoftReference<Thread>(Thread.currentThread()));
+                    running.set(true);
+                    try {
                         try {
-                            try {
-                                pumpEvents();
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            } catch (Throwable t) {
-                                if (!(Throwables.getRootCause(t) instanceof InterruptedException)) {
-                                    stop();
-                                    onError.execute(t);
-                                }
+                            pumpEvents();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } catch (Throwable t) {
+                            if (!(Throwables.getRootCause(t) instanceof InterruptedException)) {
+                                stop();
+                                onError.execute(t);
                             }
-                        } finally {
-                            stop();
                         }
+                    } finally {
+                        stop();
                     }
                 }
             });

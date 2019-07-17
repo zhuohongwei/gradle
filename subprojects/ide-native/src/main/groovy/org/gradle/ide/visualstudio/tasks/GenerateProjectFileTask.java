@@ -35,7 +35,6 @@ import org.gradle.plugins.ide.internal.IdePlugin;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.concurrent.Callable;
 
 /**
  * Task for generating a Visual Studio project file (e.g. {@code foo.vcxproj}).
@@ -53,21 +52,18 @@ public class GenerateProjectFileTask extends XmlGeneratorTask<VisualStudioProjec
 
     public void initGradleCommand() {
         final File gradlew = new File(IdePlugin.toGradleCommand(getProject()));
-        getConventionMapping().map("gradleExe", new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                final String rootDir = getTransformer().transform(getProject().getRootDir());
-                String args = "";
-                if (!rootDir.equals(".")) {
-                    args = " -p \"" + rootDir + "\"";
-                }
-
-                if (gradlew.isFile()) {
-                    return "\"" + getTransformer().transform(gradlew) + "\"" + args;
-                }
-
-                return "\"gradle\"" + args;
+        getConventionMapping().map("gradleExe", () -> {
+            final String rootDir = getTransformer().transform(getProject().getRootDir());
+            String args = "";
+            if (!rootDir.equals(".")) {
+                args = " -p \"" + rootDir + "\"";
             }
+
+            if (gradlew.isFile()) {
+                return "\"" + getTransformer().transform(gradlew) + "\"" + args;
+            }
+
+            return "\"gradle\"" + args;
         });
     }
 

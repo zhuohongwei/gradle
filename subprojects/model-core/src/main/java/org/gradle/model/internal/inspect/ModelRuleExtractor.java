@@ -23,8 +23,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import javax.annotation.concurrent.ThreadSafe;
-import org.gradle.api.Transformer;
 import org.gradle.internal.Cast;
 import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
@@ -56,6 +54,7 @@ import org.gradle.model.internal.type.ModelType;
 import org.gradle.util.CollectionUtils;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -94,12 +93,7 @@ public class ModelRuleExtractor {
     }
 
     private String describeHandlers() {
-        String desc = Joiner.on(", ").join(CollectionUtils.collect(handlers, new Transformer<String, MethodModelRuleExtractor>() {
-            @Override
-            public String transform(MethodModelRuleExtractor original) {
-                return original.getDescription();
-            }
-        }));
+        String desc = Joiner.on(", ").join(CollectionUtils.collect(handlers, original -> original.getDescription()));
         return "[" + desc + "]";
     }
 
@@ -394,12 +388,7 @@ public class ModelRuleExtractor {
         }
 
         public List<ExtractedModelRule> getRules() {
-            return CollectionUtils.collect(rules, new Transformer<ExtractedModelRule, ExtractedRuleDetails>() {
-                @Override
-                public ExtractedModelRule transform(ExtractedRuleDetails extractedRuleDetails) {
-                    return extractedRuleDetails.rule;
-                }
-            });
+            return CollectionUtils.collect(rules, extractedRuleDetails -> extractedRuleDetails.rule);
         }
 
         @Override

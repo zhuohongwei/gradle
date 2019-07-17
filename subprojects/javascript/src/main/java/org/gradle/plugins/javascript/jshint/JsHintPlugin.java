@@ -16,13 +16,11 @@
 
 package org.gradle.plugins.javascript.jshint;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionMapping;
@@ -48,56 +46,25 @@ public class JsHintPlugin implements Plugin<Project> {
         final Configuration configuration = addConfiguration(project.getConfigurations(), project.getDependencies(), jsHintExtension);
 
         ConventionMapping conventionMapping = ((IConventionAware) jsHintExtension).getConventionMapping();
-        conventionMapping.map("js", new Callable<Configuration>() {
-            @Override
-            public Configuration call() {
-                return configuration;
-            }
-        });
-        conventionMapping.map("version", new Callable<String>() {
-            @Override
-            public String call() {
-                return JsHintExtension.DEFAULT_DEPENDENCY_VERSION;
-            }
-        });
+        conventionMapping.map("js", (Callable<Configuration>) () -> configuration);
+        conventionMapping.map("version", (Callable<String>) () -> JsHintExtension.DEFAULT_DEPENDENCY_VERSION);
 
         final RhinoExtension rhinoExtension = ((ExtensionAware) jsExtension).getExtensions().getByType(RhinoExtension.class);
         final ReportingExtension reportingExtension = project.getExtensions().getByType(ReportingExtension.class);
 
-        project.getTasks().withType(JsHint.class, new Action<JsHint>() {
-            @Override
-            public void execute(final JsHint task) {
-                task.getConventionMapping().map("rhinoClasspath", new Callable<FileCollection>() {
-                    @Override
-                    public FileCollection call() {
-                        return rhinoExtension.getClasspath();
-                    }
-                });
-                task.getConventionMapping().map("jsHint", new Callable<FileCollection>() {
-                    @Override
-                    public FileCollection call() {
-                        return jsHintExtension.getJs();
-                    }
-                });
-                task.getConventionMapping().map("jsonReport", new Callable<File>() {
-                    @Override
-                    public File call() {
-                        return reportingExtension.file(task.getName() + "/report.json");
-                    }
-                });
-            }
+        project.getTasks().withType(JsHint.class, task -> {
+            task.getConventionMapping().map("rhinoClasspath", (Callable<FileCollection>) () -> rhinoExtension.getClasspath());
+            task.getConventionMapping().map("jsHint", (Callable<FileCollection>) () -> jsHintExtension.getJs());
+            task.getConventionMapping().map("jsonReport", (Callable<File>) () -> reportingExtension.file(task.getName() + "/report.json"));
         });
     }
 
     public Configuration addConfiguration(ConfigurationContainer configurations, final DependencyHandler dependencies, final JsHintExtension extension) {
         Configuration configuration = configurations.create(JsHintExtension.CONFIGURATION_NAME);
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet configDependencies) {
-                String notation = JsHintExtension.DEFAULT_DEPENDENCY_GROUP + ":" + JsHintExtension.DEFAULT_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
-                Dependency dependency = dependencies.create(notation);
-                configDependencies.add(dependency);
-            }
+        configuration.defaultDependencies(configDependencies -> {
+            String notation = JsHintExtension.DEFAULT_DEPENDENCY_GROUP + ":" + JsHintExtension.DEFAULT_DEPENDENCY_MODULE + ":" + extension.getVersion() + "@js";
+            Dependency dependency = dependencies.create(notation);
+            configDependencies.add(dependency);
         });
         return configuration;
     }

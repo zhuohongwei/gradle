@@ -74,14 +74,11 @@ class DefaultPersistentScopeIdLoader implements PersistentScopeIdLoader {
     private UniqueId get(ScopeParams params) {
         PersistentStateCache<UniqueId> store = store(params);
 
-        return store.maybeUpdate(new PersistentStateCache.UpdateAction<UniqueId>() {
-            @Override
-            public UniqueId update(UniqueId oldValue) {
-                if (oldValue == null) {
-                    return generator.create();
-                } else {
-                    return oldValue;
-                }
+        return store.maybeUpdate(oldValue -> {
+            if (oldValue == null) {
+                return generator.create();
+            } else {
+                return oldValue;
             }
         });
     }

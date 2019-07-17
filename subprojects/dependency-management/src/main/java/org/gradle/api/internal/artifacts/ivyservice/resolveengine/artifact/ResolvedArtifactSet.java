@@ -39,10 +39,7 @@ public interface ResolvedArtifactSet extends TaskDependencyContainer {
      */
     void visitLocalArtifacts(LocalArtifactVisitor listener);
 
-    Completion EMPTY_RESULT = new Completion() {
-        @Override
-        public void visit(ArtifactVisitor visitor) {
-        }
+    Completion EMPTY_RESULT = visitor -> {
     };
 
     ResolvedArtifactSet EMPTY = new ResolvedArtifactSet() {

@@ -24,15 +24,12 @@ import org.gradle.api.Task;
 import org.gradle.api.internal.provider.HasConfigurableValueInternal;
 import org.gradle.api.internal.provider.PropertyInternal;
 import org.gradle.api.internal.tasks.TaskDependencyContainer;
-import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
-import org.gradle.api.internal.tasks.properties.BeanPropertyContext;
 import org.gradle.api.internal.tasks.properties.PropertyValue;
 import org.gradle.api.internal.tasks.properties.PropertyVisitor;
 import org.gradle.api.internal.tasks.properties.TypeMetadata;
 import org.gradle.api.internal.tasks.properties.annotations.PropertyAnnotationHandler;
 import org.gradle.api.provider.HasConfigurableValue;
 import org.gradle.api.provider.Provider;
-import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.reflect.ParameterValidationContext;
 import org.gradle.internal.reflect.PropertyMetadata;
@@ -56,12 +53,7 @@ public abstract class AbstractNestedRuntimeBeanNode extends RuntimeBeanNode<Obje
             if (annotationHandler.shouldVisit(visitor)) {
                 String propertyName = getQualifiedPropertyName(propertyMetadata.getPropertyName());
                 PropertyValue value = new BeanPropertyValue(getBean(), propertyMetadata.getGetterMethod());
-                annotationHandler.visitPropertyValue(propertyName, value, propertyMetadata, visitor, new BeanPropertyContext() {
-                    @Override
-                    public void addNested(String propertyName, Object bean) {
-                        queue.add(nodeFactory.create(AbstractNestedRuntimeBeanNode.this, propertyName, bean));
-                    }
-                });
+                annotationHandler.visitPropertyValue(propertyName, value, propertyMetadata, visitor, (propertyName1, bean) -> queue.add(nodeFactory.create(AbstractNestedRuntimeBeanNode.this, propertyName1, bean)));
             }
         }
     }
@@ -73,16 +65,13 @@ public abstract class AbstractNestedRuntimeBeanNode extends RuntimeBeanNode<Obje
             @Override
             @Nullable
             public Object get() {
-                return DeprecationLogger.whileDisabled(new Factory<Object>() {
-                    @Override
-                    public Object create() {
-                        try {
-                            return method.invoke(bean);
-                        } catch (InvocationTargetException e) {
-                            throw UncheckedException.throwAsUncheckedException(e.getCause());
-                        } catch (Exception e) {
-                            throw new GradleException(String.format("Could not call %s.%s() on %s", method.getDeclaringClass().getSimpleName(), method.getName(), bean), e);
-                        }
+                return DeprecationLogger.whileDisabled(() -> {
+                    try {
+                        return method.invoke(bean);
+                    } catch (InvocationTargetException e) {
+                        throw UncheckedException.throwAsUncheckedException(e.getCause());
+                    } catch (Exception e) {
+                        throw new GradleException(String.format("Could not call %s.%s() on %s", method.getDeclaringClass().getSimpleName(), method.getName(), bean), e);
                     }
                 });
             }
@@ -99,13 +88,10 @@ public abstract class AbstractNestedRuntimeBeanNode extends RuntimeBeanNode<Obje
             if (isProvider()) {
                 return (TaskDependencyContainer) valueSupplier.get();
             } else if (isBuildable()) {
-                return new TaskDependencyContainer() {
-                    @Override
-                    public void visitDependencies(TaskDependencyResolveContext context) {
-                        Object dependency = valueSupplier.get();
-                        if (dependency != null) {
-                            context.add(dependency);
-                        }
+                return context -> {
+                    Object dependency = valueSupplier.get();
+                    if (dependency != null) {
+                        context.add(dependency);
                     }
                 };
             }

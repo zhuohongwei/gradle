@@ -31,12 +31,9 @@ public class DaemonCancelForwarder implements Stoppable {
 
     public DaemonCancelForwarder(final Dispatch<? super Cancel> dispatch, BuildCancellationToken cancellationToken) {
         this.cancellationToken = cancellationToken;
-        cancellationCallback = new Runnable() {
-            @Override
-            public void run() {
-                LOGGER.info("Request daemon to cancel build...");
-                dispatch.dispatch(new Cancel());
-            }
+        cancellationCallback = () -> {
+            LOGGER.info("Request daemon to cancel build...");
+            dispatch.dispatch(new Cancel());
         };
     }
 

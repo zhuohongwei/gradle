@@ -19,7 +19,14 @@ package org.gradle.model.internal.fixture;
 import org.gradle.api.Action;
 import org.gradle.internal.BiAction;
 import org.gradle.internal.TriAction;
-import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.DirectNodeInputUsingModelAction;
+import org.gradle.model.internal.core.DirectNodeNoInputsModelAction;
+import org.gradle.model.internal.core.ModelAction;
+import org.gradle.model.internal.core.ModelPath;
+import org.gradle.model.internal.core.ModelReference;
+import org.gradle.model.internal.core.ModelView;
+import org.gradle.model.internal.core.ModelViews;
+import org.gradle.model.internal.core.MutableModelNode;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.core.rule.describe.SimpleModelRuleDescriptor;
 import org.gradle.model.internal.type.ModelType;
@@ -76,12 +83,7 @@ public class ModelActionBuilder<T> {
     }
 
     public ModelAction action(final Action<? super T> action) {
-        return build(NO_REFS, new TriAction<MutableModelNode, T, List<ModelView<?>>>() {
-            @Override
-            public void execute(MutableModelNode mutableModelNode, T t, List<ModelView<?>> inputs) {
-                action.execute(t);
-            }
-        });
+        return build(NO_REFS, (mutableModelNode, t, inputs) -> action.execute(t));
     }
 
     public ModelAction node(final Action<? super MutableModelNode> action) {
@@ -109,12 +111,7 @@ public class ModelActionBuilder<T> {
     }
 
     public <I> ModelAction action(final ModelReference<I> inputReference, final BiAction<? super T, ? super I> action) {
-        return build(Collections.<ModelReference<?>>singletonList(inputReference), new TriAction<MutableModelNode, T, List<ModelView<?>>>() {
-            @Override
-            public void execute(MutableModelNode mutableModelNode, T t, List<ModelView<?>> inputs) {
-                action.execute(t, ModelViews.assertType(inputs.get(0), inputReference.getType()).getInstance());
-            }
-        });
+        return build(Collections.<ModelReference<?>>singletonList(inputReference), (mutableModelNode, t, inputs) -> action.execute(t, ModelViews.assertType(inputs.get(0), inputReference.getType()).getInstance()));
     }
 
     public <I> ModelAction action(final String modelPath, final ModelType<I> inputType, String referenceDescription, final BiAction<? super T, ? super I> action) {
@@ -134,12 +131,7 @@ public class ModelActionBuilder<T> {
     }
 
     private static <T> ModelAction toAction(final List<ModelReference<?>> references, final TriAction<? super MutableModelNode, ? super T, ? super List<ModelView<?>>> action, final ModelPath path, final ModelType<T> type, final ModelRuleDescriptor descriptor) {
-        return DirectNodeInputUsingModelAction.of(subject(path, type), descriptor, references, new TriAction<MutableModelNode, T, List<ModelView<?>>>() {
-            @Override
-            public void execute(MutableModelNode modelNode, T t, List<ModelView<?>> inputs) {
-                action.execute(modelNode, t, inputs);
-            }
-        });
+        return DirectNodeInputUsingModelAction.of(subject(path, type), descriptor, references, (modelNode, t, inputs) -> action.execute(modelNode, t, inputs));
     }
 
     private static <T> ModelAction toAction(Action<? super MutableModelNode> action, final ModelPath path, final ModelType<T> type, final ModelRuleDescriptor descriptor) {

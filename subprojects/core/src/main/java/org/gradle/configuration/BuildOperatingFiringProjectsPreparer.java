@@ -62,12 +62,7 @@ public class BuildOperatingFiringProjectsPreparer implements ProjectsPreparer {
                 builder.operationType(BuildOperationCategory.CONFIGURE_BUILD);
             }
             builder.totalProgress(gradle.getSettings().getProjectRegistry().size());
-            return builder.details(new ConfigureBuildBuildOperationType.Details() {
-                @Override
-                public String getBuildPath() {
-                    return gradle.getIdentityPath().toString();
-                }
-            });
+            return builder.details((ConfigureBuildBuildOperationType.Details) () -> gradle.getIdentityPath().toString());
         }
     }
 }

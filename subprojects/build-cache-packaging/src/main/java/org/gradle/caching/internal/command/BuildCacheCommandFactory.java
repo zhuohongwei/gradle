@@ -171,12 +171,7 @@ public class BuildCacheCommandFactory {
         @Override
         public BuildCacheStoreCommand.Result store(OutputStream output) throws IOException {
             final BuildCacheEntryPacker.PackResult packResult = packer.pack(entity, fingerprints, output, originMetadataFactory.createWriter(entity, executionTime));
-            return new BuildCacheStoreCommand.Result() {
-                @Override
-                public long getArtifactEntryCount() {
-                    return packResult.getEntries();
-                }
-            };
+            return () -> packResult.getEntries();
         }
     }
 }

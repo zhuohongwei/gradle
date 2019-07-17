@@ -95,20 +95,12 @@ public class BuildOperationNotificationBridge {
         @Override
         public void buildStarted(@SuppressWarnings("NullableProblems") Gradle gradle) {
             if (gradle.getParent() == null) {
-                gradle.rootProject(new InternalAction<Project>() {
-                    @Override
-                    public void execute(@SuppressWarnings("NullableProblems") Project project) {
-                        project.afterEvaluate(new InternalAction<Project>() {
-                            @Override
-                            public void execute(@SuppressWarnings("NullableProblems") Project project) {
-                                State s = state;
-                                if (s != null && s.notificationListener == null) {
-                                    valve.stop();
-                                }
-                            }
-                        });
+                gradle.rootProject((InternalAction<Project>) project -> project.afterEvaluate((InternalAction<Project>) project1 -> {
+                    State s = state;
+                    if (s != null && s.notificationListener == null) {
+                        valve.stop();
                     }
-                });
+                }));
             }
         }
     };

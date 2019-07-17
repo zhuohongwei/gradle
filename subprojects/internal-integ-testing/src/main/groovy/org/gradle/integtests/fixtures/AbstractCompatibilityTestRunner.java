@@ -15,7 +15,6 @@
  */
 package org.gradle.integtests.fixtures;
 
-import org.gradle.api.Transformer;
 import org.gradle.integtests.fixtures.executer.GradleDistribution;
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext;
 import org.gradle.integtests.fixtures.executer.UnderDevelopmentGradleDistribution;
@@ -27,7 +26,6 @@ import org.gradle.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import static org.gradle.util.CollectionUtils.sort;
@@ -60,18 +58,8 @@ public abstract class AbstractCompatibilityTestRunner extends AbstractContextual
     @Override
     protected Collection<GradleDistributionTool> getAllVersions() {
         List<GradleDistribution> allSupportedVersions = choosePreviousVersionsToTest(releasedVersions);
-        List<GradleDistribution> sortedDistributions = sort(allSupportedVersions, new Comparator<GradleDistribution>() {
-            @Override
-            public int compare(GradleDistribution dist1, GradleDistribution dist2) {
-                return dist1.getVersion().compareTo(dist2.getVersion());
-            }
-        });
-        return CollectionUtils.collect(sortedDistributions, new Transformer<GradleDistributionTool, GradleDistribution>() {
-            @Override
-            public GradleDistributionTool transform(GradleDistribution distribution) {
-                return versionedToolFrom(distribution);
-            }
-        });
+        List<GradleDistribution> sortedDistributions = sort(allSupportedVersions, (dist1, dist2) -> dist1.getVersion().compareTo(dist2.getVersion()));
+        return CollectionUtils.collect(sortedDistributions, distribution -> versionedToolFrom(distribution));
     }
 
     @Override

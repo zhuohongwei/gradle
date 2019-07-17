@@ -22,7 +22,6 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.Action;
-import org.gradle.api.Transformer;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.FileUtils;
@@ -93,75 +92,67 @@ class SwiftCompiler extends AbstractCompiler<SwiftCompileSpec> {
     @Override
     protected Action<BuildOperationQueue<CommandLineToolInvocation>> newInvocationAction(final SwiftCompileSpec spec, final List<String> genericArgs) {
         final File objectDir = spec.getObjectFileDir();
-        return new Action<BuildOperationQueue<CommandLineToolInvocation>>() {
-            @Override
-            public void execute(BuildOperationQueue<CommandLineToolInvocation> buildQueue) {
-                buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
+        return buildQueue -> {
+            buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
 
-                OutputFileMap outputFileMap = new OutputFileMap();
+            OutputFileMap outputFileMap = new OutputFileMap();
 
-                File moduleSwiftDeps = new File(objectDir, "module.swiftdeps");
-                outputFileMap.root().swiftDependenciesFile(moduleSwiftDeps);
+            File moduleSwiftDeps = new File(objectDir, "module.swiftdeps");
+            outputFileMap.root().swiftDependenciesFile(moduleSwiftDeps);
 
-                for (File sourceFile : spec.getSourceFiles()) {
-                    outputFileMap.newEntry(sourceFile.getAbsolutePath())
-                        .dependencyFile(getOutputFileDir(sourceFile, objectDir, ".d"))
-                        .diagnosticsFile(getOutputFileDir(sourceFile, objectDir, ".dia"))
-                        .objectFile(getOutputFileDir(sourceFile, objectDir, objectFileExtension))
-                        .swiftModuleFile(getOutputFileDir(sourceFile, objectDir, "~partial.swiftmodule"))
-                        .swiftDependenciesFile(getOutputFileDir(sourceFile, objectDir, ".swiftdeps"));
-                    genericArgs.add(sourceFile.getAbsolutePath());
-                }
-                if (null != spec.getModuleName()) {
-                    genericArgs.add("-module-name");
-                    genericArgs.add(spec.getModuleName());
-                    genericArgs.add("-emit-module-path");
-                    genericArgs.add(spec.getModuleFile().getAbsolutePath());
-                }
-
-
-                boolean canSafelyCompileIncrementally = swiftDepsHandler.adjustTimestampsFor(moduleSwiftDeps, spec.getChangedFiles());
-                if (canSafelyCompileIncrementally) {
-                    genericArgs.add("-incremental");
-                    genericArgs.add("-emit-dependencies");
-                }
-
-                genericArgs.add("-emit-object");
-
-                File outputFileMapFile = new File(spec.getObjectFileDir(), "output-file-map.json");
-                outputFileMap.writeToFile(outputFileMapFile);
-
-                List<String> outputArgs = Lists.newArrayList();
-                outputArgs.add("-output-file-map");
-                outputArgs.add(outputFileMapFile.getAbsolutePath());
-
-                List<String> importRootArgs = Lists.newArrayList();
-                for (File importRoot : spec.getIncludeRoots()) {
-                    importRootArgs.add("-I");
-                    importRootArgs.add(importRoot.getAbsolutePath());
-                }
-                if (spec.isDebuggable()) {
-                    genericArgs.add("-g");
-                }
-                if (spec.isOptimized()) {
-                    genericArgs.add("-O");
-                }
-
-                genericArgs.addAll(CollectionUtils.collect(spec.getMacros().keySet(), new Transformer<String, String>() {
-                    @Override
-                    public String transform(String macro) {
-                        return "-D" + macro;
-                    }
-                }));
-
-                genericArgs.add("-swift-version");
-                genericArgs.add(String.valueOf(spec.getSourceCompatibility().getVersion()));
-
-                CommandLineToolInvocation perFileInvocation =
-                    newInvocation("compiling swift file(s)", objectDir, Iterables.concat(genericArgs, outputArgs, importRootArgs), spec.getOperationLogger());
-                perFileInvocation.getEnvironment().put("TMPDIR", spec.getTempDir().getAbsolutePath());
-                buildQueue.add(perFileInvocation);
+            for (File sourceFile : spec.getSourceFiles()) {
+                outputFileMap.newEntry(sourceFile.getAbsolutePath())
+                    .dependencyFile(getOutputFileDir(sourceFile, objectDir, ".d"))
+                    .diagnosticsFile(getOutputFileDir(sourceFile, objectDir, ".dia"))
+                    .objectFile(getOutputFileDir(sourceFile, objectDir, objectFileExtension))
+                    .swiftModuleFile(getOutputFileDir(sourceFile, objectDir, "~partial.swiftmodule"))
+                    .swiftDependenciesFile(getOutputFileDir(sourceFile, objectDir, ".swiftdeps"));
+                genericArgs.add(sourceFile.getAbsolutePath());
             }
+            if (null != spec.getModuleName()) {
+                genericArgs.add("-module-name");
+                genericArgs.add(spec.getModuleName());
+                genericArgs.add("-emit-module-path");
+                genericArgs.add(spec.getModuleFile().getAbsolutePath());
+            }
+
+
+            boolean canSafelyCompileIncrementally = swiftDepsHandler.adjustTimestampsFor(moduleSwiftDeps, spec.getChangedFiles());
+            if (canSafelyCompileIncrementally) {
+                genericArgs.add("-incremental");
+                genericArgs.add("-emit-dependencies");
+            }
+
+            genericArgs.add("-emit-object");
+
+            File outputFileMapFile = new File(spec.getObjectFileDir(), "output-file-map.json");
+            outputFileMap.writeToFile(outputFileMapFile);
+
+            List<String> outputArgs = Lists.newArrayList();
+            outputArgs.add("-output-file-map");
+            outputArgs.add(outputFileMapFile.getAbsolutePath());
+
+            List<String> importRootArgs = Lists.newArrayList();
+            for (File importRoot : spec.getIncludeRoots()) {
+                importRootArgs.add("-I");
+                importRootArgs.add(importRoot.getAbsolutePath());
+            }
+            if (spec.isDebuggable()) {
+                genericArgs.add("-g");
+            }
+            if (spec.isOptimized()) {
+                genericArgs.add("-O");
+            }
+
+            genericArgs.addAll(CollectionUtils.collect(spec.getMacros().keySet(), macro -> "-D" + macro));
+
+            genericArgs.add("-swift-version");
+            genericArgs.add(String.valueOf(spec.getSourceCompatibility().getVersion()));
+
+            CommandLineToolInvocation perFileInvocation =
+                newInvocation("compiling swift file(s)", objectDir, Iterables.concat(genericArgs, outputArgs, importRootArgs), spec.getOperationLogger());
+            perFileInvocation.getEnvironment().put("TMPDIR", spec.getTempDir().getAbsolutePath());
+            buildQueue.add(perFileInvocation);
         };
     }
 

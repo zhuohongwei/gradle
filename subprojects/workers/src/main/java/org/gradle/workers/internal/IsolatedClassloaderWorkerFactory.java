@@ -38,12 +38,9 @@ public class IsolatedClassloaderWorkerFactory implements WorkerFactory {
         return new AbstractWorker(buildOperationExecutor) {
             @Override
             public DefaultWorkResult execute(ActionExecutionSpec spec, BuildOperationRef parentBuildOperation) {
-                return executeWrappedInBuildOperation(spec, parentBuildOperation, new Work() {
-                    @Override
-                    public DefaultWorkResult execute(ActionExecutionSpec spec) {
-                        ClassLoader workerInfrastructureClassloader = classLoaderRegistry.getPluginsClassLoader();
-                        return new IsolatedClassloaderWorker(forkOptions.getClassLoaderStructure(), workerInfrastructureClassloader, serviceRegistry).execute(spec);
-                    }
+                return executeWrappedInBuildOperation(spec, parentBuildOperation, spec1 -> {
+                    ClassLoader workerInfrastructureClassloader = classLoaderRegistry.getPluginsClassLoader();
+                    return new IsolatedClassloaderWorker(forkOptions.getClassLoaderStructure(), workerInfrastructureClassloader, serviceRegistry).execute(spec1);
                 });
             }
         };

@@ -16,7 +16,11 @@
 
 package org.gradle.testing.internal.util;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 /**
  * This is used to launch Gradle from within IDEA. See gradle/idea.gradle.
@@ -26,7 +30,7 @@ public class GradlewRunner {
         Process process = null;
 
         String[] combinedArgs;
-        
+
         if (System.getProperty("os.name").startsWith("Windows")) {
             combinedArgs = new String[3 + args.length];
             combinedArgs[0] = "cmd";
@@ -44,14 +48,11 @@ public class GradlewRunner {
             ProcessBuilder builder = new ProcessBuilder().command(combinedArgs);
             process = builder.start();
             final Process finalProcess = process;
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        finalProcess.destroy();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    finalProcess.destroy();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }));
             forwardAsync(process.getInputStream(), System.out);
@@ -64,24 +65,21 @@ public class GradlewRunner {
             process.destroy();
         }
     }
-    
-    private static void forwardAsync(final InputStream input, final OutputStream output) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int bufferSize = 4096;
-                byte[] buffer = new byte[bufferSize];
 
-                int read = 0;
-                try {
+    private static void forwardAsync(final InputStream input, final OutputStream output) {
+        new Thread(() -> {
+            int bufferSize = 4096;
+            byte[] buffer = new byte[bufferSize];
+
+            int read = 0;
+            try {
+                read = input.read(buffer);
+                while(read != -1) {
+                    output.write(buffer, 0, read);
                     read = input.read(buffer);
-                    while(read != -1) {
-                        output.write(buffer, 0, read);
-                        read = input.read(buffer);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace(new PrintWriter(output));
                 }
+            } catch (IOException e) {
+                e.printStackTrace(new PrintWriter(output));
             }
         }).start();
     }

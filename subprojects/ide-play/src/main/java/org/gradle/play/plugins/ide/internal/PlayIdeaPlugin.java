@@ -18,14 +18,12 @@ package org.gradle.play.plugins.ide.internal;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.plugins.DslObject;
-import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.model.Mutate;
 import org.gradle.model.Path;
 import org.gradle.model.RuleSource;
@@ -56,54 +54,28 @@ public class PlayIdeaPlugin extends RuleSource {
 
         ConventionMapping conventionMapping = conventionMappingFor(module);
 
-        conventionMapping.map("sourceDirs", new Callable<Set<File>>() {
-            @Override
-            public Set<File> call() throws Exception {
-                // TODO: Assets should probably be a source set too
-                Set<File> sourceDirs = Sets.newHashSet(playApplicationBinarySpec.getAssets().getAssetDirs());
-                return CollectionUtils.inject(sourceDirs, playApplicationBinarySpec.getInputs(), new Action<CollectionUtils.InjectionStep<Set<File>, LanguageSourceSet>>() {
-                    @Override
-                    public void execute(CollectionUtils.InjectionStep<Set<File>, LanguageSourceSet> step) {
-                        step.getTarget().addAll(step.getItem().getSource().getSrcDirs());
-                    }
-                });
-            }
+        conventionMapping.map("sourceDirs", (Callable<Set<File>>) () -> {
+            // TODO: Assets should probably be a source set too
+            Set<File> sourceDirs = Sets.newHashSet(playApplicationBinarySpec.getAssets().getAssetDirs());
+            return CollectionUtils.inject(sourceDirs, playApplicationBinarySpec.getInputs(), step -> step.getTarget().addAll(step.getItem().getSource().getSrcDirs()));
         });
 
-        conventionMapping.map("testSourceDirs", new Callable<Set<File>>() {
-            @Override
-            public Set<File> call() throws Exception {
-                // TODO: This should be modeled as a source set
-                return Collections.singleton(fileResolver.resolve("test"));
-            }
+        conventionMapping.map("testSourceDirs", (Callable<Set<File>>) () -> {
+            // TODO: This should be modeled as a source set
+            return Collections.singleton(fileResolver.resolve("test"));
         });
 
-        conventionMapping.map("singleEntryLibraries", new Callable<Map<String, Iterable<File>>>() {
-            @Override
-            public Map<String, Iterable<File>> call() throws Exception {
-                return ImmutableMap.<String, Iterable<File>>builder().
-                    put("COMPILE", Collections.singleton(playApplicationBinarySpec.getClasses().getClassesDir())).
-                    put("RUNTIME", playApplicationBinarySpec.getClasses().getResourceDirs()).
-                    // TODO: This should be modeled as a source set
-                    put("TEST", Collections.singleton(new File(buildDir, "playBinary/testClasses"))).
-                    build();
-            }
-        });
+        conventionMapping.map("singleEntryLibraries", (Callable<Map<String, Iterable<File>>>) () -> ImmutableMap.<String, Iterable<File>>builder().
+            put("COMPILE", Collections.singleton(playApplicationBinarySpec.getClasses().getClassesDir())).
+            put("RUNTIME", playApplicationBinarySpec.getClasses().getResourceDirs()).
+            // TODO: This should be modeled as a source set
+            put("TEST", Collections.singleton(new File(buildDir, "playBinary/testClasses"))).
+            build());
 
         module.setScalaPlatform(playApplicationBinarySpec.getTargetPlatform().getScalaPlatform());
 
-        conventionMapping.map("targetBytecodeVersion", new Callable<JavaVersion>() {
-            @Override
-            public JavaVersion call() throws Exception {
-                return getTargetJavaVersion(playApplicationBinarySpec);
-            }
-        });
-        conventionMapping.map("languageLevel", new Callable<IdeaLanguageLevel>(){
-            @Override
-            public IdeaLanguageLevel call() throws Exception {
-                return new IdeaLanguageLevel(getTargetJavaVersion(playApplicationBinarySpec));
-            }
-        });
+        conventionMapping.map("targetBytecodeVersion", (Callable<JavaVersion>) () -> getTargetJavaVersion(playApplicationBinarySpec));
+        conventionMapping.map("languageLevel", (Callable<IdeaLanguageLevel>) () -> new IdeaLanguageLevel(getTargetJavaVersion(playApplicationBinarySpec)));
 
         ideaModule.dependsOn(playApplicationBinarySpec.getInputs());
         ideaModule.dependsOn(playApplicationBinarySpec.getAssets());

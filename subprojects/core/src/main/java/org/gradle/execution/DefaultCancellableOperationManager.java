@@ -46,24 +46,21 @@ public class DefaultCancellableOperationManager implements CancellableOperationM
         final AtomicBoolean operationCompleted = new AtomicBoolean();
         Future<?> handle = null;
         try {
-            handle = executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (!Thread.currentThread().isInterrupted()) {
-                            int c = input.read();
-                            // Ignore input received after the monitor operation has been completed
-                            if (operationCompleted.get()) {
-                                break;
-                            }
-                            if (isCancellation(c) && !operationCompleted.get()) {
-                                cancellationToken.cancel();
-                                break;
-                            }
+            handle = executorService.submit(() -> {
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        int c = input.read();
+                        // Ignore input received after the monitor operation has been completed
+                        if (operationCompleted.get()) {
+                            break;
                         }
-                    } catch (IOException e) {
-                        throw UncheckedException.throwAsUncheckedException(e);
+                        if (isCancellation(c) && !operationCompleted.get()) {
+                            cancellationToken.cancel();
+                            break;
+                        }
                     }
+                } catch (IOException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
                 }
             });
             operation.execute(cancellationToken);

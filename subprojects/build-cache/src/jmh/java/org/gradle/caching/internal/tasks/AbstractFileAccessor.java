@@ -51,12 +51,7 @@ public abstract class AbstractFileAccessor implements DataAccessor {
     @Override
     public DataTargetFactory createTargetFactory(final String root, Level level) throws IOException {
         final Path rootDir = Files.createTempDirectory(directoryProvider.getRoot(level), root);
-        return new DataTargetFactory() {
-            @Override
-            public DataTarget createDataTarget(String name) {
-                return new Target(rootDir.resolve(name));
-            }
-        };
+        return name -> new Target(rootDir.resolve(name));
     }
 
     protected abstract InputStream openInput(Path path) throws IOException;

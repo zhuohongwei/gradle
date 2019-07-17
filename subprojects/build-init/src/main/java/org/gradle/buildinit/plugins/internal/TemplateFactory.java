@@ -19,7 +19,6 @@ package org.gradle.buildinit.plugins.internal;
 import org.gradle.api.Action;
 import org.gradle.api.internal.file.FileResolver;
 import org.gradle.buildinit.plugins.internal.modifiers.Language;
-import org.gradle.internal.Factory;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -39,12 +38,7 @@ public class TemplateFactory {
     }
 
     public TemplateOperation whenNoSourcesAvailable(TemplateOperation... operations) {
-        return new ConditionalTemplateOperation(new Factory<Boolean>() {
-            @Override
-            public Boolean create() {
-                return fileResolver.resolveFilesAsTree("src/main/" + language.getName()).isEmpty() || fileResolver.resolveFilesAsTree("src/test/" + language.getName()).isEmpty();
-            }
-        }, operations);
+        return new ConditionalTemplateOperation(() -> fileResolver.resolveFilesAsTree("src/main/" + language.getName()).isEmpty() || fileResolver.resolveFilesAsTree("src/test/" + language.getName()).isEmpty(), operations);
     }
 
     public TemplateOperation fromSourceTemplate(String clazzTemplate, String sourceSetName) {

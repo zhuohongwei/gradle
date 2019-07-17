@@ -238,12 +238,7 @@ public class DefaultIncludedBuild extends AbstractBuildState implements Included
         gradleLauncher.addListener(listener);
         gradleLauncher.scheduleTasks(tasks);
         WorkerLeaseService workerLeaseService = gradleLauncher.getGradle().getServices().get(WorkerLeaseService.class);
-        workerLeaseService.withSharedLease(parentLease, new Runnable() {
-            @Override
-            public void run() {
-                gradleLauncher.executeTasks();
-            }
-        });
+        workerLeaseService.withSharedLease(parentLease, () -> gradleLauncher.executeTasks());
     }
 
     @Override

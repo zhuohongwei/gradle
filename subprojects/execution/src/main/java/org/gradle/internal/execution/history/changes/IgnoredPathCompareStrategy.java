@@ -35,12 +35,7 @@ import java.util.Map;
 public class IgnoredPathCompareStrategy extends AbstractFingerprintCompareStrategy {
     public static final FingerprintCompareStrategy INSTANCE = new IgnoredPathCompareStrategy();
 
-    private static final Comparator<Map.Entry<HashCode, FilePathWithType>> ENTRY_COMPARATOR = new Comparator<Map.Entry<HashCode, FilePathWithType>>() {
-        @Override
-        public int compare(Map.Entry<HashCode, FilePathWithType> o1, Map.Entry<HashCode, FilePathWithType> o2) {
-            return o1.getKey().compareTo(o2.getKey());
-        }
-    };
+    private static final Comparator<Map.Entry<HashCode, FilePathWithType>> ENTRY_COMPARATOR = (o1, o2) -> o1.getKey().compareTo(o2.getKey());
 
     private IgnoredPathCompareStrategy() {
     }

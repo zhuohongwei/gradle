@@ -33,16 +33,13 @@ public class DefaultMutationGuard extends AbstractMutationGuard {
 
     @Override
     protected <T> Action<? super T> newActionWithMutation(final Action<? super T> action, final boolean allowMutationMethods) {
-        return new Action<T>() {
-            @Override
-            public void execute(T t) {
-                boolean oldIsMutationAllowed = isMutationAllowed();
-                mutationGuardState.set(allowMutationMethods);
-                try {
-                    action.execute(t);
-                } finally {
-                    mutationGuardState.set(oldIsMutationAllowed);
-                }
+        return (Action<T>) t -> {
+            boolean oldIsMutationAllowed = isMutationAllowed();
+            mutationGuardState.set(allowMutationMethods);
+            try {
+                action.execute(t);
+            } finally {
+                mutationGuardState.set(oldIsMutationAllowed);
             }
         };
     }

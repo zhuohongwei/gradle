@@ -31,9 +31,9 @@ import org.gradle.api.internal.resolve.ProjectModelResolver;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.internal.Cast;
+import org.gradle.internal.logging.text.TreeFormatter;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.service.ServiceRegistry;
-import org.gradle.internal.logging.text.TreeFormatter;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.base.ProjectSourceSet;
 import org.gradle.language.base.internal.ProjectLayout;
@@ -238,12 +238,7 @@ public class ComponentModelBasePlugin implements Plugin<Project> {
         @Defaults
         // TODO:LPTR We should collect all source sets in the project source set, however this messes up ComponentReportRenderer
         void addComponentSourcesSetsToProjectSourceSet(@Each SourceComponentSpec component, final ProjectSourceSet projectSourceSet) {
-            component.getSources().afterEach(new Action<LanguageSourceSet>() {
-                @Override
-                public void execute(LanguageSourceSet languageSourceSet) {
-                    projectSourceSet.add(languageSourceSet);
-                }
-            });
+            component.getSources().afterEach(languageSourceSet -> projectSourceSet.add(languageSourceSet));
         }
 
         @Rules
@@ -264,12 +259,7 @@ public class ComponentModelBasePlugin implements Plugin<Project> {
             @Mutate
             void initializeBinarySourceSets(ModelMap<BinarySpec> binaries) {
                 // TODO - sources is not actual an input to binaries, it's an input to each binary
-                binaries.withType(BinarySpecInternal.class, new Action<BinarySpecInternal>() {
-                    @Override
-                    public void execute(BinarySpecInternal binary) {
-                        binary.getInputs().addAll(getSources().values());
-                    }
-                });
+                binaries.withType(BinarySpecInternal.class, binary -> binary.getInputs().addAll(getSources().values()));
             }
         }
 

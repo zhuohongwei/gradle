@@ -16,26 +16,20 @@
 
 package org.gradle.model.internal.registry;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.lang.StringUtils;
 import org.gradle.api.Transformer;
 import org.gradle.model.internal.core.ModelPath;
 import org.gradle.util.CollectionUtils;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.List;
 
 @ThreadSafe
 class ModelPathSuggestionProvider implements Transformer<List<ModelPath>, ModelPath> {
 
-    private static final Predicate<Suggestion> REMOVE_NULLS = new Predicate<Suggestion>() {
-        @Override
-        public boolean apply(Suggestion input) {
-            return input != null;
-        }
-    };
+    private static final Predicate<Suggestion> REMOVE_NULLS = input -> input != null;
 
     private final Iterable<ModelPath> availablePaths;
 
@@ -46,12 +40,7 @@ class ModelPathSuggestionProvider implements Transformer<List<ModelPath>, ModelP
     @ThreadSafe
     private static class Suggestion implements Comparable<Suggestion> {
 
-        private static final Transformer<ModelPath, Suggestion> EXTRACT_PATH = new Transformer<ModelPath, Suggestion>() {
-            @Override
-            public ModelPath transform(Suggestion original) {
-                return original.path;
-            }
-        };
+        private static final Transformer<ModelPath, Suggestion> EXTRACT_PATH = original -> original.path;
 
         private final int distance;
         private final ModelPath path;
@@ -74,17 +63,14 @@ class ModelPathSuggestionProvider implements Transformer<List<ModelPath>, ModelP
 
     @Override
     public List<ModelPath> transform(final ModelPath unavailable) {
-        Iterable<Suggestion> suggestions = Iterables.transform(availablePaths, new Function<ModelPath, Suggestion>() {
-            @Override
-            public Suggestion apply(ModelPath available) {
-                int distance = StringUtils.getLevenshteinDistance(unavailable.toString(), available.toString());
-                boolean suggest = distance <= Math.min(3, unavailable.toString().length() / 2);
-                if (suggest) {
-                    return new Suggestion(distance, available);
-                } else {
-                    // avoid excess creation of Suggestion objects
-                    return null;
-                }
+        Iterable<Suggestion> suggestions = Iterables.transform(availablePaths, available -> {
+            int distance = StringUtils.getLevenshteinDistance(unavailable.toString(), available.toString());
+            boolean suggest = distance <= Math.min(3, unavailable.toString().length() / 2);
+            if (suggest) {
+                return new Suggestion(distance, available);
+            } else {
+                // avoid excess creation of Suggestion objects
+                return null;
             }
         });
 

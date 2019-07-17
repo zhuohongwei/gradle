@@ -17,7 +17,6 @@
 package org.gradle.api.internal.artifacts.configurations;
 
 import com.google.common.collect.Maps;
-import org.gradle.api.Action;
 import org.gradle.api.artifacts.result.ResolutionResult;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.internal.artifacts.result.ResolvedComponentResultInternal;
@@ -49,15 +48,10 @@ class ResolveConfigurationResolutionBuildOperationResult implements ResolveConfi
         Map<String, Object> model = new HashMap<String, Object>();
         model.put("resolvedDependenciesCount", getRootComponent().getDependencies().size());
         final Map<String, Map<String, String>> components = Maps.newHashMap();
-        resolutionResult.allComponents(new Action<ResolvedComponentResult>() {
-            @Override
-            public void execute(ResolvedComponentResult component) {
-                components.put(
-                    component.getId().getDisplayName(),
-                    Collections.singletonMap("repoName", ((ResolvedComponentResultInternal) component).getRepositoryName())
-                );
-            }
-        });
+        resolutionResult.allComponents(component -> components.put(
+            component.getId().getDisplayName(),
+            Collections.singletonMap("repoName", ((ResolvedComponentResultInternal) component).getRepositoryName())
+        ));
         model.put("components", components);
         return model;
     }

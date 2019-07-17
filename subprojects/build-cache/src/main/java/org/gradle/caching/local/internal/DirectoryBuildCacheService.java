@@ -91,15 +91,12 @@ public class DirectoryBuildCacheService implements LocalBuildCacheService, Build
     @Override
     public void loadLocally(final BuildCacheKey key, final Action<? super File> reader) {
         // We need to lock other processes out here because garbage collection can be under way in another process
-        persistentCache.withFileLock(new Runnable() {
-            @Override
-            public void run() {
-                lock.readLock().lock();
-                try {
-                    loadInsideLock(key, reader);
-                } finally {
-                    lock.readLock().unlock();
-                }
+        persistentCache.withFileLock(() -> {
+            lock.readLock().lock();
+            try {
+                loadInsideLock(key, reader);
+            } finally {
+                lock.readLock().unlock();
             }
         });
     }
@@ -129,38 +126,32 @@ public class DirectoryBuildCacheService implements LocalBuildCacheService, Build
 
     @Override
     public void store(final BuildCacheKey key, final BuildCacheEntryWriter result) throws BuildCacheException {
-        tempFileStore.withTempFile(key, new Action<File>() {
-            @Override
-            public void execute(@Nonnull File file) {
+        tempFileStore.withTempFile(key, file -> {
+            try {
+                Closer closer = Closer.create();
                 try {
-                    Closer closer = Closer.create();
-                    try {
-                        result.writeTo(closer.register(new FileOutputStream(file)));
-                    } catch (Exception e) {
-                        throw closer.rethrow(e);
-                    } finally {
-                        closer.close();
-                    }
-                } catch (IOException ex) {
-                    throw UncheckedException.throwAsUncheckedException(ex);
+                    result.writeTo(closer.register(new FileOutputStream(file)));
+                } catch (Exception e) {
+                    throw closer.rethrow(e);
+                } finally {
+                    closer.close();
                 }
-
-                storeLocally(key, file);
+            } catch (IOException ex) {
+                throw UncheckedException.throwAsUncheckedException(ex);
             }
+
+            storeLocally(key, file);
         });
     }
 
     @Override
     public void storeLocally(final BuildCacheKey key, final File file) {
-        persistentCache.withFileLock(new Runnable() {
-            @Override
-            public void run() {
-                lock.writeLock().lock();
-                try {
-                    storeInsideLock(key, file);
-                } finally {
-                    lock.writeLock().unlock();
-                }
+        persistentCache.withFileLock(() -> {
+            lock.writeLock().lock();
+            try {
+                storeInsideLock(key, file);
+            } finally {
+                lock.writeLock().unlock();
             }
         });
     }
@@ -172,12 +163,7 @@ public class DirectoryBuildCacheService implements LocalBuildCacheService, Build
 
     @Override
     public void withTempFile(final BuildCacheKey key, final Action<? super File> action) {
-        persistentCache.withFileLock(new Runnable() {
-            @Override
-            public void run() {
-                tempFileStore.withTempFile(key, action);
-            }
-        });
+        persistentCache.withFileLock(() -> tempFileStore.withTempFile(key, action));
     }
 
     @Override

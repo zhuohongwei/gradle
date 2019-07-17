@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Predicate;
 
 public class SimpleStaleClassCleaner extends StaleClassCleaner {
     private final Set<File> filesToDelete;
@@ -53,22 +52,14 @@ public class SimpleStaleClassCleaner extends StaleClassCleaner {
     @Override
     public void execute() {
         try {
-            OutputsCleaner outputsCleaner = new OutputsCleaner(new Predicate<File>() {
-                @Override
-                public boolean test(File file) {
-                    for (String prefix : prefixes) {
-                        if (file.getAbsolutePath().startsWith(prefix)) {
-                            return true;
-                        }
+            OutputsCleaner outputsCleaner = new OutputsCleaner(file -> {
+                for (String prefix : prefixes) {
+                    if (file.getAbsolutePath().startsWith(prefix)) {
+                        return true;
                     }
-                    return false;
                 }
-            }, new Predicate<File>() {
-                @Override
-                public boolean test(File dir) {
-                    return !toClean.contains(dir);
-                }
-            });
+                return false;
+            }, dir -> !toClean.contains(dir));
             for (File f : filesToDelete) {
                 if (f.isFile()) {
                     outputsCleaner.cleanupOutput(f, FileType.RegularFile);

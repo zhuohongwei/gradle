@@ -34,12 +34,7 @@ import java.util.Map;
  * Intermediate data structure used to store the result of a resolution and help at building an understandable error message in case resolution fails.
  */
 public class LibraryResolutionResult {
-    public static final Function<String, String> QUOTE_TRANSFORMER = new Function<String, String>() {
-        @Override
-        public String apply(String input) {
-            return "'" + input + "'";
-        }
-    };
+    public static final Function<String, String> QUOTE_TRANSFORMER = input -> "'" + input + "'";
     private final Map<String, VariantComponent> libsMatchingRequirements;
     private final Map<String, VariantComponent> libsNotMatchingRequirements;
     private final Class<? extends Binary> binaryType;

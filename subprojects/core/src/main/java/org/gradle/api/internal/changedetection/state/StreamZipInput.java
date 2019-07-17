@@ -22,7 +22,6 @@ import org.gradle.api.UncheckedIOException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
-import java.util.function.Supplier;
 import java.util.zip.ZipInputStream;
 
 class StreamZipInput implements ZipInput {
@@ -44,12 +43,7 @@ class StreamZipInput implements ZipInput {
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
-                return nextEntry == null ? endOfData() : new JdkZipEntry(nextEntry, new Supplier<InputStream>() {
-                    @Override
-                    public InputStream get() {
-                        return in;
-                    }
-                });
+                return nextEntry == null ? endOfData() : new JdkZipEntry(nextEntry, () -> in);
             }
         };
     }

@@ -20,7 +20,6 @@ import org.gradle.api.Transformer;
 import org.gradle.cache.CrossProcessCacheAccess;
 import org.gradle.cache.FileLock;
 import org.gradle.cache.MultiProcessSafePersistentIndexedCache;
-import org.gradle.internal.Factory;
 
 import javax.annotation.Nullable;
 
@@ -44,12 +43,7 @@ public class CrossProcessSynchronizingCache<K, V> implements MultiProcessSafePer
     @Nullable
     @Override
     public V get(final K key) {
-        return cacheAccess.withFileLock(new Factory<V>() {
-            @Override
-            public V create() {
-                return target.get(key);
-            }
-        });
+        return cacheAccess.withFileLock(() -> target.get(key));
     }
 
     @Override

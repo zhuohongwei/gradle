@@ -17,7 +17,6 @@
 package org.gradle.api.plugins;
 
 import com.google.common.collect.Lists;
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -30,7 +29,6 @@ import org.gradle.api.internal.jvm.DefaultClassDirectoryBinarySpec;
 import org.gradle.api.internal.project.taskfactory.TaskInstantiator;
 import org.gradle.api.internal.tasks.SourceSetCompileClasspath;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.internal.reflect.Instantiator;
@@ -91,27 +89,24 @@ class JavaBasePluginRules implements Plugin<Project> {
     private BridgedBinaries collectBinariesForSourceSets(final TaskContainer tasks, final JavaPluginConvention pluginConvention) {
         final Project project = pluginConvention.getProject();
         final List<ClassDirectoryBinarySpecInternal> binaries = Lists.newArrayList();
-        pluginConvention.getSourceSets().all(new Action<SourceSet>() {
-            @Override
-            public void execute(final SourceSet sourceSet) {
+        pluginConvention.getSourceSets().all(sourceSet -> {
 
-                Provider<ProcessResources> resourcesTask = tasks.named(sourceSet.getProcessResourcesTaskName(), ProcessResources.class);
-                Provider<JavaCompile> compileTask = tasks.named(sourceSet.getCompileJavaTaskName(), JavaCompile.class);
+            Provider<ProcessResources> resourcesTask = tasks.named(sourceSet.getProcessResourcesTaskName(), ProcessResources.class);
+            Provider<JavaCompile> compileTask = tasks.named(sourceSet.getCompileJavaTaskName(), JavaCompile.class);
 
-                DefaultComponentSpecIdentifier binaryId = new DefaultComponentSpecIdentifier(project.getPath(), sourceSet.getName());
-                ClassDirectoryBinarySpecInternal binary = instantiator.newInstance(DefaultClassDirectoryBinarySpec.class, binaryId, sourceSet, javaToolChain, DefaultJavaPlatform.current(), instantiator, taskInstantiator, collectionCallbackActionDecorator, domainObjectCollectionFactory);
+            DefaultComponentSpecIdentifier binaryId = new DefaultComponentSpecIdentifier(project.getPath(), sourceSet.getName());
+            ClassDirectoryBinarySpecInternal binary = instantiator.newInstance(DefaultClassDirectoryBinarySpec.class, binaryId, sourceSet, javaToolChain, DefaultJavaPlatform.current(), instantiator, taskInstantiator, collectionCallbackActionDecorator, domainObjectCollectionFactory);
 
-                Classpath compileClasspath = new SourceSetCompileClasspath(sourceSet);
-                DefaultJavaSourceSet javaSourceSet = instantiator.newInstance(DefaultJavaSourceSet.class, binaryId.child("java"), sourceSet.getJava(), compileClasspath);
-                JvmResourceSet resourceSet = instantiator.newInstance(DefaultJvmResourceSet.class, binaryId.child("resources"), sourceSet.getResources());
+            Classpath compileClasspath = new SourceSetCompileClasspath(sourceSet);
+            DefaultJavaSourceSet javaSourceSet = instantiator.newInstance(DefaultJavaSourceSet.class, binaryId.child("java"), sourceSet.getJava(), compileClasspath);
+            JvmResourceSet resourceSet = instantiator.newInstance(DefaultJvmResourceSet.class, binaryId.child("resources"), sourceSet.getResources());
 
-                binary.addSourceSet(javaSourceSet);
-                binary.addSourceSet(resourceSet);
+            binary.addSourceSet(javaSourceSet);
+            binary.addSourceSet(resourceSet);
 
-                Provider<Task> classesTask = tasks.named(sourceSet.getClassesTaskName());
-                attachTasksToBinary(binary, compileTask, resourcesTask, classesTask);
-                binaries.add(binary);
-            }
+            Provider<Task> classesTask = tasks.named(sourceSet.getClassesTaskName());
+            attachTasksToBinary(binary, compileTask, resourcesTask, classesTask);
+            binaries.add(binary);
         });
         return new BridgedBinaries(binaries);
     }

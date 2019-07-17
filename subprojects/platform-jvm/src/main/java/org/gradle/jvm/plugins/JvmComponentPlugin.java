@@ -16,7 +16,6 @@
 
 package org.gradle.jvm.plugins;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
@@ -27,7 +26,6 @@ import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.internal.jvm.Jvm;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.jvm.JarBinarySpec;
@@ -131,12 +129,9 @@ public class JvmComponentPlugin implements Plugin<Project> {
         @Model
         @Hidden
         public void javaToolChains(ModelMap<LocalJavaInstallation> javaInstallations, final JavaInstallationProbe probe) {
-            javaInstallations.create("currentGradleJDK", InstalledJdk.class, new Action<InstalledJdk>() {
-                @Override
-                public void execute(InstalledJdk installedJdk) {
-                    installedJdk.setJavaHome(Jvm.current().getJavaHome());
-                    probe.current(installedJdk);
-                }
+            javaInstallations.create("currentGradleJDK", InstalledJdk.class, installedJdk -> {
+                installedJdk.setJavaHome(Jvm.current().getJavaHome());
+                probe.current(installedJdk);
             });
         }
 
@@ -187,12 +182,9 @@ public class JvmComponentPlugin implements Plugin<Project> {
                 }
 
                 if (!javaHome.equals(currentJavaHome)) {
-                    installedJdks.create(candidate.getName(), clazz, new Action<LocalJavaInstallation>() {
-                        @Override
-                        public void execute(LocalJavaInstallation installedJdk) {
-                            installedJdk.setJavaHome(javaHome);
-                            probeResult.configure(installedJdk);
-                        }
+                    installedJdks.create(candidate.getName(), clazz, (Action<LocalJavaInstallation>) installedJdk -> {
+                        installedJdk.setJavaHome(javaHome);
+                        probeResult.configure(installedJdk);
                     });
                 }
             }
@@ -206,16 +198,13 @@ public class JvmComponentPlugin implements Plugin<Project> {
             final Collection<DependencySpec> dependencies = componentDependenciesOf(jvmLibrary);
             for (final JavaPlatform platform : selectedPlatforms) {
                 final BinaryNamingScheme namingScheme = namingSchemeFor(jvmLibrary, selectedPlatforms, platform);
-                binaries.create(namingScheme.getBinaryName(), new Action<JarBinarySpec>() {
-                    @Override
-                    public void execute(JarBinarySpec jarBinarySpec) {
-                        JarBinarySpecInternal jarBinary = (JarBinarySpecInternal) jarBinarySpec;
-                        jarBinary.setNamingScheme(namingScheme);
-                        jarBinary.setTargetPlatform(platform);
-                        jarBinary.setExportedPackages(exportedPackages);
-                        jarBinary.setApiDependencies(apiDependencies);
-                        jarBinary.setDependencies(dependencies);
-                    }
+                binaries.create(namingScheme.getBinaryName(), jarBinarySpec -> {
+                    JarBinarySpecInternal jarBinary = (JarBinarySpecInternal) jarBinarySpec;
+                    jarBinary.setNamingScheme(namingScheme);
+                    jarBinary.setTargetPlatform(platform);
+                    jarBinary.setExportedPackages(exportedPackages);
+                    jarBinary.setApiDependencies(apiDependencies);
+                    jarBinary.setDependencies(dependencies);
                 });
             }
         }
@@ -235,12 +224,7 @@ public class JvmComponentPlugin implements Plugin<Project> {
                 targetPlatforms = Collections.singletonList(
                     DefaultPlatformRequirement.create(DefaultJavaPlatform.current().getName()));
             }
-            return CollectionUtils.collect(targetPlatforms, new Transformer<JavaPlatform, PlatformRequirement>() {
-                @Override
-                public JavaPlatform transform(PlatformRequirement platformRequirement) {
-                    return platformResolver.resolve(JavaPlatform.class, platformRequirement);
-                }
-            });
+            return CollectionUtils.collect(targetPlatforms, platformRequirement -> platformResolver.resolve(JavaPlatform.class, platformRequirement));
         }
 
         private static Set<String> exportedPackagesOf(JvmLibrarySpecInternal jvmLibrary) {
@@ -269,32 +253,26 @@ public class JvmComponentPlugin implements Plugin<Project> {
             final String createRuntimeJar = "create" + capitalize(binary.getProjectScopedName());
             final JvmAssembly assembly = binary.getAssembly();
             final JarFile runtimeJarFile = binary.getRuntimeJar();
-            tasks.create(createRuntimeJar, Jar.class, new Action<Jar>() {
-                @Override
-                public void execute(Jar jar) {
-                    jar.setDescription("Creates the binary file for " + binary + ".");
-                    jar.from(assembly.getClassDirectories());
-                    jar.from(assembly.getResourceDirectories());
-                    jar.getDestinationDirectory().set(runtimeJarDestDir);
-                    jar.getArchiveFileName().set(runtimeJarArchiveName);
-                    jar.dependsOn(assembly);
-                    runtimeJarFile.setBuildTask(jar);
-                }
+            tasks.create(createRuntimeJar, Jar.class, jar -> {
+                jar.setDescription("Creates the binary file for " + binary + ".");
+                jar.from(assembly.getClassDirectories());
+                jar.from(assembly.getResourceDirectories());
+                jar.getDestinationDirectory().set(runtimeJarDestDir);
+                jar.getArchiveFileName().set(runtimeJarArchiveName);
+                jar.dependsOn(assembly);
+                runtimeJarFile.setBuildTask(jar);
             });
 
             final JarFile apiJarFile = binary.getApiJar();
             final Set<String> exportedPackages = binary.getExportedPackages();
             String apiJarTaskName = apiJarTaskName(binary);
-            tasks.create(apiJarTaskName, ApiJar.class, new Action<ApiJar>() {
-                @Override
-                public void execute(ApiJar apiJarTask) {
-                    apiJarTask.setDescription("Creates the API binary file for " + binary + ".");
-                    apiJarTask.setOutputFile(apiJarFile.getFile());
-                    apiJarTask.setExportedPackages(exportedPackages);
-                    apiJarTask.source(assembly.getClassDirectories());
-                    apiJarTask.dependsOn(assembly);
-                    apiJarFile.setBuildTask(apiJarTask);
-                }
+            tasks.create(apiJarTaskName, ApiJar.class, apiJarTask -> {
+                apiJarTask.setDescription("Creates the API binary file for " + binary + ".");
+                apiJarTask.setOutputFile(apiJarFile.getFile());
+                apiJarTask.setExportedPackages(exportedPackages);
+                apiJarTask.source(assembly.getClassDirectories());
+                apiJarTask.dependsOn(assembly);
+                apiJarFile.setBuildTask(apiJarTask);
             });
         }
 
@@ -310,12 +288,7 @@ public class JvmComponentPlugin implements Plugin<Project> {
             List<LocalJava> localJavas = index.get(path);
             if (localJavas.size() > 1) {
                 errors.add(String.format("   - %s are both pointing to the same JDK installation path: %s",
-                    Joiner.on(", ").join(Iterables.transform(localJavas, new Function<LocalJava, String>() {
-                        @Override
-                        public String apply(LocalJava input) {
-                            return "'" + input.getName() + "'";
-                        }
-                    })), path));
+                    Joiner.on(", ").join(Iterables.transform(localJavas, input -> "'" + input.getName() + "'")), path));
             }
         }
 
@@ -333,12 +306,7 @@ public class JvmComponentPlugin implements Plugin<Project> {
 
         private static List<LocalJava> toImmutableJdkList(ModelMap<LocalJava> jdks) {
             final List<LocalJava> asImmutable = Lists.newArrayList();
-            jdks.afterEach(new Action<LocalJava>() {
-                @Override
-                public void execute(LocalJava localJava) {
-                    asImmutable.add(localJava);
-                }
-            });
+            jdks.afterEach(localJava -> asImmutable.add(localJava));
             return asImmutable;
         }
 

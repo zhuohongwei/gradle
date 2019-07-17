@@ -192,12 +192,7 @@ public class NodeBackedModelSet<T> implements ModelSet<T>, ManagedInstance {
         state.assertCanReadChildren();
         if (elements == null) {
             elements = Lists.newArrayList(
-                Iterables.transform(modelNode.getLinks(ModelNodes.withType(elementType)), new Function<MutableModelNode, T>() {
-                    @Override
-                    public T apply(MutableModelNode input) {
-                        return input.asImmutable(elementType, descriptor).getInstance();
-                    }
-                })
+                Iterables.transform(modelNode.getLinks(ModelNodes.withType(elementType)), (Function<MutableModelNode, T>) input -> input.asImmutable(elementType, descriptor).getInstance())
             );
         }
         return elements;

@@ -18,7 +18,6 @@ package org.gradle.integtests.fixtures;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.gradle.api.specs.Spec;
 import org.gradle.util.CollectionUtils;
 
 import java.util.Collection;
@@ -58,12 +57,7 @@ public abstract class AbstractContextualMultiVersionSpecRunner<T extends Abstrac
 
     private Collection<T> getAvailableVersions() {
         Set<T> allAvailable = Sets.newHashSet();
-        CollectionUtils.filter(getAllVersions(), allAvailable, new Spec<T>() {
-            @Override
-            public boolean isSatisfiedBy(T version) {
-                return isAvailable(version);
-            }
-        });
+        CollectionUtils.filter(getAllVersions(), allAvailable, version -> isAvailable(version));
         return allAvailable;
     }
 
@@ -89,7 +83,7 @@ public abstract class AbstractContextualMultiVersionSpecRunner<T extends Abstrac
     }
 
     protected abstract boolean isAvailable(T version);
-    
+
     protected abstract Collection<Execution> createExecutionsFor(T versionedTool);
 
     public AbstractContextualMultiVersionSpecRunner(Class<?> target) {
@@ -147,7 +141,7 @@ public abstract class AbstractContextualMultiVersionSpecRunner<T extends Abstrac
                 }
             }
         }
-        
+
         for (T version : versionsUnderTest) {
             for (Execution execution : createExecutionsFor(version)) {
                 add(execution);

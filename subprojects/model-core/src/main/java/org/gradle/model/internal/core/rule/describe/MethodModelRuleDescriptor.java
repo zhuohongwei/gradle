@@ -20,11 +20,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.model.internal.method.WeaklyTypeReferencingMethod;
 import org.gradle.model.internal.type.ModelType;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -37,12 +37,7 @@ import java.util.WeakHashMap;
 public class MethodModelRuleDescriptor extends AbstractModelRuleDescriptor {
     private final static Cache DESCRIPTOR_CACHE = new Cache();
     private final static Joiner PARAM_JOINER = Joiner.on(", ");
-    private static final Function<ModelType<?>, String> TYPE_DISPLAYNAME_FUNCTION = new Function<ModelType<?>, String>() {
-        @Override
-        public String apply(ModelType<?> input) {
-            return input.getDisplayName();
-        }
-    };
+    private static final Function<ModelType<?>, String> TYPE_DISPLAYNAME_FUNCTION = input -> input.getDisplayName();
 
     private final WeaklyTypeReferencingMethod<?, ?> method;
     private String description;

@@ -44,20 +44,17 @@ public class ChainingTransformer<T> implements Transformer<T, T> {
     }
 
     public void add(final Closure transformer) {
-        transformers.add(new Transformer<T, T>() {
-            @Override
-            public T transform(T original) {
-                transformer.setDelegate(original);
-                transformer.setResolveStrategy(Closure.DELEGATE_FIRST);
-                Object value = transformer.call(original);
-                if (type.isInstance(value)) {
-                    return type.cast(value);
-                }
-                if (type == String.class && value instanceof GString) {
-                    return type.cast(value.toString());
-                }
-                return original;
+        transformers.add(original -> {
+            transformer.setDelegate(original);
+            transformer.setResolveStrategy(Closure.DELEGATE_FIRST);
+            Object value = transformer.call(original);
+            if (type.isInstance(value)) {
+                return type.cast(value);
             }
+            if (type == String.class && value instanceof GString) {
+                return type.cast(value.toString());
+            }
+            return original;
         });
     }
 

@@ -41,7 +41,6 @@ import org.gradle.util.GUtil;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.Callable;
 
@@ -60,12 +59,7 @@ public class Ear extends Jar {
     public Ear() {
         getArchiveExtension().set(EAR_EXTENSION);
         setMetadataCharset("UTF-8");
-        lib = getRootSpec().addChildBeforeSpec(getMainSpec()).into(new Callable<String>() {
-            @Override
-            public String call() {
-                return GUtil.elvis(getLibDirName(), DEFAULT_LIB_DIR_NAME);
-            }
-        });
+        lib = getRootSpec().addChildBeforeSpec(getMainSpec()).into((Callable<String>) () -> GUtil.elvis(getLibDirName(), DEFAULT_LIB_DIR_NAME));
         getMainSpec().appendCachingSafeCopyAction(
             new Action<FileCopyDetails>() {
                 @Override
@@ -107,34 +101,26 @@ public class Ear extends Jar {
         // this allows us to generate the deployment descriptor after recording all modules it contains
         CopySpecInternal metaInf = (CopySpecInternal) getMainSpec().addChild().into("META-INF");
         CopySpecInternal descriptorChild = metaInf.addChild();
-        descriptorChild.from(new Callable<FileTreeAdapter>() {
-            @Override
-            public FileTreeAdapter call() {
-                final DeploymentDescriptor descriptor = getDeploymentDescriptor();
+        descriptorChild.from((Callable<FileTreeAdapter>) () -> {
+            final DeploymentDescriptor descriptor = getDeploymentDescriptor();
 
-                if (descriptor != null) {
-                    if (descriptor.getLibraryDirectory() == null) {
-                        descriptor.setLibraryDirectory(getLibDirName());
-                    }
-
-                    RelativePath relativePath = RelativePath.parse(true, descriptor.getFileName());
-                    if (relativePath.getSegments().length > 1) {
-                        DeprecationLogger.nagUserOfDeprecated("File paths in deployment descriptor file name", "Use simple file name instead.");
-                        descriptorChild.into(relativePath.getParent().getPathString());
-                    }
-                    GeneratedSingletonFileTree descriptorSource = new GeneratedSingletonFileTree(getTemporaryDirFactory(), relativePath.getLastName(), new Action<OutputStream>() {
-                        @Override
-                        public void execute(OutputStream outputStream) {
-                            descriptor.writeTo(new OutputStreamWriter(outputStream));
-                        }
-                    });
-
-
-                    return new FileTreeAdapter(descriptorSource);
+            if (descriptor != null) {
+                if (descriptor.getLibraryDirectory() == null) {
+                    descriptor.setLibraryDirectory(getLibDirName());
                 }
 
-                return null;
+                RelativePath relativePath = RelativePath.parse(true, descriptor.getFileName());
+                if (relativePath.getSegments().length > 1) {
+                    DeprecationLogger.nagUserOfDeprecated("File paths in deployment descriptor file name", "Use simple file name instead.");
+                    descriptorChild.into(relativePath.getParent().getPathString());
+                }
+                GeneratedSingletonFileTree descriptorSource = new GeneratedSingletonFileTree(getTemporaryDirFactory(), relativePath.getLastName(), outputStream -> descriptor.writeTo(new OutputStreamWriter(outputStream)));
+
+
+                return new FileTreeAdapter(descriptorSource);
             }
+
+            return null;
         });
     }
 

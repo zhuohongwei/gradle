@@ -34,11 +34,8 @@ public class DefaultTaskLocalState implements TaskLocalStateInternal {
 
     @Override
     public void register(final Object... paths) {
-        taskMutator.mutate("TaskLocalState.register(Object...)", new Runnable() {
-            @Override
-            public void run() {
-                Collections.addAll(DefaultTaskLocalState.this.registeredPaths, paths);
-            }
+        taskMutator.mutate("TaskLocalState.register(Object...)", () -> {
+            Collections.addAll(DefaultTaskLocalState.this.registeredPaths, paths);
         });
     }
 

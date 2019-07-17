@@ -66,66 +66,63 @@ public class DisconnectableInputStream extends BulkReadInputStream {
 
     DisconnectableInputStream(final InputStream source, Action<Runnable> executer, int bufferLength) {
         buffer = new byte[bufferLength];
-        Runnable consume = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        int pos;
-                        lock.lock();
-                        try {
-                            while (!closed && writePos == buffer.length && writePos != readPos) {
-                                // buffer is full, wait until it has been read
-                                condition.await();
-                            }
-                            assert writePos >= readPos;
-                            if (closed) {
-                                // stream has been closed, don't bother reading anything else
-                                inputFinished = true;
-                                condition.signalAll();
-                                return;
-                            }
-                            if (readPos == writePos) {
-                                // buffer has been fully read, start at the beginning
-                                readPos = 0;
-                                writePos = 0;
-                            }
-                            pos = writePos;
-                        } finally {
-                            lock.unlock();
-                        }
-
-                        int nread = source.read(buffer, pos, buffer.length - pos);
-
-                        lock.lock();
-                        try {
-                            if (nread > 0) {
-                                // Have read some data - let readers know
-                                assert writePos >= readPos;
-                                writePos += nread;
-                                assert buffer.length >= writePos;
-                                condition.signalAll();
-                            }
-                            if (nread < 0) {
-                                // End of the stream
-                                inputFinished = true;
-                                condition.signalAll();
-                                return;
-                            }
-                        } finally {
-                            lock.unlock();
-                        }
-                    }
-                } catch (Throwable throwable) {
+        Runnable consume = () -> {
+            try {
+                while (true) {
+                    int pos;
                     lock.lock();
                     try {
-                        inputFinished = true;
-                        condition.signalAll();
+                        while (!closed && writePos == buffer.length && writePos != readPos) {
+                            // buffer is full, wait until it has been read
+                            condition.await();
+                        }
+                        assert writePos >= readPos;
+                        if (closed) {
+                            // stream has been closed, don't bother reading anything else
+                            inputFinished = true;
+                            condition.signalAll();
+                            return;
+                        }
+                        if (readPos == writePos) {
+                            // buffer has been fully read, start at the beginning
+                            readPos = 0;
+                            writePos = 0;
+                        }
+                        pos = writePos;
                     } finally {
                         lock.unlock();
                     }
-                    throw UncheckedException.throwAsUncheckedException(throwable);
+
+                    int nread = source.read(buffer, pos, buffer.length - pos);
+
+                    lock.lock();
+                    try {
+                        if (nread > 0) {
+                            // Have read some data - let readers know
+                            assert writePos >= readPos;
+                            writePos += nread;
+                            assert buffer.length >= writePos;
+                            condition.signalAll();
+                        }
+                        if (nread < 0) {
+                            // End of the stream
+                            inputFinished = true;
+                            condition.signalAll();
+                            return;
+                        }
+                    } finally {
+                        lock.unlock();
+                    }
                 }
+            } catch (Throwable throwable) {
+                lock.lock();
+                try {
+                    inputFinished = true;
+                    condition.signalAll();
+                } finally {
+                    lock.unlock();
+                }
+                throw UncheckedException.throwAsUncheckedException(throwable);
             }
         };
 

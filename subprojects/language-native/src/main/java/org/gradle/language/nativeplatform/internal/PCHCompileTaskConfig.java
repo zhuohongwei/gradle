@@ -18,7 +18,6 @@ package org.gradle.language.nativeplatform.internal;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.language.base.internal.LanguageSourceSetInternal;
 import org.gradle.language.nativeplatform.tasks.AbstractNativeCompileTask;
@@ -49,12 +48,7 @@ public class PCHCompileTaskConfig extends CompileTaskConfig {
 
         task.getObjectFileDir().set(new File(binary.getNamingScheme().getOutputDirectory(project.getBuildDir(), "objs"), languageSourceSet.getProjectScopedName() + "PCH"));
 
-        task.dependsOn(project.getTasks().withType(PrefixHeaderFileGenerateTask.class).matching(new Spec<PrefixHeaderFileGenerateTask>() {
-            @Override
-            public boolean isSatisfiedBy(PrefixHeaderFileGenerateTask prefixHeaderFileGenerateTask) {
-                return prefixHeaderFileGenerateTask.getPrefixHeaderFile().equals(sourceSet.getPrefixHeaderFile());
-            }
-        }));
+        task.dependsOn(project.getTasks().withType(PrefixHeaderFileGenerateTask.class).matching(prefixHeaderFileGenerateTask -> prefixHeaderFileGenerateTask.getPrefixHeaderFile().equals(sourceSet.getPrefixHeaderFile())));
 
         // This is so that VisualCpp has the object file of the generated source file available at link time
         binary.binaryInputs(task.getOutputs().getFiles().getAsFileTree().matching(new PatternSet().include("**/*.obj", "**/*.o")));

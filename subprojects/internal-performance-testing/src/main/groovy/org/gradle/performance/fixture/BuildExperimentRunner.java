@@ -190,12 +190,7 @@ public class BuildExperimentRunner {
 
         final AtomicBoolean omitMeasurement = new AtomicBoolean();
         if (experiment.getListener() != null) {
-            experiment.getListener().afterInvocation(invocationInfo, operation, new BuildExperimentListener.MeasurementCallback() {
-                @Override
-                public void omitMeasurement() {
-                    omitMeasurement.set(true);
-                }
-            });
+            experiment.getListener().afterInvocation(invocationInfo, operation, () -> omitMeasurement.set(true));
         }
 
         if (!omitMeasurement.get()) {

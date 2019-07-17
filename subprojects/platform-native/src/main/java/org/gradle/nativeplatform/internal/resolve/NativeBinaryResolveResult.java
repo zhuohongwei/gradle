@@ -16,11 +16,9 @@
 
 package org.gradle.nativeplatform.internal.resolve;
 
-import org.gradle.api.Transformer;
-import org.gradle.api.specs.Spec;
-import org.gradle.nativeplatform.NativeLibraryBinary;
-import org.gradle.nativeplatform.NativeDependencySet;
 import org.gradle.nativeplatform.NativeBinarySpec;
+import org.gradle.nativeplatform.NativeDependencySet;
+import org.gradle.nativeplatform.NativeLibraryBinary;
 import org.gradle.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -47,12 +45,7 @@ public class NativeBinaryResolveResult {
     }
 
     public List<NativeDependencySet> getAllResults() {
-        return CollectionUtils.collect(getAllResolutions(), new Transformer<NativeDependencySet, NativeBinaryRequirementResolveResult>() {
-            @Override
-            public NativeDependencySet transform(NativeBinaryRequirementResolveResult original) {
-                return original.getNativeDependencySet();
-            }
-        });
+        return CollectionUtils.collect(getAllResolutions(), original -> original.getNativeDependencySet());
     }
 
     public List<NativeLibraryBinary> getAllLibraryBinaries() {
@@ -66,11 +59,6 @@ public class NativeBinaryResolveResult {
     }
 
     public List<NativeBinaryRequirementResolveResult> getPendingResolutions() {
-        return CollectionUtils.filter(resolutions, new Spec<NativeBinaryRequirementResolveResult>() {
-            @Override
-            public boolean isSatisfiedBy(NativeBinaryRequirementResolveResult element) {
-                return !element.isComplete();
-            }
-        });
+        return CollectionUtils.filter(resolutions, element -> !element.isComplete());
     }
 }

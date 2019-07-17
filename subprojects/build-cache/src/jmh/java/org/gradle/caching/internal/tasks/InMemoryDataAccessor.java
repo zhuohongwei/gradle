@@ -37,12 +37,7 @@ public class InMemoryDataAccessor implements DataAccessor {
 
     @Override
     public DataTargetFactory createTargetFactory(final String root, Level level) {
-        return new DataTargetFactory() {
-            @Override
-            public DataTarget createDataTarget(String name) {
-                return new Target(root + "/" + name);
-            }
-        };
+        return name -> new Target(root + "/" + name);
     }
 
     private static class Source implements DataSource {

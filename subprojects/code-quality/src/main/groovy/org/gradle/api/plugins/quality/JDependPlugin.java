@@ -17,12 +17,9 @@ package org.gradle.api.plugins.quality;
 
 import com.google.common.util.concurrent.Callables;
 import org.apache.tools.ant.Main;
-import org.gradle.api.Action;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.plugins.quality.internal.AbstractCodeQualityPlugin;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.util.SingleMessageLogger;
 
@@ -81,14 +78,11 @@ public class JDependPlugin extends AbstractCodeQualityPlugin<JDepend> {
     }
 
     private void configureDefaultDependencies(Configuration configuration) {
-        configuration.defaultDependencies(new Action<DependencySet>() {
-            @Override
-            public void execute(DependencySet dependencies) {
-                dependencies.add(project.getDependencies().create("jdepend:jdepend:" + extension.getToolVersion()));
-                Class<Main> antMain = Main.class;
-                String antVersion = antMain.getPackage().getImplementationVersion();
-                dependencies.add(project.getDependencies().create("org.apache.ant:ant-jdepend:" + antVersion));
-            }
+        configuration.defaultDependencies(dependencies -> {
+            dependencies.add(project.getDependencies().create("jdepend:jdepend:" + extension.getToolVersion()));
+            Class<Main> antMain = Main.class;
+            String antVersion = antMain.getPackage().getImplementationVersion();
+            dependencies.add(project.getDependencies().create("org.apache.ant:ant-jdepend:" + antVersion));
         });
     }
 
@@ -97,24 +91,13 @@ public class JDependPlugin extends AbstractCodeQualityPlugin<JDepend> {
     }
 
     private void configureReportsConventionMapping(JDepend task, final String baseName) {
-        task.getReports().all(new Action<SingleFileReport>() {
-            @Override
-            public void execute(final SingleFileReport report) {
-                ConventionMapping reportMapping = conventionMappingOf(report);
-                reportMapping.map("enabled", new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return report.getName().equals("xml");
-                    }
-                });
-                reportMapping.map("destination", new Callable<File>() {
-                    @Override
-                    public File call() {
-                        final String fileSuffix = report.getName().equals("text") ? "txt" : report.getName();
-                        return new File(extension.getReportsDir(), baseName + "." + fileSuffix);
-                    }
-                });
-            }
+        task.getReports().all(report -> {
+            ConventionMapping reportMapping = conventionMappingOf(report);
+            reportMapping.map("enabled", (Callable<Boolean>) () -> report.getName().equals("xml"));
+            reportMapping.map("destination", (Callable<File>) () -> {
+                final String fileSuffix = report.getName().equals("text") ? "txt" : report.getName();
+                return new File(extension.getReportsDir(), baseName + "." + fileSuffix);
+            });
         });
     }
 

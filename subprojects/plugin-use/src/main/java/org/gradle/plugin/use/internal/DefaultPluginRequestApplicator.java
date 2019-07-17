@@ -17,9 +17,7 @@
 package org.gradle.plugin.use.internal;
 
 import com.google.common.collect.Iterables;
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -86,12 +84,9 @@ public class DefaultPluginRequestApplicator implements PluginRequestApplicator {
 
         final PluginResolver effectivePluginResolver = wrapInAlreadyInClasspathResolver(classLoaderScope);
 
-        List<Result> results = collect(requests, new Transformer<Result, PluginRequestInternal>() {
-            @Override
-            public Result transform(PluginRequestInternal request) {
-                PluginRequestInternal configuredRequest = pluginResolutionStrategy.applyTo(request);
-                return resolveToFoundResult(effectivePluginResolver, configuredRequest);
-            }
+        List<Result> results = collect(requests, request -> {
+            PluginRequestInternal configuredRequest = pluginResolutionStrategy.applyTo(request);
+            return resolveToFoundResult(effectivePluginResolver, configuredRequest);
         });
 
         // Could be different to ids in the requests as they may be unqualified
@@ -107,34 +102,29 @@ public class DefaultPluginRequestApplicator implements PluginRequestApplicator {
             final Set<String> repoUrls = newLinkedHashSet();
 
             for (final Result result : results) {
-                applyPlugin(result.request, result.found.getPluginId(), new Runnable() {
+                applyPlugin(result.request, result.found.getPluginId(), () -> result.found.execute(new PluginResolveContext() {
                     @Override
-                    public void run() {
-                        result.found.execute(new PluginResolveContext() {
-                            @Override
-                            public void addLegacy(PluginId pluginId, final String m2RepoUrl, Object dependencyNotation) {
-                                repoUrls.add(m2RepoUrl);
-                                addLegacy(pluginId, dependencyNotation);
-                            }
-
-                            @Override
-                            public void addLegacy(PluginId pluginId, Object dependencyNotation) {
-                                legacyActualPluginIds.put(result, pluginId);
-                                scriptHandler.addScriptClassPathDependency(dependencyNotation);
-                            }
-
-                            @Override
-                            public void add(PluginImplementation<?> plugin) {
-                                pluginImpls.put(result, plugin);
-                            }
-
-                            @Override
-                            public void addFromDifferentLoader(PluginImplementation<?> plugin) {
-                                pluginImplsFromOtherLoaders.put(result, plugin);
-                            }
-                        });
+                    public void addLegacy(PluginId pluginId, final String m2RepoUrl, Object dependencyNotation) {
+                        repoUrls.add(m2RepoUrl);
+                        addLegacy(pluginId, dependencyNotation);
                     }
-                });
+
+                    @Override
+                    public void addLegacy(PluginId pluginId, Object dependencyNotation) {
+                        legacyActualPluginIds.put(result, pluginId);
+                        scriptHandler.addScriptClassPathDependency(dependencyNotation);
+                    }
+
+                    @Override
+                    public void add(PluginImplementation<?> plugin) {
+                        pluginImpls.put(result, plugin);
+                    }
+
+                    @Override
+                    public void addFromDifferentLoader(PluginImplementation<?> plugin) {
+                        pluginImplsFromOtherLoaders.put(result, plugin);
+                    }
+                }));
             }
 
             addMissingMavenRepositories(repositories, repoUrls);
@@ -148,24 +138,18 @@ public class DefaultPluginRequestApplicator implements PluginRequestApplicator {
         for (final Map.Entry<Result, PluginId> entry : legacyActualPluginIds.entrySet()) {
             final PluginRequestInternal request = entry.getKey().request;
             final PluginId id = entry.getValue();
-            applyPlugin(request, id, new Runnable() {
-                @Override
-                public void run() {
-                    if (request.isApply()) {
-                        target.apply(id.toString());
-                    }
+            applyPlugin(request, id, () -> {
+                if (request.isApply()) {
+                    target.apply(id.toString());
                 }
             });
         }
 
         for (final Map.Entry<Result, PluginImplementation<?>> entry : Iterables.concat(pluginImpls.entrySet(), pluginImplsFromOtherLoaders.entrySet())) {
             final Result result = entry.getKey();
-            applyPlugin(result.request, result.found.getPluginId(), new Runnable() {
-                @Override
-                public void run() {
-                    if (result.request.isApply()) {
-                        target.apply(entry.getValue());
-                    }
+            applyPlugin(result.request, result.found.getPluginId(), () -> {
+                if (result.request.isApply()) {
+                    target.apply(entry.getValue());
                 }
             });
         }
@@ -188,12 +172,7 @@ public class DefaultPluginRequestApplicator implements PluginRequestApplicator {
     }
 
     private void maven(RepositoryHandler repositories, final String m2RepoUrl) {
-        repositories.maven(new Action<MavenArtifactRepository>() {
-            @Override
-            public void execute(MavenArtifactRepository mavenArtifactRepository) {
-                mavenArtifactRepository.setUrl(m2RepoUrl);
-            }
-        });
+        repositories.maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(m2RepoUrl));
     }
 
     private Set<String> existingMavenUrls(RepositoryHandler repositories) {

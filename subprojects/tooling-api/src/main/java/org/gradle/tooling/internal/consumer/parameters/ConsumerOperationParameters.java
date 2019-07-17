@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 @SuppressWarnings("deprecation")
 public class ConsumerOperationParameters implements BuildOperationParametersVersion1, BuildParametersVersion1, BuildParameters {
@@ -187,12 +186,7 @@ public class ConsumerOperationParameters implements BuildOperationParametersVers
 
         public void addProgressListener(ProgressListener listener, Set<OperationType> eventTypes) {
             for (OperationType type : eventTypes) {
-                List<ProgressListener> listeners = this.progressListeners.computeIfAbsent(type, new Function<OperationType, List<ProgressListener>>() {
-                    @Override
-                    public List<ProgressListener> apply(OperationType operationType) {
-                        return new ArrayList<ProgressListener>();
-                    }
-                });
+                List<ProgressListener> listeners = this.progressListeners.computeIfAbsent(type, operationType -> new ArrayList<ProgressListener>());
                 listeners.add(listener);
             }
         }

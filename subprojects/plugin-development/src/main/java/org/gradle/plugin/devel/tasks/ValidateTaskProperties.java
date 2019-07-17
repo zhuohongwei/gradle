@@ -17,7 +17,6 @@
 package org.gradle.plugin.devel.tasks;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -234,13 +233,7 @@ public class ValidateTaskProperties extends ConventionTask implements Verificati
     }
 
     private static List<InvalidUserDataException> toExceptionList(List<String> problemMessages) {
-        return Lists.transform(problemMessages, new Function<String, InvalidUserDataException>() {
-            @Override
-            @SuppressWarnings("NullableProblems")
-            public InvalidUserDataException apply(String problemMessage) {
-                return new InvalidUserDataException(problemMessage);
-            }
-        });
+        return Lists.transform(problemMessages, problemMessage -> new InvalidUserDataException(problemMessage));
     }
 
     /**

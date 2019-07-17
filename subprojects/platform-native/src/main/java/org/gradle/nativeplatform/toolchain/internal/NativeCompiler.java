@@ -59,14 +59,11 @@ public abstract class NativeCompiler<T extends NativeCompileSpec> extends Abstra
     @Override
     protected Action<BuildOperationQueue<CommandLineToolInvocation>> newInvocationAction(final T spec, final List<String> genericArgs) {
         final File objectDir = spec.getObjectFileDir();
-        return new Action<BuildOperationQueue<CommandLineToolInvocation>>() {
-            @Override
-            public void execute(BuildOperationQueue<CommandLineToolInvocation> buildQueue) {
-                buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
-                for (File sourceFile : spec.getSourceFiles()) {
-                    CommandLineToolInvocation perFileInvocation = createPerFileInvocation(genericArgs, sourceFile, objectDir, spec);
-                    buildQueue.add(perFileInvocation);
-                }
+        return buildQueue -> {
+            buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
+            for (File sourceFile : spec.getSourceFiles()) {
+                CommandLineToolInvocation perFileInvocation = createPerFileInvocation(genericArgs, sourceFile, objectDir, spec);
+                buildQueue.add(perFileInvocation);
             }
         };
     }

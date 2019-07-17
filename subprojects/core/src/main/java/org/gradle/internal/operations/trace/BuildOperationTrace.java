@@ -22,9 +22,7 @@ import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 import groovy.json.JsonOutput;
 import groovy.json.JsonSlurper;
-import org.gradle.BuildResult;
 import org.gradle.StartParameter;
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.internal.InternalAction;
 import org.gradle.api.invocation.Gradle;
@@ -382,24 +380,16 @@ public class BuildOperationTrace implements Stoppable {
         @Override
         public void projectsLoaded(@SuppressWarnings("NullableProblems") Gradle gradle) {
             if (gradle.getParent() == null) {
-                gradle.getRootProject().beforeEvaluate(new InternalAction<Project>() {
-                    @Override
-                    public void execute(Project project) {
-                        stopBuffering();
-                    }
-                });
+                gradle.getRootProject().beforeEvaluate((InternalAction<Project>) project -> stopBuffering());
             }
         }
 
         @Override
         public void buildStarted(@SuppressWarnings("NullableProblems") Gradle gradle) {
             if (gradle.getParent() == null) {
-                gradle.buildFinished(new Action<BuildResult>() {
-                    @Override
-                    public void execute(BuildResult buildResult) {
-                        // Build may have failed before getting to projectsLoaded
-                        stopBuffering();
-                    }
+                gradle.buildFinished(buildResult -> {
+                    // Build may have failed before getting to projectsLoaded
+                    stopBuffering();
                 });
             }
         }

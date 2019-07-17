@@ -56,12 +56,7 @@ public class Deleter {
 
     public boolean delete(Object... paths) {
         final Object[] innerPaths = paths;
-        return delete(new Action<DeleteSpec>() {
-            @Override
-            public void execute(DeleteSpec deleteSpec) {
-                deleteSpec.delete(innerPaths).setFollowSymlinks(false);
-            }
-        }).getDidWork();
+        return delete(deleteSpec -> deleteSpec.delete(innerPaths).setFollowSymlinks(false)).getDidWork();
     }
 
     public WorkResult delete(Action<? super DeleteSpec> action) {

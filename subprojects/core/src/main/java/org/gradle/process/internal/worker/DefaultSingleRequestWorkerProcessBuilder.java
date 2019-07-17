@@ -31,8 +31,6 @@ import org.gradle.process.internal.worker.request.ResponseProtocol;
 import org.gradle.process.internal.worker.request.WorkerAction;
 
 import java.io.File;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Set;
 
@@ -112,32 +110,29 @@ class DefaultSingleRequestWorkerProcessBuilder<PROTOCOL> implements SingleReques
 
     @Override
     public PROTOCOL build() {
-        return protocolType.cast(Proxy.newProxyInstance(protocolType.getClassLoader(), new Class[]{protocolType}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Receiver receiver = new Receiver(getBaseName());
-                try {
-                    WorkerProcess workerProcess = builder.build();
-                    workerProcess.start();
-                    ObjectConnection connection = workerProcess.getConnection();
-                    RequestProtocol requestProtocol = connection.addOutgoing(RequestProtocol.class);
-                    connection.addIncoming(ResponseProtocol.class, receiver);
-                    connection.useJavaSerializationForParameters(workerImplementation.getClassLoader());
-                    connection.useParameterSerializers(RequestSerializerRegistry.create(workerImplementation.getClassLoader(), argumentSerializers));
-                    connection.connect();
-                    // TODO(ew): inject BuildOperationIdentifierRegistry instead of static use
-                    requestProtocol.runThenStop(new Request(method.getName(), method.getParameterTypes(), args, CurrentBuildOperationRef.instance().get()));
-                    boolean hasResult = receiver.awaitNextResult();
-                    workerProcess.waitForStop();
-                    if (!hasResult) {
-                        // Reached the end of input, worker has exited without failing
-                        throw new IllegalStateException(String.format("No response was received from %s but the worker process has finished.", getBaseName()));
-                    }
-                } catch (Exception e) {
-                    throw WorkerProcessException.runFailed(getBaseName(), e);
+        return protocolType.cast(Proxy.newProxyInstance(protocolType.getClassLoader(), new Class[]{protocolType}, (proxy, method, args) -> {
+            Receiver receiver = new Receiver(getBaseName());
+            try {
+                WorkerProcess workerProcess = builder.build();
+                workerProcess.start();
+                ObjectConnection connection = workerProcess.getConnection();
+                RequestProtocol requestProtocol = connection.addOutgoing(RequestProtocol.class);
+                connection.addIncoming(ResponseProtocol.class, receiver);
+                connection.useJavaSerializationForParameters(workerImplementation.getClassLoader());
+                connection.useParameterSerializers(RequestSerializerRegistry.create(workerImplementation.getClassLoader(), argumentSerializers));
+                connection.connect();
+                // TODO(ew): inject BuildOperationIdentifierRegistry instead of static use
+                requestProtocol.runThenStop(new Request(method.getName(), method.getParameterTypes(), args, CurrentBuildOperationRef.instance().get()));
+                boolean hasResult = receiver.awaitNextResult();
+                workerProcess.waitForStop();
+                if (!hasResult) {
+                    // Reached the end of input, worker has exited without failing
+                    throw new IllegalStateException(String.format("No response was received from %s but the worker process has finished.", getBaseName()));
                 }
-                return receiver.getNextResult();
+            } catch (Exception e) {
+                throw WorkerProcessException.runFailed(getBaseName(), e);
             }
+            return receiver.getNextResult();
         }));
     }
 

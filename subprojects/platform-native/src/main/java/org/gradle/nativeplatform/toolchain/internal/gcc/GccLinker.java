@@ -43,12 +43,9 @@ class GccLinker extends AbstractCompiler<LinkerSpec> {
         final CommandLineToolInvocation invocation = newInvocation(
             "linking " + spec.getOutputFile().getName(), args, spec.getOperationLogger());
 
-        return new Action<BuildOperationQueue<CommandLineToolInvocation>>() {
-            @Override
-            public void execute(BuildOperationQueue<CommandLineToolInvocation> buildQueue) {
-                buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
-                buildQueue.add(invocation);
-            }
+        return buildQueue -> {
+            buildQueue.setLogLocation(spec.getOperationLogger().getLogLocation());
+            buildQueue.add(invocation);
         };
     }
 

@@ -29,7 +29,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.LocalState;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.internal.Factory;
 import org.gradle.internal.jacoco.JacocoAgentJar;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.util.DeprecationLogger;
@@ -336,12 +335,7 @@ public class JacocoTaskExtension {
         builder.append(RelativePathUtil.relativePath(task.getWorkingDir(), agent.getJar()));
         builder.append('=');
         argument.append("destfile", getDestinationFile());
-        argument.append("append", DeprecationLogger.whileDisabled(new Factory<Boolean>() {
-            @Override
-            public Boolean create() {
-                return isAppend();
-            }
-        }));
+        argument.append("append", DeprecationLogger.whileDisabled(() -> isAppend()));
         argument.append("includes", getIncludes());
         argument.append("excludes", getExcludes());
         argument.append("exclclassloader", getExcludeClassLoaders());

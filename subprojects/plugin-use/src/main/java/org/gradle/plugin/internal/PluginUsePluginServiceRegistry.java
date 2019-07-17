@@ -121,13 +121,10 @@ public class PluginUsePluginServiceRegistry extends AbstractPluginServiceRegistr
         private Factory<DependencyResolutionServices> makeDependencyResolutionServicesFactory(final BuildLayoutFactory buildLayoutFactory, final StartParameter startParameter,
                                                                                               final FileResolver fileResolver, final DependencyManagementServices dependencyManagementServices,
                                                                                               final DependencyMetaDataProvider dependencyMetaDataProvider) {
-            return new Factory<DependencyResolutionServices>() {
-                @Override
-                public DependencyResolutionServices create() {
-                    BuildLayout buildLayout = buildLayoutFactory.getLayoutFor(new BuildLayoutConfiguration(startParameter));
-                    FileResolver capableFileResolver = fileResolver.newResolver(buildLayout.getSettingsDir());
-                    return dependencyManagementServices.create(capableFileResolver, dependencyMetaDataProvider, makeUnknownProjectFinder(), RootScriptDomainObjectContext.INSTANCE);
-                }
+            return () -> {
+                BuildLayout buildLayout = buildLayoutFactory.getLayoutFor(new BuildLayoutConfiguration(startParameter));
+                FileResolver capableFileResolver = fileResolver.newResolver(buildLayout.getSettingsDir());
+                return dependencyManagementServices.create(capableFileResolver, dependencyMetaDataProvider, makeUnknownProjectFinder(), RootScriptDomainObjectContext.INSTANCE);
             };
         }
 

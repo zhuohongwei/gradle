@@ -27,18 +27,8 @@ import java.util.Map;
 public final class BuildOperationRecord {
 
     public static final Ordering<BuildOperationRecord> ORDERING = Ordering.natural()
-        .onResultOf(new Function<BuildOperationRecord, Comparable>() {
-            @Override
-            public Comparable apply(BuildOperationRecord input) {
-                return input.startTime;
-            }
-        })
-        .compound(Ordering.natural().onResultOf(new Function<BuildOperationRecord, Comparable>() {
-            @Override
-            public Comparable apply(BuildOperationRecord input) {
-                return input.id;
-            }
-        }));
+        .onResultOf((Function<BuildOperationRecord, Comparable>) input -> input.startTime)
+        .compound(Ordering.natural().onResultOf(input -> input.id));
 
     public final Long id;
     public final Long parentId;
@@ -111,21 +101,11 @@ public final class BuildOperationRecord {
         }
 
         if (!progress.isEmpty()) {
-            map.put("progress", Lists.transform(progress, new Function<Progress, Map<String, ?>>() {
-                @Override
-                public Map<String, ?> apply(Progress input) {
-                    return input.toSerializable();
-                }
-            }));
+            map.put("progress", Lists.transform(progress, (Function<Progress, Map<String, ?>>) input -> input.toSerializable()));
         }
 
         if (!children.isEmpty()) {
-            map.put("children", Lists.transform(children, new Function<BuildOperationRecord, Map<String, ?>>() {
-                @Override
-                public Map<String, ?> apply(BuildOperationRecord input) {
-                    return input.toSerializable();
-                }
-            }));
+            map.put("children", Lists.transform(children, (Function<BuildOperationRecord, Map<String, ?>>) input -> input.toSerializable()));
         }
 
         return map;

@@ -21,7 +21,6 @@ import org.apache.commons.io.output.TeeOutputStream;
 import org.gradle.BuildResult;
 import org.gradle.StartParameter;
 import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.execution.TaskExecutionGraphListener;
@@ -70,7 +69,6 @@ import org.gradle.process.internal.JavaExecHandleBuilder;
 import org.gradle.test.fixtures.file.TestDirectoryProvider;
 import org.gradle.test.fixtures.file.TestFile;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
-import org.gradle.tooling.internal.provider.serialization.ClassLoaderDetails;
 import org.gradle.tooling.internal.provider.serialization.DeserializeMap;
 import org.gradle.tooling.internal.provider.serialization.PayloadClassLoaderRegistry;
 import org.gradle.tooling.internal.provider.serialization.PayloadSerializer;
@@ -210,24 +208,21 @@ public class InProcessGradleExecuter extends DaemonGradleExecuter {
 
     @Override
     protected Factory<JavaExecHandleBuilder> getExecHandleFactory() {
-        return new Factory<JavaExecHandleBuilder>() {
-            @Override
-            public JavaExecHandleBuilder create() {
-                NativeServicesTestFixture.initialize();
-                GradleInvocation invocation = buildInvocation();
-                JavaExecHandleBuilder builder = TestFiles.execFactory().newJavaExec();
-                builder.workingDir(getWorkingDir());
-                builder.setExecutable(new File(getJavaHome(), "bin/java"));
-                builder.classpath(getExecHandleFactoryClasspath());
-                builder.jvmArgs(invocation.launcherJvmArgs);
-                builder.environment(invocation.environmentVars);
+        return () -> {
+            NativeServicesTestFixture.initialize();
+            GradleInvocation invocation = buildInvocation();
+            JavaExecHandleBuilder builder = TestFiles.execFactory().newJavaExec();
+            builder.workingDir(getWorkingDir());
+            builder.setExecutable(new File(getJavaHome(), "bin/java"));
+            builder.classpath(getExecHandleFactoryClasspath());
+            builder.jvmArgs(invocation.launcherJvmArgs);
+            builder.environment(invocation.environmentVars);
 
-                builder.setMain(Main.class.getName());
-                builder.args(invocation.args);
-                builder.setStandardInput(connectStdIn());
+            builder.setMain(Main.class.getName());
+            builder.args(invocation.args);
+            builder.setStandardInput(connectStdIn());
 
-                return builder;
-            }
+            return builder;
         };
     }
 
@@ -255,12 +250,7 @@ public class InProcessGradleExecuter extends DaemonGradleExecuter {
     }
 
     private File getClasspathManifestJarFor(Collection<File> classpath) {
-        String cpString = CollectionUtils.join(" ", CollectionUtils.collect(classpath, new Transformer<String, File>() {
-            @Override
-            public String transform(File file) {
-                return file.toURI().toString();
-            }
-        }));
+        String cpString = CollectionUtils.join(" ", CollectionUtils.collect(classpath, file -> file.toURI().toString()));
         File cpJar = new File(getDefaultTmpDir(), "daemon-classpath-manifest-" + HashUtil.createCompactMD5(cpString) + ".jar");
         if (!cpJar.isFile()) {
             Manifest manifest = new Manifest();
@@ -816,12 +806,9 @@ public class InProcessGradleExecuter extends DaemonGradleExecuter {
 
         @Override
         public DeserializeMap newDeserializeSession() {
-            return new DeserializeMap() {
-                @Override
-                public Class<?> resolveClass(ClassLoaderDetails classLoaderDetails, String className) throws ClassNotFoundException {
-                    // Assume everything is loaded into the current classloader
-                    return Class.forName(className);
-                }
+            return (classLoaderDetails, className) -> {
+                // Assume everything is loaded into the current classloader
+                return Class.forName(className);
             };
         }
     }

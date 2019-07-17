@@ -93,12 +93,7 @@ abstract class AbstractClassGenerator implements ClassGenerator {
     private final ImmutableSet<Class<? extends Annotation>> disabledAnnotations;
     private final ImmutableSet<Class<? extends Annotation>> enabledAnnotations;
     private final ImmutableMultimap<Class<? extends Annotation>, TypeToken<?>> allowedTypesForAnnotation;
-    private final Transformer<GeneratedClassImpl, Class<?>> generator = new Transformer<GeneratedClassImpl, Class<?>>() {
-        @Override
-        public GeneratedClassImpl transform(Class<?> type) {
-            return generateUnderLock(type);
-        }
-    };
+    private final Transformer<GeneratedClassImpl, Class<?>> generator = type -> generateUnderLock(type);
 
     protected AbstractClassGenerator(Collection<? extends InjectAnnotationHandler> allKnownAnnotations, Collection<Class<? extends Annotation>> enabledAnnotations, CrossBuildInMemoryCache<Class<?>, GeneratedClassImpl> generatedClassesCache) {
         this.generatedClasses = generatedClassesCache;

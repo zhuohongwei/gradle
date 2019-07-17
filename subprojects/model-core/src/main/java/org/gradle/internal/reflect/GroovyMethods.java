@@ -17,12 +17,10 @@
 package org.gradle.internal.reflect;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import groovy.lang.GroovyObject;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
@@ -36,12 +34,7 @@ public class GroovyMethods {
             Iterables.concat(
                 Arrays.asList(Object.class.getMethods()),
                 Arrays.asList(GroovyObject.class.getMethods())
-            ), new Function<Method, Equivalence.Wrapper<Method>>() {
-                @Override
-                public Equivalence.Wrapper<Method> apply(@Nullable Method input) {
-                    return SIGNATURE_EQUIVALENCE.wrap(input);
-                }
-            }
+            ), input -> SIGNATURE_EQUIVALENCE.wrap(input)
         )
     );
 

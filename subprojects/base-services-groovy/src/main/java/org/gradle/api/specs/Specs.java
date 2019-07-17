@@ -29,23 +29,13 @@ import java.util.List;
  */
 public class Specs {
 
-    public static final Spec<Object> SATISFIES_ALL = new Spec<Object>() {
-        @Override
-        public boolean isSatisfiedBy(Object element) {
-            return true;
-        }
-    };
+    public static final Spec<Object> SATISFIES_ALL = element -> true;
 
     public static <T> Spec<T> satisfyAll() {
         return Cast.uncheckedCast(SATISFIES_ALL);
     }
 
-    public static final Spec<Object> SATISFIES_NONE = new Spec<Object>() {
-        @Override
-        public boolean isSatisfiedBy(Object element) {
-            return false;
-        }
-    };
+    public static final Spec<Object> SATISFIES_NONE = element -> false;
 
     public static <T> Spec<T> satisfyNone() {
         return Cast.uncheckedCast(SATISFIES_NONE);

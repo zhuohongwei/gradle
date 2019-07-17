@@ -21,9 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Properties;
@@ -60,22 +57,19 @@ public class OriginMetadataFactory {
     }
 
     public OriginWriter createWriter(CacheableEntity entry, long elapsedTime) {
-        return new OriginWriter() {
-            @Override
-            public void execute(OutputStream outputStream) throws IOException {
-                Properties properties = new Properties();
-                properties.setProperty(BUILD_INVOCATION_ID_KEY, currentBuildInvocationId);
-                properties.setProperty(TYPE_KEY, entry.getClass().getCanonicalName());
-                properties.setProperty(IDENTITY_KEY, entry.getIdentity());
-                properties.setProperty(CREATION_TIME_KEY, Long.toString(System.currentTimeMillis()));
-                properties.setProperty(EXECUTION_TIME_KEY, Long.toString(elapsedTime));
-                properties.setProperty(ROOT_PATH_KEY, rootDir.getAbsolutePath());
-                properties.setProperty(OPERATING_SYSTEM_KEY, operatingSystem);
-                properties.setProperty(HOST_NAME_KEY, determineHostName());
-                properties.setProperty(USER_NAME_KEY, userName);
-                additionalProperties.accept(properties);
-                properties.store(outputStream, "Generated origin information");
-            }
+        return outputStream -> {
+            Properties properties = new Properties();
+            properties.setProperty(BUILD_INVOCATION_ID_KEY, currentBuildInvocationId);
+            properties.setProperty(TYPE_KEY, entry.getClass().getCanonicalName());
+            properties.setProperty(IDENTITY_KEY, entry.getIdentity());
+            properties.setProperty(CREATION_TIME_KEY, Long.toString(System.currentTimeMillis()));
+            properties.setProperty(EXECUTION_TIME_KEY, Long.toString(elapsedTime));
+            properties.setProperty(ROOT_PATH_KEY, rootDir.getAbsolutePath());
+            properties.setProperty(OPERATING_SYSTEM_KEY, operatingSystem);
+            properties.setProperty(HOST_NAME_KEY, determineHostName());
+            properties.setProperty(USER_NAME_KEY, userName);
+            additionalProperties.accept(properties);
+            properties.store(outputStream, "Generated origin information");
         };
     }
 
@@ -91,25 +85,22 @@ public class OriginMetadataFactory {
     }
 
     public OriginReader createReader(CacheableEntity entry) {
-        return new OriginReader() {
-            @Override
-            public OriginMetadata execute(InputStream inputStream) throws IOException {
-                Properties properties = new Properties();
-                properties.load(inputStream);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Origin for {}: {}", entry.getDisplayName(), properties);
-                }
-
-                String originBuildInvocationId = properties.getProperty(BUILD_INVOCATION_ID_KEY);
-                String executionTimeAsString = properties.getProperty(EXECUTION_TIME_KEY);
-
-                if (originBuildInvocationId == null || executionTimeAsString == null) {
-                    throw new IllegalStateException("Cached result format error, corrupted origin metadata.");
-                }
-
-                long originalExecutionTime = Long.parseLong(executionTimeAsString);
-                return new OriginMetadata(originBuildInvocationId, originalExecutionTime);
+        return inputStream -> {
+            Properties properties = new Properties();
+            properties.load(inputStream);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Origin for {}: {}", entry.getDisplayName(), properties);
             }
+
+            String originBuildInvocationId = properties.getProperty(BUILD_INVOCATION_ID_KEY);
+            String executionTimeAsString = properties.getProperty(EXECUTION_TIME_KEY);
+
+            if (originBuildInvocationId == null || executionTimeAsString == null) {
+                throw new IllegalStateException("Cached result format error, corrupted origin metadata.");
+            }
+
+            long originalExecutionTime = Long.parseLong(executionTimeAsString);
+            return new OriginMetadata(originBuildInvocationId, originalExecutionTime);
         };
     }
 }

@@ -51,16 +51,13 @@ import java.util.Map;
 public class IvyDescriptorFileGenerator {
     private static final String IVY_FILE_ENCODING = "UTF-8";
     private static final String IVY_DATE_PATTERN = "yyyyMMddHHmmss";
-    private static final Action<XmlProvider> ADD_GRADLE_METADATA_MARKER = new Action<XmlProvider>() {
-        @Override
-        public void execute(XmlProvider xmlProvider) {
-            StringBuilder builder = xmlProvider.asString();
-            int idx = builder.indexOf("<info");
-            builder.insert(idx, xmlComments(MetaDataParser.GRADLE_METADATA_MARKER_COMMENT_LINES)
-                + "  "
-                + xmlComment(MetaDataParser.GRADLE_METADATA_MARKER)
-                + "  ");
-        }
+    private static final Action<XmlProvider> ADD_GRADLE_METADATA_MARKER = xmlProvider -> {
+        StringBuilder builder = xmlProvider.asString();
+        int idx = builder.indexOf("<info");
+        builder.insert(idx, xmlComments(MetaDataParser.GRADLE_METADATA_MARKER_COMMENT_LINES)
+            + "  "
+            + xmlComment(MetaDataParser.GRADLE_METADATA_MARKER)
+            + "  ");
     };
 
     private final SimpleDateFormat ivyDateFormat = new SimpleDateFormat(IVY_DATE_PATTERN);
@@ -142,14 +139,11 @@ public class IvyDescriptorFileGenerator {
     }
 
     public IvyDescriptorFileGenerator writeTo(File file) {
-        xmlTransformer.transform(file, IVY_FILE_ENCODING, new Action<Writer>() {
-            @Override
-            public void execute(Writer writer) {
-                try {
-                    writeDescriptor(writer);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
+        xmlTransformer.transform(file, IVY_FILE_ENCODING, writer -> {
+            try {
+                writeDescriptor(writer);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         });
         return this;

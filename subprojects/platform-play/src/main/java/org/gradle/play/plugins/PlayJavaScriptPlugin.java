@@ -16,7 +16,11 @@
 
 package org.gradle.play.plugins;
 
-import org.gradle.api.*;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Incubating;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.base.internal.SourceTransformTaskConfig;
@@ -63,12 +67,9 @@ public class PlayJavaScriptPlugin implements Plugin<Project> {
 
         @Finalize
         void createJavascriptSourceSets(@Each PlayApplicationSpec playComponent) {
-            playComponent.getSources().create("javaScript", JavaScriptSourceSet.class, new Action<JavaScriptSourceSet>() {
-                @Override
-                public void execute(JavaScriptSourceSet javaScriptSourceSet) {
-                    javaScriptSourceSet.getSource().srcDir("app/assets");
-                    javaScriptSourceSet.getSource().include("**/*.js");
-                }
+            playComponent.getSources().create("javaScript", JavaScriptSourceSet.class, javaScriptSourceSet -> {
+                javaScriptSourceSet.getSource().srcDir("app/assets");
+                javaScriptSourceSet.getSource().include("**/*.js");
             });
         }
 

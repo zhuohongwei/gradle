@@ -65,45 +65,25 @@ public class DefaultObjectConfigurationAction implements ObjectConfigurationActi
 
     @Override
     public ObjectConfigurationAction from(final Object script) {
-        actions.add(new Runnable() {
-            @Override
-            public void run() {
-                applyScript(script);
-            }
-        });
+        actions.add(() -> applyScript(script));
         return this;
     }
 
     @Override
     public ObjectConfigurationAction plugin(final Class<? extends Plugin> pluginClass) {
-        actions.add(new Runnable() {
-            @Override
-            public void run() {
-                applyPlugin(pluginClass);
-            }
-        });
+        actions.add(() -> applyPlugin(pluginClass));
         return this;
     }
 
     @Override
     public ObjectConfigurationAction plugin(final String pluginId) {
-        actions.add(new Runnable() {
-            @Override
-            public void run() {
-                applyType(pluginId);
-            }
-        });
+        actions.add(() -> applyType(pluginId));
         return this;
     }
 
     @Override
     public ObjectConfigurationAction type(final Class<?> pluginClass) {
-        actions.add(new Runnable() {
-            @Override
-            public void run() {
-                applyType(pluginClass);
-            }
-        });
+        actions.add(() -> applyType(pluginClass));
         return this;
     }
 

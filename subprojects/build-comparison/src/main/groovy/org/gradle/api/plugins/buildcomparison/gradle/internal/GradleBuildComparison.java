@@ -16,9 +16,7 @@
 
 package org.gradle.api.plugins.buildcomparison.gradle.internal;
 
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.Transformer;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.buildcomparison.compare.internal.BuildComparator;
@@ -51,7 +49,6 @@ import org.gradle.util.GFileUtils;
 import org.gradle.util.GradleVersion;
 import org.gradle.util.RelativePathUtil;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.Writer;
 import java.nio.charset.Charset;
@@ -197,12 +194,7 @@ public class GradleBuildComparison {
         fileStore.moveFileStore(new File(reportDir, FILES_DIR_NAME));
 
         final Charset encoding = Charset.defaultCharset();
-        IoActions.writeTextFile(new File(reportDir, HTML_REPORT_FILE_NAME), encoding.name(), new Action<BufferedWriter>() {
-            @Override
-            public void execute(BufferedWriter writer) {
-                createResultRenderer(encoding, reportDir, hostAttributes).render(result, writer);
-            }
-        });
+        IoActions.writeTextFile(new File(reportDir, HTML_REPORT_FILE_NAME), encoding.name(), writer -> createResultRenderer(encoding, reportDir, hostAttributes).render(result, writer));
     }
 
     private BuildComparisonResultRenderer<Writer> createResultRenderer(Charset encoding, final File reportDir, final Map<String, String> hostAttributes) {
@@ -213,12 +205,7 @@ public class GradleBuildComparison {
                 sourceBuildExecuter,
                 targetBuildExecuter,
                 hostAttributes,
-                new Transformer<String, File>() {
-                    @Override
-                    public String transform(File original) {
-                        return RelativePathUtil.relativePath(reportDir, original);
-                    }
-                }
+            original -> RelativePathUtil.relativePath(reportDir, original)
         );
     }
 

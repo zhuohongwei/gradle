@@ -28,12 +28,7 @@ public class DefaultDirectoryFileTreeFactory implements DirectoryFileTreeFactory
     private final FileSystem fileSystem;
 
     public DefaultDirectoryFileTreeFactory() {
-        this.patternSetFactory = new Factory<PatternSet>() {
-            @Override
-            public PatternSet create() {
-                return new PatternSet();
-            }
-        };
+        this.patternSetFactory = () -> new PatternSet();
         this.fileSystem = FileSystems.getDefault();
     }
 

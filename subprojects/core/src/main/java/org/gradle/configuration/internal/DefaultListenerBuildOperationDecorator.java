@@ -148,12 +148,7 @@ public class DefaultListenerBuildOperationDecorator implements ListenerBuildOper
             buildOperationExecutor.run(new Operation(applicationId, registrationPoint) {
                 @Override
                 public void run(final BuildOperationContext context) {
-                    userCodeApplicationContext.reapply(applicationId, new Runnable() {
-                        @Override
-                        public void run() {
-                            delegate.execute(arg);
-                        }
-                    });
+                    userCodeApplicationContext.reapply(applicationId, () -> delegate.execute(arg));
                     context.setResult(RESULT);
                 }
             });
@@ -177,14 +172,11 @@ public class DefaultListenerBuildOperationDecorator implements ListenerBuildOper
             buildOperationExecutor.run(new Operation(applicationId, registrationPoint) {
                 @Override
                 public void run(final BuildOperationContext context) {
-                    userCodeApplicationContext.reapply(applicationId, new Runnable() {
-                        @Override
-                        public void run() {
-                            int numClosureArgs = delegate.getMaximumNumberOfParameters();
-                            Object[] finalArgs = numClosureArgs < args.length ? Arrays.copyOf(args, numClosureArgs) : args;
-                            delegate.call(finalArgs);
-                            context.setResult(RESULT);
-                        }
+                    userCodeApplicationContext.reapply(applicationId, () -> {
+                        int numClosureArgs = delegate.getMaximumNumberOfParameters();
+                        Object[] finalArgs = numClosureArgs < args.length ? Arrays.copyOf(args, numClosureArgs) : args;
+                        delegate.call(finalArgs);
+                        context.setResult(RESULT);
                     });
                 }
             });
@@ -237,17 +229,14 @@ public class DefaultListenerBuildOperationDecorator implements ListenerBuildOper
                 buildOperationExecutor.run(new Operation(applicationId, registrationPoint) {
                     @Override
                     public void run(final BuildOperationContext context) {
-                        userCodeApplicationContext.reapply(applicationId, new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    method.invoke(delegate, args);
-                                    context.setResult(RESULT);
-                                } catch (InvocationTargetException e) {
-                                    throw UncheckedException.unwrapAndRethrow(e);
-                                } catch (Exception e) {
-                                    throw UncheckedException.throwAsUncheckedException(e);
-                                }
+                        userCodeApplicationContext.reapply(applicationId, () -> {
+                            try {
+                                method.invoke(delegate, args);
+                                context.setResult(RESULT);
+                            } catch (InvocationTargetException e) {
+                                throw UncheckedException.unwrapAndRethrow(e);
+                            } catch (Exception e) {
+                                throw UncheckedException.throwAsUncheckedException(e);
                             }
                         });
                     }

@@ -42,12 +42,7 @@ public class DefaultMultiProcessSafePersistentIndexedCache<K, V> implements Mult
     public V get(final K key) {
         final BTreePersistentIndexedCache<K, V> cache = getCache();
         try {
-            return fileAccess.readFile(new Factory<V>() {
-                @Override
-                public V create() {
-                    return cache.get(key);
-                }
-            });
+            return fileAccess.readFile((Factory<V>) () -> cache.get(key));
         } catch (FileIntegrityViolationException e) {
             return null;
         }
@@ -68,12 +63,7 @@ public class DefaultMultiProcessSafePersistentIndexedCache<K, V> implements Mult
         final BTreePersistentIndexedCache<K, V> cache = getCache();
         // Use writeFile because the cache can internally recover from datafile
         // corruption, so we don't care at this level if it's corrupt
-        fileAccess.writeFile(new Runnable() {
-            @Override
-            public void run() {
-                cache.put(key, value);
-            }
-        });
+        fileAccess.writeFile(() -> cache.put(key, value));
     }
 
     @Override
@@ -81,12 +71,7 @@ public class DefaultMultiProcessSafePersistentIndexedCache<K, V> implements Mult
         final BTreePersistentIndexedCache<K, V> cache = getCache();
         // Use writeFile because the cache can internally recover from datafile
         // corruption, so we don't care at this level if it's corrupt
-        fileAccess.writeFile(new Runnable() {
-            @Override
-            public void run() {
-                cache.remove(key);
-            }
-        });
+        fileAccess.writeFile(() -> cache.remove(key));
     }
 
     @Override
@@ -97,12 +82,7 @@ public class DefaultMultiProcessSafePersistentIndexedCache<K, V> implements Mult
     public void finishWork() {
         if (cache != null) {
             try {
-                fileAccess.writeFile(new Runnable() {
-                    @Override
-                    public void run() {
-                        cache.close();
-                    }
-                });
+                fileAccess.writeFile(() -> cache.close());
             } finally {
                 cache = null;
             }
@@ -117,12 +97,7 @@ public class DefaultMultiProcessSafePersistentIndexedCache<K, V> implements Mult
         if (cache == null) {
             // Use writeFile because the cache can internally recover from datafile
             // corruption, so we don't care at this level if it's corrupt
-            fileAccess.writeFile(new Runnable() {
-                @Override
-                public void run() {
-                    cache = factory.create();
-                }
-            });
+            fileAccess.writeFile(() -> cache = factory.create());
         }
         return cache;
     }

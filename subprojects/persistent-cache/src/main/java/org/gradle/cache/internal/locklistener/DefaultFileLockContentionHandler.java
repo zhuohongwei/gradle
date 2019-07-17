@@ -282,15 +282,12 @@ public class DefaultFileLockContentionHandler implements FileLockContentionHandl
 
         @Override
         public void run() {
-            action.execute(new FileLockReleasedSignal() {
-                @Override
-                public void trigger() {
-                    Set<SocketAddress> requesters = consumeRequesters();
-                    if (requesters == null) {
-                        throw new IllegalStateException("trigger() has already been called and must at most be called once");
-                    }
-                    communicator.confirmLockRelease(requesters, lockId);
+            action.execute(() -> {
+                Set<SocketAddress> requesters = consumeRequesters();
+                if (requesters == null) {
+                    throw new IllegalStateException("trigger() has already been called and must at most be called once");
                 }
+                communicator.confirmLockRelease(requesters, lockId);
             });
         }
 

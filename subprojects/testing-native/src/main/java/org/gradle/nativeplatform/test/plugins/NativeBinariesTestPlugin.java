@@ -17,7 +17,6 @@
 package org.gradle.nativeplatform.test.plugins;
 
 import com.google.common.collect.Lists;
-import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -25,7 +24,6 @@ import org.gradle.api.Task;
 import org.gradle.api.internal.resolve.ProjectModelResolver;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.internal.service.ServiceRegistry;
-import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.nativeplatform.DependentSourceSet;
 import org.gradle.model.Defaults;
 import org.gradle.model.Each;
@@ -79,18 +77,8 @@ public class NativeBinariesTestPlugin implements Plugin<Project> {
         @Finalize
         void attachTestedBinarySourcesToTestBinaries(@Each final NativeTestSuiteBinarySpecInternal testSuiteBinary) {
             final BinarySpec testedBinary = testSuiteBinary.getTestedBinary();
-            testSuiteBinary.getInputs().withType(DependentSourceSet.class).all(new Action<DependentSourceSet>() {
-                @Override
-                public void execute(DependentSourceSet testSource) {
-                    testSource.lib(testedBinary.getInputs());
-                }
-            });
-            testedBinary.getInputs().all(new Action<LanguageSourceSet>() {
-                @Override
-                public void execute(LanguageSourceSet testedSource) {
-                    testSuiteBinary.getInputs().add(testedSource);
-                }
-            });
+            testSuiteBinary.getInputs().withType(DependentSourceSet.class).all(testSource -> testSource.lib(testedBinary.getInputs()));
+            testedBinary.getInputs().all(testedSource -> testSuiteBinary.getInputs().add(testedSource));
         }
 
         @Finalize
@@ -117,22 +105,19 @@ public class NativeBinariesTestPlugin implements Plugin<Project> {
             final ModelMap<NativeBinarySpecInternal> nativeBinaries = binaries.withType(NativeBinarySpecInternal.class);
             for (final NativeBinarySpecInternal binary : nativeBinaries) {
                 Task buildDependents = tasks.get(binary.getNamingScheme().getTaskName("buildDependents"));
-                Callable<Iterable<Task>> deferredDependencies = new Callable<Iterable<Task>>() {
-                    @Override
-                    public Iterable<Task> call() {
-                        List<Task> dependencies = Lists.newArrayList();
-                        DependentBinariesResolvedResult result = dependentsResolver.resolve(binary).getRoot();
-                        for (DependentBinariesResolvedResult dependent : result.getChildren()) {
-                            if (dependent.isBuildable() && dependent.isTestSuite()) {
-                                ModelRegistry modelRegistry = projectModelResolver.resolveProjectModel(dependent.getId().getProjectPath());
-                                ModelMap<NativeBinarySpecInternal> projectBinaries = modelRegistry.realize("binaries", ModelTypes.modelMap(NativeBinarySpecInternal.class));
-                                NativeBinarySpecInternal dependentBinary = projectBinaries.get(dependent.getProjectScopedName());
-                                NativeTestSuiteBinarySpecInternal testSuiteBinary = (NativeTestSuiteBinarySpecInternal) dependentBinary;
-                                dependencies.add(testSuiteBinary.getCheckTask());
-                            }
+                Callable<Iterable<Task>> deferredDependencies = () -> {
+                    List<Task> dependencies = Lists.newArrayList();
+                    DependentBinariesResolvedResult result = dependentsResolver.resolve(binary).getRoot();
+                    for (DependentBinariesResolvedResult dependent : result.getChildren()) {
+                        if (dependent.isBuildable() && dependent.isTestSuite()) {
+                            ModelRegistry modelRegistry = projectModelResolver.resolveProjectModel(dependent.getId().getProjectPath());
+                            ModelMap<NativeBinarySpecInternal> projectBinaries = modelRegistry.realize("binaries", ModelTypes.modelMap(NativeBinarySpecInternal.class));
+                            NativeBinarySpecInternal dependentBinary = projectBinaries.get(dependent.getProjectScopedName());
+                            NativeTestSuiteBinarySpecInternal testSuiteBinary = (NativeTestSuiteBinarySpecInternal) dependentBinary;
+                            dependencies.add(testSuiteBinary.getCheckTask());
                         }
-                        return dependencies;
                     }
+                    return dependencies;
                 };
                 buildDependents.dependsOn(deferredDependencies);
             }

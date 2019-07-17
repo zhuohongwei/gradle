@@ -51,15 +51,12 @@ public class DefaultXcodeProject implements XcodeProject {
     }
 
     public Callable<List<TaskDependency>> getTaskDependencies() {
-        return new Callable<List<TaskDependency>>() {
-            @Override
-            public List<TaskDependency> call() throws Exception {
-                List<TaskDependency> result = Lists.newArrayList();
-                for (XcodeTarget xcodeTarget : getTargets()) {
-                    result.addAll(xcodeTarget.getTaskDependencies());
-                }
-                return result;
+        return () -> {
+            List<TaskDependency> result = Lists.newArrayList();
+            for (XcodeTarget xcodeTarget : getTargets()) {
+                result.addAll(xcodeTarget.getTaskDependencies());
             }
+            return result;
         };
     }
 

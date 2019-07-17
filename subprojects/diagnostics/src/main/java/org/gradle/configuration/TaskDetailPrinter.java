@@ -25,7 +25,6 @@ import org.gradle.api.Transformer;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.internal.tasks.options.OptionDescriptor;
 import org.gradle.api.internal.tasks.options.OptionReader;
-import org.gradle.api.specs.Spec;
 import org.gradle.execution.TaskSelector;
 import org.gradle.internal.logging.text.LinePrefixingStyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutput;
@@ -67,12 +66,7 @@ public class TaskDetailPrinter {
 
         final Set<Class> classes = classListMap.keySet();
         boolean multipleClasses = classes.size() > 1;
-        final List<Class> sortedClasses = sort(classes, new Comparator<Class>() {
-            @Override
-            public int compare(Class o1, Class o2) {
-                return o1.getSimpleName().compareTo(o2.getSimpleName());
-            }
-        });
+        final List<Class> sortedClasses = sort(classes, (o1, o2) -> o1.getSimpleName().compareTo(o2.getSimpleName()));
         for (Class clazz : sortedClasses) {
             output.println();
             final List<Task> tasksByType = classListMap.get(clazz);
@@ -110,21 +104,11 @@ public class TaskDetailPrinter {
                 return o1.getSimpleName().compareTo(o2.getSimpleName());
             }
         });
-        taskTypes.addAll(collect(tasks, new Transformer<Class, Task>() {
-            @Override
-            public Class transform(Task original) {
-                return getDeclaredTaskType(original);
-            }
-        }));
+        taskTypes.addAll(collect(tasks, original -> getDeclaredTaskType(original)));
 
         ListMultimap<Class, Task> tasksGroupedByType = ArrayListMultimap.create();
         for (final Class taskType : taskTypes) {
-            tasksGroupedByType.putAll(taskType, filter(tasks, new Spec<Task>() {
-                @Override
-                public boolean isSatisfiedBy(Task element) {
-                    return getDeclaredTaskType(element).equals(taskType);
-                }
-            }));
+            tasksGroupedByType.putAll(taskType, filter(tasks, element -> getDeclaredTaskType(element).equals(taskType)));
         }
         return tasksGroupedByType;
     }
@@ -139,21 +123,11 @@ public class TaskDetailPrinter {
     }
 
     private void printTaskDescription(StyledTextOutput output, List<Task> tasks) {
-        printTaskAttribute(output, "Description", tasks, new Transformer<String, Task>() {
-            @Override
-            public String transform(Task task) {
-                return task.getDescription();
-            }
-        });
+        printTaskAttribute(output, "Description", tasks, task -> task.getDescription());
     }
 
     private void printTaskGroup(StyledTextOutput output, List<Task> tasks) {
-        printTaskAttribute(output, "Group", tasks, new Transformer<String, Task>() {
-            @Override
-            public String transform(Task task) {
-                return task.getGroup();
-            }
-        });
+        printTaskAttribute(output, "Group", tasks, task -> task.getGroup());
     }
 
     private void printTaskAttribute(StyledTextOutput output, String attributeHeader, List<Task> tasks, Transformer<String, Task> transformer) {

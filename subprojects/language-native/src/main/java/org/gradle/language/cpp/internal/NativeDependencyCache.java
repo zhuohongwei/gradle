@@ -20,7 +20,6 @@ import org.gradle.cache.CacheRepository;
 import org.gradle.cache.FileLockManager;
 import org.gradle.cache.PersistentCache;
 import org.gradle.cache.internal.filelock.LockOptionsBuilder;
-import org.gradle.internal.Factory;
 import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.nativeplatform.internal.modulemap.ModuleMap;
@@ -41,16 +40,13 @@ public class NativeDependencyCache implements Stoppable {
 
     public File getModuleMapFile(final ModuleMap moduleMap) {
         final String hash = HashUtil.compactStringFor(moduleMap.getHashCode().toByteArray());
-        return cache.useCache(new Factory<File>() {
-            @Override
-            public File create() {
-                File dir = new File(cache.getBaseDir(), "maps/" + hash + "/" + moduleMap.getModuleName());
-                File moduleMapFile = new File(dir, "module.modulemap");
-                if (!moduleMapFile.isFile()) {
-                    generateFile(moduleMapFile, moduleMap.getModuleName(), moduleMap.getPublicHeaderPaths());
-                }
-                return moduleMapFile;
+        return cache.useCache(() -> {
+            File dir = new File(cache.getBaseDir(), "maps/" + hash + "/" + moduleMap.getModuleName());
+            File moduleMapFile = new File(dir, "module.modulemap");
+            if (!moduleMapFile.isFile()) {
+                generateFile(moduleMapFile, moduleMap.getModuleName(), moduleMap.getPublicHeaderPaths());
             }
+            return moduleMapFile;
         });
     }
 

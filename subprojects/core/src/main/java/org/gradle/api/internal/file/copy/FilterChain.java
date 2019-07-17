@@ -78,31 +78,23 @@ public class FilterChain implements Transformer<InputStream, InputStream> {
     }
 
     public void add(final Class<? extends FilterReader> filterType, final Map<String, ?> properties) {
-        transformers.add(new Transformer<Reader, Reader>() {
-            @Override
-            public Reader transform(Reader original) {
-                try {
-                    Constructor<? extends FilterReader> constructor = filterType.getConstructor(Reader.class);
-                    FilterReader result = constructor.newInstance(original);
+        transformers.add(original -> {
+            try {
+                Constructor<? extends FilterReader> constructor = filterType.getConstructor(Reader.class);
+                FilterReader result = constructor.newInstance(original);
 
-                    if (properties != null) {
-                        ConfigureUtil.configureByMap(properties, result);
-                    }
-                    return result;
-                } catch (Throwable th) {
-                    throw new InvalidUserDataException("Error - Invalid filter specification for " + filterType.getName(), th);
+                if (properties != null) {
+                    ConfigureUtil.configureByMap(properties, result);
                 }
+                return result;
+            } catch (Throwable th) {
+                throw new InvalidUserDataException("Error - Invalid filter specification for " + filterType.getName(), th);
             }
         });
     }
 
     public void add(final Transformer<String, String> transformer) {
-        transformers.add(new Transformer<Reader, Reader>() {
-            @Override
-            public Reader transform(Reader reader) {
-                return new LineFilter(reader, transformer);
-            }
-        });
+        transformers.add(reader -> new LineFilter(reader, transformer));
     }
 
     public void add(final Closure closure) {
@@ -110,25 +102,22 @@ public class FilterChain implements Transformer<InputStream, InputStream> {
     }
 
     public void expand(final Map<String, ?> properties) {
-        transformers.add(new Transformer<Reader, Reader>() {
-            @Override
-            public Reader transform(Reader original) {
+        transformers.add(original -> {
+            try {
+                Template template;
                 try {
-                    Template template;
-                    try {
-                        SimpleTemplateEngine engine = new SimpleTemplateEngine();
-                        template = engine.createTemplate(original);
-                    } finally {
-                        original.close();
-                    }
-                    StringWriter writer = new StringWriter();
-                    template.make(properties).writeTo(writer);
-                    return new StringReader(writer.toString());
-                } catch (MissingPropertyException e) {
-                    throw new GradleException(String.format("Missing property (%s) for Groovy template expansion. Defined keys %s.", e.getProperty(), properties.keySet()), e);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    SimpleTemplateEngine engine = new SimpleTemplateEngine();
+                    template = engine.createTemplate(original);
+                } finally {
+                    original.close();
                 }
+                StringWriter writer = new StringWriter();
+                template.make(properties).writeTo(writer);
+                return new StringReader(writer.toString());
+            } catch (MissingPropertyException e) {
+                throw new GradleException(String.format("Missing property (%s) for Groovy template expansion. Defined keys %s.", e.getProperty(), properties.keySet()), e);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         });
     }

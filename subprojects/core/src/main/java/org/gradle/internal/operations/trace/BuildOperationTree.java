@@ -16,7 +16,6 @@
 
 package org.gradle.internal.operations.trace;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -45,12 +44,7 @@ public class BuildOperationTree {
     }
 
     static List<Map<String, ?>> serialize(List<BuildOperationRecord> roots) {
-        return Lists.transform(roots, new Function<BuildOperationRecord, Map<String, ?>>() {
-            @Override
-            public Map<String, ?> apply(BuildOperationRecord input) {
-                return input.toSerializable();
-            }
-        });
+        return Lists.transform(roots, input -> input.toSerializable());
     }
 
 }

@@ -18,7 +18,6 @@ package org.gradle.build.docs.dsl.source;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.file.RegularFileProperty;
@@ -109,25 +108,22 @@ public class GenerateDefaultImportsTask extends DefaultTask {
         final Set<String> packages = new LinkedHashSet<>();
         final Multimap<String, String> simpleNames = LinkedHashMultimap.create();
 
-        repository.each(new Action<ClassMetaData>() {
-            @Override
-            public void execute(ClassMetaData classMetaData) {
-                if (classMetaData.getOuterClassName() != null) {
-                    // Ignore inner classes
-                    return;
-                }
-                String packageName = classMetaData.getPackageName();
-                if (excludedPackages.contains(packageName)) {
-                    return;
-                }
-                for (String excludedPrefix : excludedPrefixes) {
-                    if (packageName.startsWith(excludedPrefix)) {
-                        return;
-                    }
-                }
-                simpleNames.put(classMetaData.getSimpleName(), classMetaData.getClassName());
-                packages.add(packageName);
+        repository.each(classMetaData -> {
+            if (classMetaData.getOuterClassName() != null) {
+                // Ignore inner classes
+                return;
             }
+            String packageName = classMetaData.getPackageName();
+            if (excludedPackages.contains(packageName)) {
+                return;
+            }
+            for (String excludedPrefix : excludedPrefixes) {
+                if (packageName.startsWith(excludedPrefix)) {
+                    return;
+                }
+            }
+            simpleNames.put(classMetaData.getSimpleName(), classMetaData.getClassName());
+            packages.add(packageName);
         });
 
         try (PrintWriter mappingFileWriter = new PrintWriter(new FileWriter(getMappingDestFile().getAsFile().get()))) {

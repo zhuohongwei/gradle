@@ -16,7 +16,6 @@
 
 package org.gradle.play.internal.run;
 
-import org.gradle.api.Transformer;
 import org.gradle.util.CollectionUtils;
 
 import java.io.File;
@@ -40,12 +39,9 @@ public class PlayRunAdapterV23X extends DefaultVersionedPlayRunAdapter {
 
     @Override
     protected ClassLoader createAssetsClassLoader(File assetsJar, Iterable<File> assetsDirs, ClassLoader classLoader) {
-        List<AssetsClassLoader.AssetDir> assetDirs = CollectionUtils.collect(assetsDirs, new Transformer<AssetsClassLoader.AssetDir, File>() {
-            @Override
-            public AssetsClassLoader.AssetDir transform(File file) {
-                // TODO: This prefix shouldn't be hardcoded
-                return new AssetsClassLoader.AssetDir("public", file);
-            }
+        List<AssetsClassLoader.AssetDir> assetDirs = CollectionUtils.collect(assetsDirs, file -> {
+            // TODO: This prefix shouldn't be hardcoded
+            return new AssetsClassLoader.AssetDir("public", file);
         });
         return new AssetsClassLoader(classLoader, assetDirs);
     }

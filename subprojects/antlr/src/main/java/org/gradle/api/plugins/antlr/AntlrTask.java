@@ -16,7 +16,6 @@
 
 package org.gradle.api.plugins.antlr;
 
-import org.gradle.api.Action;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
@@ -36,7 +35,6 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceTask;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs;
-import org.gradle.api.tasks.incremental.InputFileDetails;
 import org.gradle.internal.MutableBoolean;
 import org.gradle.process.internal.worker.WorkerProcessFactory;
 import org.gradle.util.GFileUtils;
@@ -193,25 +191,19 @@ public class AntlrTask extends SourceTask {
         final Set<File> sourceFiles = getSource().getFiles();
         final MutableBoolean cleanRebuild = new MutableBoolean();
         inputs.outOfDate(
-            new Action<InputFileDetails>() {
-                @Override
-                public void execute(InputFileDetails details) {
-                    File input = details.getFile();
-                    if (sourceFiles.contains(input)) {
-                        grammarFiles.add(input);
-                    } else {
-                        // classpath change?
-                        cleanRebuild.set(true);
-                    }
+            details -> {
+                File input = details.getFile();
+                if (sourceFiles.contains(input)) {
+                    grammarFiles.add(input);
+                } else {
+                    // classpath change?
+                    cleanRebuild.set(true);
                 }
             }
         );
-        inputs.removed(new Action<InputFileDetails>() {
-            @Override
-            public void execute(InputFileDetails details) {
-                if (details.isRemoved()) {
-                    cleanRebuild.set(true);
-                }
+        inputs.removed(details -> {
+            if (details.isRemoved()) {
+                cleanRebuild.set(true);
             }
         });
         if (cleanRebuild.get()) {

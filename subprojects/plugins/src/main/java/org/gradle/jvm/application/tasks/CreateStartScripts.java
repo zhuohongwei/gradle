@@ -16,7 +16,6 @@
 
 package org.gradle.jvm.application.tasks;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
@@ -314,12 +313,7 @@ public class CreateStartScripts extends ConventionTask {
         if (classpathNullable == null) {
             return Collections.emptyList();
         }
-        return Lists.newArrayList(Iterables.transform(classpathNullable.getFiles(), new Function<File, String>() {
-            @Override
-            public String apply(File input) {
-                return "lib/" + input.getName();
-            }
-        }));
+        return Lists.newArrayList(Iterables.transform(classpathNullable.getFiles(), input -> "lib/" + input.getName()));
     }
 
 }

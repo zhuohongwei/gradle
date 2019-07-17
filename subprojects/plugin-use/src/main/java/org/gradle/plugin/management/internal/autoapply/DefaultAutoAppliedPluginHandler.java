@@ -15,7 +15,6 @@
  */
 package org.gradle.plugin.management.internal.autoapply;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -75,12 +74,7 @@ public class DefaultAutoAppliedPluginHandler implements AutoAppliedPluginHandler
     }
 
     private List<PluginRequestInternal> filterAlreadyAppliedOrRequested(PluginRequests autoAppliedPlugins, final PluginRequests initialRequests, final PluginContainer pluginContainer, final ScriptHandler scriptHandler) {
-        return Lists.newArrayList(Iterables.filter(autoAppliedPlugins, new Predicate<PluginRequestInternal>() {
-            @Override
-            public boolean apply(PluginRequestInternal autoAppliedPlugin) {
-                return !isAlreadyAppliedOrRequested(autoAppliedPlugin, initialRequests, pluginContainer, scriptHandler);
-            }
-        }));
+        return Lists.newArrayList(Iterables.filter(autoAppliedPlugins, autoAppliedPlugin -> !isAlreadyAppliedOrRequested(autoAppliedPlugin, initialRequests, pluginContainer, scriptHandler)));
     }
 
     private static boolean isAlreadyAppliedOrRequested(PluginRequestInternal autoAppliedPlugin, PluginRequests requests, PluginContainer pluginContainer, ScriptHandler scriptHandler) {

@@ -31,7 +31,6 @@ import org.gradle.language.base.internal.registry.LanguageTransformContainer;
 import org.gradle.platform.base.internal.BinarySpecInternal;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -100,13 +99,10 @@ public class BinarySourceTransformations {
 
     private Iterable<LanguageTransform<?, ?>> prioritize(LanguageTransformContainer languageTransforms) {
         List<LanguageTransform<?, ?>> prioritized = Lists.newArrayList(languageTransforms);
-        Collections.sort(prioritized, new Comparator<LanguageTransform<?, ?>>() {
-            @Override
-            public int compare(LanguageTransform<?, ?> o1, LanguageTransform<?, ?> o2) {
-                boolean joint1 = o1.getTransformTask() instanceof JointCompileTaskConfig;
-                boolean joint2 = o2.getTransformTask() instanceof JointCompileTaskConfig;
-                return Booleans.trueFirst().compare(joint1, joint2);
-            }
+        Collections.sort(prioritized, (o1, o2) -> {
+            boolean joint1 = o1.getTransformTask() instanceof JointCompileTaskConfig;
+            boolean joint2 = o2.getTransformTask() instanceof JointCompileTaskConfig;
+            return Booleans.trueFirst().compare(joint1, joint2);
         });
         return prioritized;
     }

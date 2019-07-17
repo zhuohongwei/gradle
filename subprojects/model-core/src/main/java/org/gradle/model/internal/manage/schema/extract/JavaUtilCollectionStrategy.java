@@ -17,9 +17,7 @@
 package org.gradle.model.internal.manage.schema.extract;
 
 import com.google.common.collect.ImmutableList;
-import org.gradle.api.Action;
 import org.gradle.model.internal.manage.schema.ModelProperty;
-import org.gradle.model.internal.manage.schema.ModelSchema;
 import org.gradle.model.internal.manage.schema.ScalarCollectionSchema;
 import org.gradle.model.internal.manage.schema.UnmanagedImplStructSchema;
 import org.gradle.model.internal.method.WeaklyTypeReferencingMethod;
@@ -58,12 +56,7 @@ public class JavaUtilCollectionStrategy implements ModelSchemaExtractionStrategy
 
     private <T, E> ScalarCollectionSchema<T, E> createSchema(ModelSchemaExtractionContext<T> extractionContext, ModelType<T> type, ModelType<E> elementType) {
         final ScalarCollectionSchema<T, E> schema = new ScalarCollectionSchema<T, E>(type, elementType);
-        extractionContext.child(elementType, "element type", new Action<ModelSchema<E>>() {
-            @Override
-            public void execute(ModelSchema<E> elementTypeSchema) {
-                schema.setElementTypeSchema(elementTypeSchema);
-            }
-        });
+        extractionContext.child(elementType, "element type", elementTypeSchema -> schema.setElementTypeSchema(elementTypeSchema));
         return schema;
     }
 }

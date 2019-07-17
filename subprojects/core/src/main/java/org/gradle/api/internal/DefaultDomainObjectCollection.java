@@ -54,12 +54,7 @@ public class DefaultDomainObjectCollection<T> extends AbstractCollection<T> impl
         this.type = type;
         this.store = store;
         this.eventRegister = eventRegister;
-        this.store.onRealize(new Action<T>() {
-            @Override
-            public void execute(T value) {
-                doAddRealized(value, eventRegister.getAddActions());
-            }
-        });
+        this.store.onRealize(value -> doAddRealized(value, eventRegister.getAddActions()));
     }
 
     protected DefaultDomainObjectCollection(DefaultDomainObjectCollection<? super T> collection, CollectionFilter<T> filter) {

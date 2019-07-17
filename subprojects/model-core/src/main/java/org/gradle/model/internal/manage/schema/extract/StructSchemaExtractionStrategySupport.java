@@ -20,7 +20,6 @@ import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -63,12 +62,7 @@ public abstract class StructSchemaExtractionStrategySupport implements ModelSche
         List<ModelSchemaAspect> aspects = aspectExtractor.extract(extractionContext, extractedProperties);
 
         Set<WeaklyTypeReferencingMethod<?, ?>> nonPropertyMethods = getNonPropertyMethods(candidateMethods, extractedProperties);
-        Iterable<ModelProperty<?>> properties = Iterables.transform(extractedProperties, new Function<ModelPropertyExtractionResult<?>, ModelProperty<?>>() {
-            @Override
-            public ModelProperty<?> apply(ModelPropertyExtractionResult<?> propertyResult) {
-                return propertyResult.getProperty();
-            }
-        });
+        Iterable<ModelProperty<?>> properties = Iterables.transform(extractedProperties, propertyResult -> propertyResult.getProperty());
 
         ModelSchema<R> schema = createSchema(extractionContext, properties, nonPropertyMethods, aspects);
         for (ModelPropertyExtractionResult<?> propertyResult : extractedProperties) {
@@ -79,23 +73,13 @@ public abstract class StructSchemaExtractionStrategySupport implements ModelSche
     }
 
     private Set<WeaklyTypeReferencingMethod<?, ?>> getNonPropertyMethods(CandidateMethods candidateMethods, List<ModelPropertyExtractionResult<?>> extractedProperties) {
-        Set<Method> nonPropertyMethods = Sets.newLinkedHashSet(Iterables.transform(candidateMethods.allMethods().keySet(), new Function<Wrapper<Method>, Method>() {
-            @Override
-            public Method apply(Wrapper<Method> method) {
-                return method.get();
-            }
-        }));
+        Set<Method> nonPropertyMethods = Sets.newLinkedHashSet(Iterables.transform(candidateMethods.allMethods().keySet(), method -> method.get()));
         for (ModelPropertyExtractionResult<?> extractedProperty : extractedProperties) {
             for (PropertyAccessorExtractionContext accessor : extractedProperty.getAccessors()) {
                 nonPropertyMethods.removeAll(accessor.getDeclaringMethods());
             }
         }
-        return Sets.newLinkedHashSet(Iterables.transform(nonPropertyMethods, new Function<Method, WeaklyTypeReferencingMethod<?, ?>>() {
-            @Override
-            public WeaklyTypeReferencingMethod<?, ?> apply(Method method) {
-                return WeaklyTypeReferencingMethod.of(method);
-            }
-        }));
+        return Sets.newLinkedHashSet(Iterables.transform(nonPropertyMethods, (Function<Method, WeaklyTypeReferencingMethod<?, ?>>) method -> WeaklyTypeReferencingMethod.of(method)));
     }
 
     protected abstract boolean isTarget(ModelType<?> type);
@@ -116,12 +100,7 @@ public abstract class StructSchemaExtractionStrategySupport implements ModelSche
                 propertyContext.addAccessor(new PropertyAccessorExtractionContext(propertyAccessorType, methodsWithEqualSignature));
             }
         }
-        return Collections2.filter(propertiesMap.values(), new Predicate<ModelPropertyExtractionContext>() {
-            @Override
-            public boolean apply(ModelPropertyExtractionContext property) {
-                return property.isReadable();
-            }
-        });
+        return Collections2.filter(propertiesMap.values(), property -> property.isReadable());
     }
 
     private static List<ModelPropertyExtractionResult<?>> extractProperties(Iterable<ModelPropertyExtractionContext> properties) {
@@ -169,12 +148,7 @@ public abstract class StructSchemaExtractionStrategySupport implements ModelSche
     }
 
     private static <P> Action<? super ModelSchema<P>> attachSchema(final ModelProperty<P> property) {
-        return new Action<ModelSchema<P>>() {
-            @Override
-            public void execute(ModelSchema<P> propertySchema) {
-                property.setSchema(propertySchema);
-            }
-        };
+        return (Action<ModelSchema<P>>) propertySchema -> property.setSchema(propertySchema);
     }
 
     private static String propertyDescription(ModelSchemaExtractionContext<?> parentContext, ModelProperty<?> property) {

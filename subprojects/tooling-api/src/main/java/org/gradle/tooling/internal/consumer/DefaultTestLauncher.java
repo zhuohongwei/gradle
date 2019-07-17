@@ -16,8 +16,8 @@
 
 package org.gradle.tooling.internal.consumer;
 
-import com.google.common.collect.*;
-import org.gradle.api.Transformer;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.gradle.tooling.ResultHandler;
 import org.gradle.tooling.TestExecutionException;
 import org.gradle.tooling.TestLauncher;
@@ -29,7 +29,11 @@ import org.gradle.tooling.internal.consumer.parameters.ConsumerOperationParamete
 import org.gradle.tooling.internal.protocol.test.InternalJvmTestRequest;
 import org.gradle.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class DefaultTestLauncher extends AbstractLongRunningOperation<DefaultTestLauncher> implements TestLauncher {
 
@@ -70,12 +74,7 @@ public class DefaultTestLauncher extends AbstractLongRunningOperation<DefaultTes
 
     @Override
     public TestLauncher withJvmTestClasses(Iterable<String> testClasses) {
-        List<InternalJvmTestRequest> newRequests = CollectionUtils.collect(testClasses, new Transformer<InternalJvmTestRequest, String>() {
-            @Override
-            public InternalJvmTestRequest transform(String testClass) {
-                return new DefaultInternalJvmTestRequest(testClass, null);
-            }
-        });
+        List<InternalJvmTestRequest> newRequests = CollectionUtils.collect(testClasses, testClass -> new DefaultInternalJvmTestRequest(testClass, null));
         internalJvmTestRequests.addAll(newRequests);
         testClassNames.addAll(CollectionUtils.toList(testClasses));
         return this;
@@ -89,12 +88,7 @@ public class DefaultTestLauncher extends AbstractLongRunningOperation<DefaultTes
 
     @Override
     public TestLauncher withJvmTestMethods(final String testClass, Iterable<String> methods) {
-        List<InternalJvmTestRequest> newRequests = CollectionUtils.collect(methods, new Transformer<InternalJvmTestRequest, String>() {
-            @Override
-            public InternalJvmTestRequest transform(String methodName) {
-                return new DefaultInternalJvmTestRequest(testClass, methodName);
-            }
-        });
+        List<InternalJvmTestRequest> newRequests = CollectionUtils.collect(methods, methodName -> new DefaultInternalJvmTestRequest(testClass, methodName));
         this.internalJvmTestRequests.addAll(newRequests);
         this.testClassNames.add(testClass);
         return this;
@@ -130,12 +124,7 @@ public class DefaultTestLauncher extends AbstractLongRunningOperation<DefaultTes
 
     private class ResultHandlerAdapter extends org.gradle.tooling.internal.consumer.ResultHandlerAdapter<Void> {
         public ResultHandlerAdapter(ResultHandler<? super Void> handler) {
-            super(handler, new ExceptionTransformer(new Transformer<String, Throwable>() {
-                @Override
-                public String transform(Throwable throwable) {
-                    return String.format("Could not execute tests using %s.", connection.getDisplayName());
-                }
-            }));
+            super(handler, new ExceptionTransformer(throwable -> String.format("Could not execute tests using %s.", connection.getDisplayName())));
         }
     }
 }

@@ -82,20 +82,17 @@ public class DefaultCachedClasspathTransformer implements CachedClasspathTransfo
 
     @Override
     public Collection<URL> transform(Collection<URL> urls) {
-        return CollectionUtils.collect(urls, new Transformer<URL, URL>() {
-            @Override
-            public URL transform(URL url) {
-                if (url.getProtocol().equals("file")) {
-                    try {
-                        return jarFileTransformer.transform(new File(url.toURI())).toURI().toURL();
-                    } catch (URISyntaxException e) {
-                        throw UncheckedException.throwAsUncheckedException(e);
-                    } catch (MalformedURLException e) {
-                        throw UncheckedException.throwAsUncheckedException(e);
-                    }
-                } else {
-                    return url;
+        return CollectionUtils.collect(urls, url -> {
+            if (url.getProtocol().equals("file")) {
+                try {
+                    return jarFileTransformer.transform(new File(url.toURI())).toURI().toURL();
+                } catch (URISyntaxException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
+                } catch (MalformedURLException e) {
+                    throw UncheckedException.throwAsUncheckedException(e);
                 }
+            } else {
+                return url;
             }
         });
     }
@@ -129,12 +126,7 @@ public class DefaultCachedClasspathTransformer implements CachedClasspathTransfo
         @Override
         public File transform(final File original) {
             if (shouldUseFromCache(original)) {
-                return cache.useCache(new Factory<File>() {
-                    @Override
-                    public File create() {
-                        return jarCache.getCachedJar(original, baseDir);
-                    }
-                });
+                return cache.useCache(() -> jarCache.getCachedJar(original, baseDir));
             }
             return original;
         }

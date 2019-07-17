@@ -131,12 +131,7 @@ public class ClasspathFingerprintingStrategy extends AbstractFingerprintingStrat
     private class ClasspathContentFingerprintingVisitor implements FileSystemSnapshotVisitor {
         private final ClasspathFingerprintVisitor delegate;
         private final RelativePathSegmentsTracker relativePathSegmentsTracker = new RelativePathSegmentsTracker();
-        private final Factory<String[]> relativePathFactory = new Factory<String[]>() {
-            @Override
-            public String[] create() {
-                return Iterables.toArray(relativePathSegmentsTracker.getRelativePath(), String.class);
-            }
-        };
+        private final Factory<String[]> relativePathFactory = () -> Iterables.toArray(relativePathSegmentsTracker.getRelativePath(), String.class);
 
         public ClasspathContentFingerprintingVisitor(ClasspathFingerprintVisitor delegate) {
             this.delegate = delegate;

@@ -23,11 +23,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.function.Supplier;
 import java.util.zip.ZipFile;
 
 class FileZipInput implements ZipInput {
@@ -72,14 +70,11 @@ class FileZipInput implements ZipInput {
                     return endOfData();
                 }
                 final java.util.zip.ZipEntry zipEntry = entries.nextElement();
-                return new JdkZipEntry(zipEntry, new Supplier<InputStream>() {
-                    @Override
-                    public InputStream get() {
-                        try {
-                            return file.getInputStream(zipEntry);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
+                return new JdkZipEntry(zipEntry, () -> {
+                    try {
+                        return file.getInputStream(zipEntry);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
                     }
                 });
             }

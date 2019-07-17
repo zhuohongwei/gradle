@@ -19,7 +19,6 @@ import org.apache.tools.zip.UnixStat;
 import org.apache.tools.zip.Zip64RequiredException;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileCopyDetails;
@@ -81,11 +80,8 @@ public class ZipCopyAction implements CopyAction {
         }
 
         try {
-            IoActions.withResource(zipOutStr, new Action<ZipOutputStream>() {
-                @Override
-                public void execute(ZipOutputStream outputStream) {
-                    stream.process(new StreamAction(outputStream, encoding));
-                }
+            IoActions.withResource(zipOutStr, outputStream -> {
+                stream.process(new StreamAction(outputStream, encoding));
             });
         } catch (UncheckedIOException e) {
             if (e.getCause() instanceof Zip64RequiredException) {

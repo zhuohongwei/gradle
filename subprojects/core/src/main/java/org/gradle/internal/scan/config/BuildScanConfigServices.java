@@ -44,23 +44,20 @@ public class BuildScanConfigServices {
     }
 
     Factory<BuildScanConfig.Attributes> createBuildScanConfigAttributes(final GradleInternal gradle) {
-        return new Factory<BuildScanConfig.Attributes>() {
-            @Override
-            public BuildScanConfig.Attributes create() {
-                VcsResolver vcsResolver = gradle.getServices().get(VcsResolver.class);
-                final boolean hasRules = vcsResolver.hasRules();
-                return new BuildScanConfig.Attributes() {
-                    @Override
-                    public boolean isRootProjectHasVcsMappings() {
-                        return hasRules;
-                    }
+        return () -> {
+            VcsResolver vcsResolver = gradle.getServices().get(VcsResolver.class);
+            final boolean hasRules = vcsResolver.hasRules();
+            return new BuildScanConfig.Attributes() {
+                @Override
+                public boolean isRootProjectHasVcsMappings() {
+                    return hasRules;
+                }
 
-                    @Override
-                    public boolean isTaskExecutingBuild() {
-                        return gradle.getBuildType() == GradleInternal.BuildType.TASKS;
-                    }
-                };
-            }
+                @Override
+                public boolean isTaskExecutingBuild() {
+                    return gradle.getBuildType() == GradleInternal.BuildType.TASKS;
+                }
+            };
         };
     }
 

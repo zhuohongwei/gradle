@@ -17,7 +17,6 @@
 package org.gradle.plugins.javascript.envjs.http.simple;
 
 import org.gradle.api.UncheckedIOException;
-import org.gradle.internal.concurrent.Stoppable;
 import org.gradle.plugins.javascript.envjs.http.HttpFileServer;
 import org.gradle.plugins.javascript.envjs.http.HttpFileServerFactory;
 import org.gradle.plugins.javascript.envjs.http.simple.internal.SimpleFileServerContainer;
@@ -44,14 +43,11 @@ public class SimpleHttpFileServerFactory implements HttpFileServerFactory {
             InetSocketAddress address = new InetSocketAddress(port);
             InetSocketAddress usedAddress = (InetSocketAddress)connection.connect(address);
 
-            return new SimpleHttpFileServer(contentRoot, usedAddress.getPort(), new Stoppable() {
-                @Override
-                public void stop() {
-                    try {
-                        server.stop();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+            return new SimpleHttpFileServer(contentRoot, usedAddress.getPort(), () -> {
+                try {
+                    server.stop();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             });
         } catch (IOException e) {

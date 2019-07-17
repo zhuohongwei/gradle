@@ -52,17 +52,14 @@ class WatchServicePoller {
 
     private List<FileWatcherEvent> handleWatchKey(WatchKey watchKey) {
         final Path watchedPath = (Path) watchKey.watchable();
-        Transformer<FileWatcherEvent, WatchEvent<?>> watchEventTransformer = new Transformer<FileWatcherEvent, WatchEvent<?>>() {
-            @Override
-            public FileWatcherEvent transform(WatchEvent<?> event) {
-                WatchEvent.Kind kind = event.kind();
-                File file = null;
-                if (kind.type() == Path.class) {
-                    WatchEvent<Path> ev = Cast.uncheckedCast(event);
-                    file = watchedPath.resolve(ev.context()).toFile();
-                }
-                return toEvent(kind, file);
+        Transformer<FileWatcherEvent, WatchEvent<?>> watchEventTransformer = event -> {
+            WatchEvent.Kind kind = event.kind();
+            File file = null;
+            if (kind.type() == Path.class) {
+                WatchEvent<Path> ev = Cast.uncheckedCast(event);
+                file = watchedPath.resolve(ev.context()).toFile();
             }
+            return toEvent(kind, file);
         };
 
         List<WatchEvent<?>> watchEvents = watchKey.pollEvents();

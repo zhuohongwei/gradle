@@ -19,10 +19,24 @@ package org.gradle.model.internal.manage.schema.extract;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
-import org.gradle.internal.BiAction;
 import org.gradle.internal.Cast;
 import org.gradle.model.ModelSet;
-import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.AddProjectionsAction;
+import org.gradle.model.internal.core.ChildNodeInitializerStrategy;
+import org.gradle.model.internal.core.DefaultModelViewState;
+import org.gradle.model.internal.core.DirectNodeInputUsingModelAction;
+import org.gradle.model.internal.core.InstanceModelView;
+import org.gradle.model.internal.core.ModelAction;
+import org.gradle.model.internal.core.ModelActionRole;
+import org.gradle.model.internal.core.ModelReference;
+import org.gradle.model.internal.core.ModelView;
+import org.gradle.model.internal.core.ModelViewFactory;
+import org.gradle.model.internal.core.MutableModelNode;
+import org.gradle.model.internal.core.NodeBackedModelSet;
+import org.gradle.model.internal.core.NodeInitializer;
+import org.gradle.model.internal.core.NodeInitializerContext;
+import org.gradle.model.internal.core.NodeInitializerRegistry;
+import org.gradle.model.internal.core.TypedModelProjection;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.inspect.ManagedChildNodeCreatorStrategy;
 import org.gradle.model.internal.manage.schema.CollectionSchema;
@@ -100,12 +114,9 @@ public class ModelSetNodeInitializerExtractionStrategy extends CollectionNodeIni
                 ))
                 .put(ModelActionRole.Create, DirectNodeInputUsingModelAction.of(subject, descriptor,
                     ModelReference.of(NodeInitializerRegistry.class),
-                    new BiAction<MutableModelNode, NodeInitializerRegistry>() {
-                        @Override
-                        public void execute(MutableModelNode modelNode, NodeInitializerRegistry nodeInitializerRegistry) {
-                            ChildNodeInitializerStrategy<T> childStrategy = new ManagedChildNodeCreatorStrategy<T>(nodeInitializerRegistry);
-                            modelNode.setPrivateData(ChildNodeInitializerStrategy.class, childStrategy);
-                        }
+                    (modelNode, nodeInitializerRegistry) -> {
+                        ChildNodeInitializerStrategy<T> childStrategy = new ManagedChildNodeCreatorStrategy<T>(nodeInitializerRegistry);
+                        modelNode.setPrivateData(ChildNodeInitializerStrategy.class, childStrategy);
                     }
                 ))
                 .build();

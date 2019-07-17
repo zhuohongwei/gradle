@@ -35,23 +35,17 @@ public class FreeListBlockStore implements BlockStore {
 
     @Override
     public void open(final Runnable initAction, final Factory factory) {
-        Runnable freeListInitAction = new Runnable() {
-            @Override
-            public void run() {
-                freeListBlock = new FreeListBlock();
-                store.write(freeListBlock);
-                store.flush();
-                initAction.run();
-            }
+        Runnable freeListInitAction = () -> {
+            freeListBlock = new FreeListBlock();
+            store.write(freeListBlock);
+            store.flush();
+            initAction.run();
         };
-        Factory freeListFactory = new Factory() {
-            @Override
-            public Object create(Class<? extends BlockPayload> type) {
-                if (type == FreeListBlock.class) {
-                    return new FreeListBlock();
-                }
-                return factory.create(type);
+        Factory freeListFactory = type -> {
+            if (type == FreeListBlock.class) {
+                return new FreeListBlock();
             }
+            return factory.create(type);
         };
 
         store.open(freeListInitAction, freeListFactory);

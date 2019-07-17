@@ -84,12 +84,7 @@ public class PluginDependencyResolutionServices implements DependencyResolutionS
         return getDependencyResolutionServices().getAttributesSchema();
     }
     public PluginRepositoryHandlerProvider getPluginRepositoryHandlerProvider() {
-        return new PluginRepositoryHandlerProvider() {
-            @Override
-            public RepositoryHandler getPluginRepositoryHandler() {
-                return getResolveRepositoryHandler();
-            }
-        };
+        return () -> getResolveRepositoryHandler();
     }
 
     @Override
@@ -98,16 +93,13 @@ public class PluginDependencyResolutionServices implements DependencyResolutionS
     }
 
     public PluginRepositoriesProvider getPluginRepositoriesProvider() {
-        return new PluginRepositoriesProvider() {
-            @Override
-            public List<ArtifactRepository> getPluginRepositories() {
-                RepositoryHandler repositories = getResolveRepositoryHandler();
-                List<ArtifactRepository> list = new ArrayList<ArtifactRepository>(repositories.size());
-                for (ArtifactRepository repository : repositories) {
-                    list.add(new PluginArtifactRepository(repository));
-                }
-                return list;
+        return () -> {
+            RepositoryHandler repositories = getResolveRepositoryHandler();
+            List<ArtifactRepository> list = new ArrayList<ArtifactRepository>(repositories.size());
+            for (ArtifactRepository repository : repositories) {
+                list.add(new PluginArtifactRepository(repository));
             }
+            return list;
         };
     }
 

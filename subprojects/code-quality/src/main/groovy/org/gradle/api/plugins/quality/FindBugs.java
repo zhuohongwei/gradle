@@ -16,7 +16,6 @@
 package org.gradle.api.plugins.quality;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
@@ -233,12 +232,7 @@ public class FindBugs extends SourceTask implements VerificationTask, Reporting<
     @TaskAction
     public void run() throws IOException, InterruptedException {
         new FindBugsClasspathValidator(JavaVersion.current()).validateClasspath(
-            Iterables.transform(getFindbugsClasspath(), new Function<File, String>() {
-                @Override
-                public String apply(File input) {
-                    return input.getName();
-                }
-            }));
+            Iterables.transform(getFindbugsClasspath(), input -> input.getName()));
         FindBugsSpec spec = generateSpec();
         FindBugsWorkerManager manager = new FindBugsWorkerManager();
 

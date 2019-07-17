@@ -16,13 +16,14 @@
 
 package org.gradle.model.internal.core;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import org.gradle.api.Action;
 import org.gradle.model.ModelViewClosedException;
 import org.gradle.model.ReadOnlyModelViewException;
 import org.gradle.model.WriteOnlyModelViewException;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.type.ModelType;
+
+import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
 public class DefaultModelViewState implements ModelViewState {
@@ -47,12 +48,7 @@ public class DefaultModelViewState implements ModelViewState {
     }
 
     public Action<Object> closer() {
-        return new Action<Object>() {
-            @Override
-            public void execute(Object o) {
-                close();
-            }
-        };
+        return o -> close();
     }
 
     @Override

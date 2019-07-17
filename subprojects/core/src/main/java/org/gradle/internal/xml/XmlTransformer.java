@@ -77,21 +77,11 @@ public class XmlTransformer implements Transformer<String, String> {
     }
 
     public void transform(File destination, final String encoding, final Action<? super Writer> generator) {
-        IoActions.writeTextFile(destination, encoding, new Action<Writer>() {
-            @Override
-            public void execute(Writer writer) {
-                transform(writer, encoding, generator);
-            }
-        });
+        IoActions.writeTextFile(destination, encoding, (Action<Writer>) writer -> transform(writer, encoding, generator));
     }
 
     public void transform(File destination, final Action<? super Writer> generator) {
-        IoActions.writeTextFile(destination, new Action<Writer>() {
-            @Override
-            public void execute(Writer writer) {
-                transform(writer, generator);
-            }
-        });
+        IoActions.writeTextFile(destination, (Action<Writer>) writer -> transform(writer, generator));
     }
 
     public void transform(Writer destination, Action<? super Writer> generator) {

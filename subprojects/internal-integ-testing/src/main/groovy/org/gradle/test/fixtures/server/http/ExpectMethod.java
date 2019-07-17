@@ -111,12 +111,7 @@ class ExpectMethod implements ResourceHandler, BuildableExpectedRequest, Resourc
         if (content.length < 1024) {
             throw new IllegalArgumentException("Content is too short.");
         }
-        SendPartialResponseThenBlock block = new SendPartialResponseThenBlock(lock, timeoutMs, new WaitPrecondition() {
-            @Override
-            public void assertCanWait() throws IllegalStateException {
-                ExpectMethod.this.precondition.assertCanWait();
-            }
-        }, content);
+        SendPartialResponseThenBlock block = new SendPartialResponseThenBlock(lock, timeoutMs, () -> ExpectMethod.this.precondition.assertCanWait(), content);
         replaceBody(block, block);
         return this;
     }

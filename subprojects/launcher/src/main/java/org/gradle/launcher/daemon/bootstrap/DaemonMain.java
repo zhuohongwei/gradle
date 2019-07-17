@@ -171,13 +171,10 @@ public class DaemonMain extends EntryPoint {
         }
         final PrintStream log = result;
 
-        ShutdownHooks.addShutdownHook(new Runnable() {
-            @Override
-            public void run() {
-                //just in case we have a bug related to logging,
-                //printing some exit info directly to file:
-                log.println(DaemonMessages.DAEMON_VM_SHUTTING_DOWN);
-            }
+        ShutdownHooks.addShutdownHook(() -> {
+            //just in case we have a bug related to logging,
+            //printing some exit info directly to file:
+            log.println(DaemonMessages.DAEMON_VM_SHUTTING_DOWN);
         });
 
         //close all streams and redirect IO

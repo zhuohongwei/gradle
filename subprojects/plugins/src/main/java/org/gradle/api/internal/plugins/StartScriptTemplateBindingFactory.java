@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.plugins;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang.StringUtils;
@@ -64,19 +63,9 @@ public class StartScriptTemplateBindingFactory implements Transformer<Map<String
 
     private String createJoinedClasspath(Iterable<String> classpath) {
         if (windows) {
-            return Joiner.on(";").join(Iterables.transform(classpath, new Function<String, String>() {
-                @Override
-                public String apply(String input) {
-                    return "%APP_HOME%\\" + input.replace("/", "\\");
-                }
-            }));
+            return Joiner.on(";").join(Iterables.transform(classpath, input -> "%APP_HOME%\\" + input.replace("/", "\\")));
         } else {
-            return Joiner.on(":").join(Iterables.transform(classpath, new Function<String, String>() {
-                @Override
-                public String apply(String input) {
-                    return "$APP_HOME/" + input.replace("\\", "/");
-                }
-            }));
+            return Joiner.on(":").join(Iterables.transform(classpath, input -> "$APP_HOME/" + input.replace("\\", "/")));
         }
     }
 
@@ -86,12 +75,7 @@ public class StartScriptTemplateBindingFactory implements Transformer<Map<String
                 return "";
             }
 
-            Iterable<String> quotedDefaultJvmOpts = Iterables.transform(CollectionUtils.toStringList(defaultJvmOpts), new Function<String, String>() {
-                @Override
-                public String apply(String jvmOpt) {
-                    return "\"" + escapeWindowsJvmOpt(jvmOpt) + "\"";
-                }
-            });
+            Iterable<String> quotedDefaultJvmOpts = Iterables.transform(CollectionUtils.toStringList(defaultJvmOpts), jvmOpt -> "\"" + escapeWindowsJvmOpt(jvmOpt) + "\"");
 
             Joiner spaceJoiner = Joiner.on(" ");
             return spaceJoiner.join(quotedDefaultJvmOpts);
@@ -100,17 +84,14 @@ public class StartScriptTemplateBindingFactory implements Transformer<Map<String
                 return "";
             }
 
-            Iterable<String> quotedDefaultJvmOpts = Iterables.transform(CollectionUtils.toStringList(defaultJvmOpts), new Function<String, String>() {
-                @Override
-                public String apply(String jvmOpt) {
-                    //quote ', ", \, $. Probably not perfect. TODO: identify non-working cases, fail-fast on them
-                    jvmOpt = jvmOpt.replace("\\", "\\\\");
-                    jvmOpt = jvmOpt.replace("\"", "\\\"");
-                    jvmOpt = jvmOpt.replace("'", "'\"'\"'");
-                    jvmOpt = jvmOpt.replace("`", "'\"`\"'");
-                    jvmOpt = jvmOpt.replace("$", "\\$");
-                    return "\"" + jvmOpt + "\"";
-                }
+            Iterable<String> quotedDefaultJvmOpts = Iterables.transform(CollectionUtils.toStringList(defaultJvmOpts), jvmOpt -> {
+                //quote ', ", \, $. Probably not perfect. TODO: identify non-working cases, fail-fast on them
+                jvmOpt = jvmOpt.replace("\\", "\\\\");
+                jvmOpt = jvmOpt.replace("\"", "\\\"");
+                jvmOpt = jvmOpt.replace("'", "'\"'\"'");
+                jvmOpt = jvmOpt.replace("`", "'\"`\"'");
+                jvmOpt = jvmOpt.replace("$", "\\$");
+                return "\"" + jvmOpt + "\"";
             });
 
             //put the whole arguments string in single quotes, unless defaultJvmOpts was empty,

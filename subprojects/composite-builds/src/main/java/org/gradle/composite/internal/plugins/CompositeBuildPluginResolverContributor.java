@@ -70,18 +70,15 @@ public class CompositeBuildPluginResolverContributor implements PluginResolverCo
                     // Do not substitute plugins from same build or builds that were not explicitly included
                     continue;
                 }
-                PluginResolution pluginResolution = build.withState(new Transformer<PluginResolution, GradleInternal>() {
-                    @Override
-                    public PluginResolution transform(GradleInternal gradleInternal) {
-                        ProjectPublicationRegistry publicationRegistry = gradleInternal.getServices().get(ProjectPublicationRegistry.class);
-                        for (ProjectPublicationRegistry.Reference<PluginPublication> reference : publicationRegistry.getPublications(PluginPublication.class)) {
-                            PluginId pluginId = reference.get().getPluginId();
-                            if (pluginId.equals(pluginRequest.getId())) {
-                                return new LocalPluginResolution(pluginId, reference.getProducingProject());
-                            }
+                PluginResolution pluginResolution = build.withState((Transformer<PluginResolution, GradleInternal>) gradleInternal -> {
+                    ProjectPublicationRegistry publicationRegistry = gradleInternal.getServices().get(ProjectPublicationRegistry.class);
+                    for (ProjectPublicationRegistry.Reference<PluginPublication> reference : publicationRegistry.getPublications(PluginPublication.class)) {
+                        PluginId pluginId = reference.get().getPluginId();
+                        if (pluginId.equals(pluginRequest.getId())) {
+                            return new LocalPluginResolution(pluginId, reference.getProducingProject());
                         }
-                        return null;
                     }
+                    return null;
                 });
                 if (pluginResolution != null) {
                     results.put(pluginRequest.getId(), new Resolution(pluginResolution));

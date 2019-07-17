@@ -23,7 +23,6 @@ import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.NonNullApi;
 import org.gradle.api.Task;
-import org.gradle.api.Transformer;
 import org.gradle.api.execution.TaskExecutionAdapter;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.execution.TaskExecutionGraphListener;
@@ -163,12 +162,7 @@ public class DefaultTaskExecutionGraph implements TaskExecutionGraphInternal {
         if (!hasFiredWhenReady) {
             ProjectStateRegistry projectStateRegistry = gradleInternal.getServices().get(ProjectStateRegistry.class);
             // We know that we're running single-threaded here, so we can use lenient project locking
-            projectStateRegistry.withLenientState(new Runnable() {
-                @Override
-                public void run() {
-                    buildOperationExecutor.run(new NotifyTaskGraphWhenReady(DefaultTaskExecutionGraph.this, graphListeners.getSource(), gradleInternal));
-                }
-            });
+            projectStateRegistry.withLenientState(() -> buildOperationExecutor.run(new NotifyTaskGraphWhenReady(DefaultTaskExecutionGraph.this, graphListeners.getSource(), gradleInternal)));
             hasFiredWhenReady = true;
         } else if (!graphListeners.isEmpty()) {
             LOGGER.warn("Ignoring listeners of task graph ready event, as this build (" + gradleInternal.getIdentityPath() + ") has already executed work.");
@@ -183,12 +177,9 @@ public class DefaultTaskExecutionGraph implements TaskExecutionGraphInternal {
             );
             LOGGER.debug("Timing: Executing the DAG took " + clock.getElapsed());
         } finally {
-            coordinationService.withStateLock(new Transformer<ResourceLockState.Disposition, ResourceLockState>() {
-                @Override
-                public ResourceLockState.Disposition transform(ResourceLockState resourceLockState) {
-                    executionPlan.clear();
-                    return ResourceLockState.Disposition.FINISHED;
-                }
+            coordinationService.withStateLock(resourceLockState -> {
+                executionPlan.clear();
+                return ResourceLockState.Disposition.FINISHED;
             });
         }
     }
@@ -210,12 +201,7 @@ public class DefaultTaskExecutionGraph implements TaskExecutionGraphInternal {
 
     @Override
     public void whenReady(final Action<TaskExecutionGraph> action) {
-        graphListeners.add(listenerBuildOperationDecorator.decorate("TaskExecutionGraph.whenReady", TaskExecutionGraphListener.class, new TaskExecutionGraphListener() {
-            @Override
-            public void graphPopulated(TaskExecutionGraph graph) {
-                action.execute(graph);
-            }
-        }));
+        graphListeners.add(listenerBuildOperationDecorator.decorate("TaskExecutionGraph.whenReady", TaskExecutionGraphListener.class, graph -> action.execute(graph)));
     }
 
     @Override

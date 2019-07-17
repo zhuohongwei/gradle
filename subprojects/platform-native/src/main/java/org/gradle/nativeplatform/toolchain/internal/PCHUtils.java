@@ -51,14 +51,11 @@ public class PCHUtils {
         }
 
         try {
-            FileUtils.writeLines(headerFile, CollectionUtils.collect(headers, new Transformer<String, String>() {
-                @Override
-                public String transform(String header) {
-                    if (header.startsWith("<")) {
-                        return "#include ".concat(header);
-                    } else {
-                        return "#include \"".concat(header).concat("\"");
-                    }
+            FileUtils.writeLines(headerFile, CollectionUtils.collect(headers, header -> {
+                if (header.startsWith("<")) {
+                    return "#include ".concat(header);
+                } else {
+                    return "#include \"".concat(header).concat("\"");
                 }
             }));
         } catch (IOException e) {
@@ -81,16 +78,13 @@ public class PCHUtils {
     }
 
     public static <T extends NativeCompileSpec> Transformer<T, T> getHeaderToSourceFileTransformer(Class<T> type) {
-        return new Transformer<T, T>() {
-            @Override
-            public T transform(T original) {
-                List<File> newSourceFiles = Lists.newArrayList();
-                for (File sourceFile : original.getSourceFiles()) {
-                    newSourceFiles.add(generatePCHSourceFile(original, sourceFile));
-                }
-                original.setSourceFiles(newSourceFiles);
-                return original;
+        return original -> {
+            List<File> newSourceFiles = Lists.newArrayList();
+            for (File sourceFile : original.getSourceFiles()) {
+                newSourceFiles.add(generatePCHSourceFile(original, sourceFile));
             }
+            original.setSourceFiles(newSourceFiles);
+            return original;
         };
     }
 

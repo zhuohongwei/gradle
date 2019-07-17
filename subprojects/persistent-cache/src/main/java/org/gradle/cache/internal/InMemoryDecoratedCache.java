@@ -26,7 +26,6 @@ import org.gradle.internal.UncheckedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -54,12 +53,9 @@ class InMemoryDecoratedCache<K, V> implements MultiProcessSafeAsyncPersistentInd
     public V get(final K key) {
         Object value;
         try {
-            value = inMemoryCache.get(key, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    Object out = delegate.get(key);
-                    return out == null ? NULL : out;
-                }
+            value = inMemoryCache.get(key, () -> {
+                Object out = delegate.get(key);
+                return out == null ? NULL : out;
             });
         } catch (UncheckedExecutionException e) {
             throw UncheckedException.throwAsUncheckedException(e.getCause());
@@ -85,20 +81,17 @@ class InMemoryDecoratedCache<K, V> implements MultiProcessSafeAsyncPersistentInd
             } else if (value != null) {
                 return Cast.uncheckedCast(value);
             }
-            value = inMemoryCache.get(key, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    if (!wasNull) {
-                        Object out = delegate.get(key);
-                        if (out != null) {
-                            return out;
-                        }
+            value = inMemoryCache.get(key, () -> {
+                if (!wasNull) {
+                    Object out = delegate.get(key);
+                    if (out != null) {
+                        return out;
                     }
-                    V value = producer.transform(key);
-                    delegate.putLater(key, value, completion);
-                    completionRef.set(Runnables.doNothing());
-                    return value;
                 }
+                V value1 = producer.transform(key);
+                delegate.putLater(key, value1, completion);
+                completionRef.set(Runnables.doNothing());
+                return value1;
             });
         } catch (UncheckedExecutionException e) {
             throw UncheckedException.throwAsUncheckedException(e.getCause());

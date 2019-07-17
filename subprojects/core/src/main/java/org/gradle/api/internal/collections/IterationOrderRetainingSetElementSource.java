@@ -26,12 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class IterationOrderRetainingSetElementSource<T> extends AbstractIterationOrderRetainingElementSource<T> {
-    private final Spec<ValuePointer<T>> noDuplicates = new Spec<ValuePointer<T>>() {
-        @Override
-        public boolean isSatisfiedBy(ValuePointer<T> pointer) {
-            return !pointer.getElement().isDuplicate(pointer.getIndex());
-        }
-    };
+    private final Spec<ValuePointer<T>> noDuplicates = pointer -> !pointer.getElement().isDuplicate(pointer.getIndex());
 
     @Override
     public Iterator<T> iterator() {

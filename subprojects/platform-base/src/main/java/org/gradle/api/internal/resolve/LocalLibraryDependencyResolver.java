@@ -81,17 +81,7 @@ public class LocalLibraryDependencyResolver implements DependencyToComponentIdRe
         this.projectModelResolver = projectModelResolver;
         this.libraryResolver = libraryResolver;
         this.binaryType = binaryType;
-        this.binaryPredicate = new Predicate<VariantComponent>() {
-            @Override
-            public boolean apply(VariantComponent input) {
-                return Iterables.any(input.getVariants(), new Predicate<Binary>() {
-                    @Override
-                    public boolean apply(Binary input) {
-                        return binaryType.isAssignableFrom(input.getClass());
-                    }
-                });
-            }
-        };
+        this.binaryPredicate = input -> Iterables.any(input.getVariants(), (Predicate<Binary>) input1 -> binaryType.isAssignableFrom(input1.getClass()));
     }
 
     @Override

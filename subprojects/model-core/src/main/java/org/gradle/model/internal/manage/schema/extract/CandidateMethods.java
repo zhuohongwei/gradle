@@ -17,9 +17,9 @@
 package org.gradle.model.internal.manage.schema.extract;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -77,12 +77,7 @@ public class CandidateMethods {
      */
     public Map<Equivalence.Wrapper<Method>, Collection<Method>> overriddenMethodsNamed(String methodName) {
         if (candidates.containsKey(methodName)) {
-            return Maps.filterValues(candidates.get(methodName), new Predicate<Collection<Method>>() {
-                @Override
-                public boolean apply(Collection<Method> equivalentMethods) {
-                    return equivalentMethods.size() > 1;
-                }
-            });
+            return Maps.filterValues(candidates.get(methodName), equivalentMethods -> equivalentMethods.size() > 1);
         }
         return Collections.<Equivalence.Wrapper<Method>, Collection<Method>>emptyMap();
     }

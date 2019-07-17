@@ -18,7 +18,6 @@ package org.gradle.api.tasks.diagnostics;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.artifacts.Configuration;
@@ -259,12 +258,9 @@ public class DependencyInsightReportTask extends DefaultTask {
         ResolutionResult result = incoming.getResolutionResult(errorHandler);
 
         final Set<DependencyResult> selectedDependencies = new LinkedHashSet<DependencyResult>();
-        result.allDependencies(new Action<DependencyResult>() {
-            @Override
-            public void execute(DependencyResult dependencyResult) {
-                if (dependencySpec.isSatisfiedBy(dependencyResult)) {
-                    selectedDependencies.add(dependencyResult);
-                }
+        result.allDependencies(dependencyResult -> {
+            if (dependencySpec.isSatisfiedBy(dependencyResult)) {
+                selectedDependencies.add(dependencyResult);
             }
         });
         return selectedDependencies;

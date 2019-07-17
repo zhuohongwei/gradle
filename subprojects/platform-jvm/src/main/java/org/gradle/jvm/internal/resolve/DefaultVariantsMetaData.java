@@ -15,7 +15,6 @@
  */
 package org.gradle.jvm.internal.resolve;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -40,12 +39,7 @@ public class DefaultVariantsMetaData implements VariantsMetaData {
     private DefaultVariantsMetaData(Map<String, Object> variantCoordinates, Map<String, ModelType<?>> variantAxisTypes) {
         this.variantCoordinates = variantCoordinates;
         this.allVariantAxes = variantCoordinates.keySet();
-        this.nonNullVariantAxes = ImmutableSet.copyOf(Maps.filterEntries(variantCoordinates, new Predicate<Map.Entry<String, Object>>() {
-            @Override
-            public boolean apply(Map.Entry<String, Object> input) {
-                return input.getValue()!=null;
-            }
-        }).keySet());
+        this.nonNullVariantAxes = ImmutableSet.copyOf(Maps.filterEntries(variantCoordinates, input -> input.getValue()!=null).keySet());
         this.variantAxisTypes = variantAxisTypes;
     }
 

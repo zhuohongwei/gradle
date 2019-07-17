@@ -15,7 +15,6 @@
  */
 package org.gradle.nativeplatform.toolchain.internal;
 
-import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
@@ -39,18 +38,8 @@ public class DefaultNativeToolChainRegistry extends DefaultPolymorphicDomainObje
 
     public DefaultNativeToolChainRegistry(Instantiator instantiator, CollectionCallbackActionDecorator collectionCallbackActionDecorator) {
         super(NativeToolChain.class, instantiator, collectionCallbackActionDecorator);
-        whenObjectAdded(new Action<NativeToolChain>() {
-            @Override
-            public void execute(NativeToolChain toolChain) {
-                searchOrder.add((NativeToolChainInternal) toolChain);
-            }
-        });
-        whenObjectRemoved(new Action<NativeToolChain>() {
-            @Override
-            public void execute(NativeToolChain toolChain) {
-                searchOrder.remove(toolChain);
-            }
-        });
+        whenObjectAdded(toolChain -> searchOrder.add((NativeToolChainInternal) toolChain));
+        whenObjectRemoved(toolChain -> searchOrder.remove(toolChain));
     }
 
     @Override

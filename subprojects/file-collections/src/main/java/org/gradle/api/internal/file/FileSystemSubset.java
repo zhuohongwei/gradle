@@ -21,13 +21,13 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.file.DirectoryTree;
 import org.gradle.api.internal.file.collections.DirectoryTrees;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.FileUtils;
 import org.gradle.internal.nativeintegration.services.FileSystems;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.File;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,12 +56,7 @@ public class FileSystemSubset {
 
     public Iterable<? extends File> getRoots() {
         return FileUtils.calculateRoots(
-            Iterables.concat(files, Iterables.transform(trees, new Function<DirectoryTree, File>() {
-                @Override
-                public File apply(DirectoryTree input) {
-                    return input.getDir();
-                }
-            }))
+            Iterables.concat(files, Iterables.transform(trees, (Function<DirectoryTree, File>) input -> input.getDir()))
         );
     }
 

@@ -44,22 +44,12 @@ public class FileIntegrityViolationSuppressingPersistentStateCacheDecorator<T> i
 
     @Override
     public T update(final UpdateAction<T> updateAction) {
-        return doUpdate(updateAction, new Factory<T>() {
-            @Override
-            public T create() {
-                return delegate.update(updateAction);
-            }
-        });
+        return doUpdate(updateAction, () -> delegate.update(updateAction));
     }
 
     @Override
     public T maybeUpdate(final UpdateAction<T> updateAction) {
-        return doUpdate(updateAction, new Factory<T>() {
-            @Override
-            public T create() {
-                return delegate.maybeUpdate(updateAction);
-            }
-        });
+        return doUpdate(updateAction, () -> delegate.maybeUpdate(updateAction));
     }
 
     private T doUpdate(UpdateAction<T> updateAction, Factory<T> work) {

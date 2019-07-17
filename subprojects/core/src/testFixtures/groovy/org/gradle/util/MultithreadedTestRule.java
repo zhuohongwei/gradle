@@ -102,12 +102,7 @@ public class MultithreadedTestRule extends ExternalResource {
      * Executes the given closure in a test thread.
      */
     protected ThreadHandle start(final Closure closure) {
-        Runnable task = new Runnable() {
-            @Override
-            public void run() {
-                closure.call();
-            }
-        };
+        Runnable task = () -> closure.call();
 
         return start(task);
     }
@@ -116,12 +111,7 @@ public class MultithreadedTestRule extends ExternalResource {
      * Executes the given closure in a test thread and waits for it to complete.
      */
     protected ThreadHandle run(final Closure closure) {
-        Runnable task = new Runnable() {
-            @Override
-            public void run() {
-                closure.call();
-            }
-        };
+        Runnable task = () -> closure.call();
 
         return start(task).waitFor();
     }
@@ -357,31 +347,28 @@ public class MultithreadedTestRule extends ExternalResource {
     public void expectLater(final int tick) {
         final Thread targetThread = Thread.currentThread();
         LOGGER.debug("Thread {} expecting tick {}", targetThread, tick);
-        start(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(500L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+        start(() -> {
+            try {
+                Thread.sleep(500L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            lock.lock();
+            try {
+                ClockTickImpl clockTick = getTick(tick);
+                if (!clockTick.isImmediatelyAfter(currentTick)) {
+                    throw new RuntimeException(String.format("Cannot wait for %s, as clock is currently at %s.",
+                            clockTick, currentTick));
                 }
-                lock.lock();
-                try {
-                    ClockTickImpl clockTick = getTick(tick);
-                    if (!clockTick.isImmediatelyAfter(currentTick)) {
-                        throw new RuntimeException(String.format("Cannot wait for %s, as clock is currently at %s.",
-                                clockTick, currentTick));
-                    }
-                    if (!active.contains(targetThread)) {
-                        throw new RuntimeException(
-                                "Cannot wait for clock tick from a thread which is not a test thread.");
-                    }
+                if (!active.contains(targetThread)) {
+                    throw new RuntimeException(
+                            "Cannot wait for clock tick from a thread which is not a test thread.");
+                }
 
-                    synching.add(targetThread);
-                    condition.signalAll();
-                } finally {
-                    lock.unlock();
-                }
+                synching.add(targetThread);
+                condition.signalAll();
+            } finally {
+                lock.unlock();
             }
         });
     }

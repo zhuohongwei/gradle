@@ -16,7 +16,6 @@
 package org.gradle.tooling.internal.consumer.parameters;
 
 import org.gradle.internal.event.ListenerBroadcast;
-import org.gradle.tooling.ProgressEvent;
 import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.internal.protocol.ProgressListenerVersion1;
 
@@ -45,11 +44,6 @@ class ProgressListenerAdapter implements ProgressListenerVersion1 {
 
     private void fireChangeEvent() {
         final String description = stack.isEmpty() ? "" : stack.getFirst();
-        listeners.getSource().statusChanged(new ProgressEvent() {
-            @Override
-            public String getDescription() {
-                return description;
-            }
-        });
+        listeners.getSource().statusChanged(() -> description);
     }
 }

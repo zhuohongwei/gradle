@@ -27,8 +27,6 @@ import org.gradle.internal.Actions;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.util.DeprecationLogger;
 
-import java.util.concurrent.Callable;
-
 import static org.gradle.util.ConfigureUtil.configure;
 
 /**
@@ -96,24 +94,9 @@ public class OsgiPluginConvention {
         ConventionMapping mapping = ((IConventionAware) osgiManifest).getConventionMapping();
         final OsgiHelper osgiHelper = new OsgiHelper();
 
-        mapping.map("version", new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return osgiHelper.getVersion(project.getVersion().toString());
-            }
-        });
-        mapping.map("name", new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName();
-            }
-        });
-        mapping.map("symbolicName", new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                return osgiHelper.getBundleSymbolicName(project);
-            }
-        });
+        mapping.map("version", () -> osgiHelper.getVersion(project.getVersion().toString()));
+        mapping.map("name", () -> project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName());
+        mapping.map("symbolicName", () -> osgiHelper.getBundleSymbolicName(project));
 
         return osgiManifest;
     }

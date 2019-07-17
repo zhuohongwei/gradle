@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.Transformer;
 import org.gradle.concurrent.ParallelismConfiguration;
 import org.gradle.internal.MutableReference;
 import org.gradle.internal.SystemProperties;
@@ -155,79 +154,73 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor, St
 
     private <O extends BuildOperation> void execute(final O buildOperation, final BuildOperationWorker<O> worker, @Nullable BuildOperationState defaultParent) {
         BuildOperationDescriptor.Builder descriptorBuilder = buildOperation.description();
-        execute(descriptorBuilder, defaultParent, new BuildOperationExecution<BuildOperation>() {
-            @Override
-            public BuildOperation execute(BuildOperationDescriptor descriptor, DefaultBuildOperationContext context, BuildOperationExecutionListener listener) {
-                Throwable failure = null;
+        execute(descriptorBuilder, defaultParent, (BuildOperationExecution<BuildOperation>) (descriptor, context, listener) -> {
+            Throwable failure = null;
+            try {
+                listener.start();
                 try {
-                    listener.start();
-                    try {
-                        worker.execute(buildOperation, context);
-                    } catch (Throwable t) {
-                        context.thrown(t);
-                        failure = t;
-                    }
-                    listener.stop();
-                    if (failure != null) {
-                        throw UncheckedException.throwAsUncheckedException(failure, true);
-                    }
-                    return buildOperation;
-                } finally {
-                    listener.close();
+                    worker.execute(buildOperation, context);
+                } catch (Throwable t) {
+                    context.thrown(t);
+                    failure = t;
                 }
+                listener.stop();
+                if (failure != null) {
+                    throw UncheckedException.throwAsUncheckedException(failure, true);
+                }
+                return buildOperation;
+            } finally {
+                listener.close();
             }
         });
     }
 
     private ExecutingBuildOperation start(final BuildOperationDescriptor.Builder descriptorBuilder, @Nullable BuildOperationState defaultParent) {
-        return execute(descriptorBuilder, defaultParent, new BuildOperationExecution<ExecutingBuildOperation>() {
-            @Override
-            public ExecutingBuildOperation execute(final BuildOperationDescriptor descriptor, final DefaultBuildOperationContext context, final BuildOperationExecutionListener listener) {
-                listener.start();
-                return new ExecutingBuildOperation() {
-                    private boolean finished;
+        return execute(descriptorBuilder, defaultParent, (BuildOperationExecution<ExecutingBuildOperation>) (descriptor, context, listener) -> {
+            listener.start();
+            return new ExecutingBuildOperation() {
+                private boolean finished;
 
-                    @Override
-                    public BuildOperationDescriptor.Builder description() {
-                        return descriptorBuilder;
-                    }
+                @Override
+                public BuildOperationDescriptor.Builder description() {
+                    return descriptorBuilder;
+                }
 
-                    @Override
-                    public void failed(@Nullable Throwable failure) {
-                        assertNotFinished();
-                        context.failed(failure);
-                        finish();
-                    }
+                @Override
+                public void failed(@Nullable Throwable failure) {
+                    assertNotFinished();
+                    context.failed(failure);
+                    finish();
+                }
 
-                    @Override
-                    public void setResult(Object result) {
-                        assertNotFinished();
-                        context.setResult(result);
-                        finish();
-                    }
+                @Override
+                public void setResult(Object result) {
+                    assertNotFinished();
+                    context.setResult(result);
+                    finish();
+                }
 
-                    @Override
-                    public void setStatus(String status) {
-                        assertNotFinished();
-                        context.setStatus(status);
-                    }
+                @Override
+                public void setStatus(String status) {
+                    assertNotFinished();
+                    context.setStatus(status);
+                }
 
-                    private void finish() {
-                        finished = true;
-                        try {
-                            listener.stop();
-                        } finally {
-                            listener.close();
-                        }
+                private void finish() {
+                    finished = true;
+                    try {
+                        listener.stop();
+                    } finally {
+                        listener.close();
                     }
+                }
 
-                    private void assertNotFinished() {
-                        if (finished) {
-                            throw new IllegalStateException(String.format("Operation (%s) has already finished.", descriptor));
-                        }
+                private void assertNotFinished() {
+                    if (finished) {
+                        throw new IllegalStateException(String.format("Operation (%s) has already finished.", descriptor));
                     }
-                };
-            }
+                }
+            };
         });
     }
 
@@ -350,12 +343,7 @@ public class DefaultBuildOperationExecutor implements BuildOperationExecutor, St
     }
 
     private static String formatMultipleFailureMessage(List<GradleException> failures) {
-        return StringUtils.join(CollectionUtils.collect(failures, new Transformer<String, GradleException>() {
-            @Override
-            public String transform(GradleException e) {
-                return e.getMessage();
-            }
-        }), LINE_SEPARATOR + "AND" + LINE_SEPARATOR);
+        return StringUtils.join(CollectionUtils.collect(failures, e -> e.getMessage()), LINE_SEPARATOR + "AND" + LINE_SEPARATOR);
     }
 
     @Override

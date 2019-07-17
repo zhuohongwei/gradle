@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 // todo - stream serialised value to file
@@ -92,29 +91,23 @@ public class BTreePersistentIndexedCache<K, V> {
     }
 
     private void doOpen() throws Exception {
-        BlockStore.Factory factory = new BlockStore.Factory() {
-            @Override
-            public Object create(Class<? extends BlockPayload> type) {
-                if (type == HeaderBlock.class) {
-                    return new HeaderBlock();
-                }
-                if (type == IndexBlock.class) {
-                    return new IndexBlock();
-                }
-                if (type == DataBlock.class) {
-                    return new DataBlock();
-                }
-                throw new UnsupportedOperationException();
+        BlockStore.Factory factory = type -> {
+            if (type == HeaderBlock.class) {
+                return new HeaderBlock();
             }
+            if (type == IndexBlock.class) {
+                return new IndexBlock();
+            }
+            if (type == DataBlock.class) {
+                return new DataBlock();
+            }
+            throw new UnsupportedOperationException();
         };
-        Runnable initAction = new Runnable() {
-            @Override
-            public void run() {
-                header = new HeaderBlock();
-                store.write(header);
-                header.index.newRoot();
-                store.flush();
-            }
+        Runnable initAction = () -> {
+            header = new HeaderBlock();
+            store.write(header);
+            header.index.newRoot();
+            store.flush();
         };
 
         store.open(initAction, factory);
@@ -229,12 +222,7 @@ public class BTreePersistentIndexedCache<K, V> {
         blocks.add(header);
         verifyTree(header.getRoot(), "", blocks, Long.MAX_VALUE, true);
 
-        Collections.sort(blocks, new Comparator<BlockPayload>() {
-            @Override
-            public int compare(BlockPayload block, BlockPayload block1) {
-                return block.getPos().compareTo(block1.getPos());
-            }
-        });
+        Collections.sort(blocks, (block, block1) -> block.getPos().compareTo(block1.getPos()));
 
         for (int i = 0; i < blocks.size() - 1; i++) {
             Block b1 = blocks.get(i).getBlock();

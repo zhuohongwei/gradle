@@ -21,7 +21,6 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.java.archives.internal.DefaultManifest;
 import org.gradle.api.plugins.osgi.OsgiManifest;
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.Factory;
 import org.gradle.internal.UncheckedException;
 import org.gradle.util.CollectionUtils;
@@ -29,7 +28,14 @@ import org.gradle.util.WrapUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.Manifest;
 
 @SuppressWarnings("deprecation")
@@ -321,12 +327,7 @@ public class DefaultOsgiManifest extends DefaultManifest implements OsgiManifest
         modelledInstructions.put(Analyzer.BUNDLE_VENDOR, createListFromPropertyString(vendor));
         modelledInstructions.put(Analyzer.BUNDLE_DOCURL, createListFromPropertyString(docURL));
 
-        return CollectionUtils.filter(modelledInstructions, new Spec<Map.Entry<String, List<String>>>() {
-            @Override
-            public boolean isSatisfiedBy(Map.Entry<String, List<String>> element) {
-                return element.getValue() != null;
-            }
-        });
+        return CollectionUtils.filter(modelledInstructions, element -> element.getValue() != null);
     }
 
     @Override

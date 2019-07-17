@@ -80,32 +80,17 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
 
     @Override
     public List<DaemonInfo> getIdle() {
-        return getDaemonsMatching(new Spec<DaemonInfo>() {
-            @Override
-            public boolean isSatisfiedBy(DaemonInfo daemonInfo) {
-                return daemonInfo.getState() == Idle;
-            }
-        });
+        return getDaemonsMatching(daemonInfo -> daemonInfo.getState() == Idle);
     }
 
     @Override
     public List<DaemonInfo> getNotIdle() {
-        return getDaemonsMatching(new Spec<DaemonInfo>() {
-            @Override
-            public boolean isSatisfiedBy(DaemonInfo daemonInfo) {
-                return daemonInfo.getState() != Idle;
-            }
-        });
+        return getDaemonsMatching(daemonInfo -> daemonInfo.getState() != Idle);
     }
 
     @Override
     public List<DaemonInfo> getCanceled() {
-        return getDaemonsMatching(new Spec<DaemonInfo>() {
-            @Override
-            public boolean isSatisfiedBy(DaemonInfo daemonInfo) {
-                return daemonInfo.getState() == Canceled;
-            }
-        });
+        return getDaemonsMatching(daemonInfo -> daemonInfo.getState() == Canceled);
     }
 
     private List<DaemonInfo> getDaemonsMatching(Spec<DaemonInfo> spec) {
@@ -129,15 +114,12 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
         lock.lock();
         LOGGER.debug("Removing daemon address: {}", address);
         try {
-            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
-                @Override
-                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
-                    if (oldValue == null) {
-                        return oldValue;
-                    }
-                    oldValue.removeInfo(address);
+            cache.update(oldValue -> {
+                if (oldValue == null) {
                     return oldValue;
                 }
+                oldValue.removeInfo(address);
+                return oldValue;
             });
         } finally {
             lock.unlock();
@@ -149,16 +131,14 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
         lock.lock();
         LOGGER.debug("Marking busy by address: {}", address);
         try {
-            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
-                @Override
-                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
-                    DaemonInfo daemonInfo = oldValue != null ? oldValue.getInfo(address) : null;
-                    if (daemonInfo != null) {
-                        daemonInfo.setState(state);
-                    }
-                    // Else, has been removed by something else - ignore
-                    return oldValue;
-                }});
+            cache.update(oldValue -> {
+                DaemonInfo daemonInfo = oldValue != null ? oldValue.getInfo(address) : null;
+                if (daemonInfo != null) {
+                    daemonInfo.setState(state);
+                }
+                // Else, has been removed by something else - ignore
+                return oldValue;
+            });
         } finally {
             lock.unlock();
         }
@@ -169,15 +149,12 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
         lock.lock();
         LOGGER.debug("Storing daemon stop event with timestamp {}", stopEvent.getTimestamp().getTime());
         try {
-            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
-                @Override
-                public DaemonRegistryContent update(DaemonRegistryContent content) {
-                    if (content == null) { // registry doesn't exist yet
-                        content = new DaemonRegistryContent();
-                    }
-                    content.addStopEvent(stopEvent);
-                    return content;
+            cache.update(content -> {
+                if (content == null) { // registry doesn't exist yet
+                    content = new DaemonRegistryContent();
                 }
+                content.addStopEvent(stopEvent);
+                return content;
             });
         } finally {
             lock.unlock();
@@ -204,14 +181,11 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
         lock.lock();
         LOGGER.info("Removing {} daemon stop events from registry", events.size());
         try {
-            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
-                @Override
-                public DaemonRegistryContent update(DaemonRegistryContent content) {
-                    if (content != null) { // no daemon process has started yet
-                        content.removeStopEvents(events);
-                    }
-                    return content;
+            cache.update(content -> {
+                if (content != null) { // no daemon process has started yet
+                    content.removeStopEvents(events);
                 }
+                return content;
             });
         } finally {
             lock.unlock();
@@ -228,17 +202,14 @@ public class PersistentDaemonRegistry implements DaemonRegistry {
         lock.lock();
         LOGGER.debug("Storing daemon address: {}, context: {}", address, daemonContext);
         try {
-            cache.update(new PersistentStateCache.UpdateAction<DaemonRegistryContent>() {
-                @Override
-                public DaemonRegistryContent update(DaemonRegistryContent oldValue) {
-                    if (oldValue == null) {
-                        //it means the registry didn't exist yet
-                        oldValue = new DaemonRegistryContent();
-                    }
-                    DaemonInfo daemonInfo = new DaemonInfo(address, daemonContext, token, state);
-                    oldValue.setStatus(address, daemonInfo);
-                    return oldValue;
+            cache.update(oldValue -> {
+                if (oldValue == null) {
+                    //it means the registry didn't exist yet
+                    oldValue = new DaemonRegistryContent();
                 }
+                DaemonInfo daemonInfo = new DaemonInfo(address, daemonContext, token, state);
+                oldValue.setStatus(address, daemonInfo);
+                return oldValue;
             });
         } finally {
             lock.unlock();

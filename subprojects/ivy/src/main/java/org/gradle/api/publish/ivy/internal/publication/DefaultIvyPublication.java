@@ -73,7 +73,6 @@ import org.gradle.api.publish.ivy.internal.dependency.IvyDependencyInternal;
 import org.gradle.api.publish.ivy.internal.dependency.IvyExcludeRule;
 import org.gradle.api.publish.ivy.internal.publisher.IvyNormalizedPublication;
 import org.gradle.api.publish.ivy.internal.publisher.IvyPublicationIdentity;
-import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.Describables;
 import org.gradle.internal.DisplayName;
@@ -457,21 +456,13 @@ public class DefaultIvyPublication implements IvyPublicationInternal {
     @Override
     public IvyNormalizedPublication asNormalisedPublication() {
         populateFromComponent();
-        DomainObjectSet<IvyArtifact> existingDerivedArtifacts = derivedArtifacts.matching(new Spec<IvyArtifact>() {
-            @Override
-            public boolean isSatisfiedBy(IvyArtifact artifact) {
-                return artifact.getFile().exists();
+        DomainObjectSet<IvyArtifact> existingDerivedArtifacts = derivedArtifacts.matching(artifact -> artifact.getFile().exists());
+        Set<IvyArtifact> artifactsToBePublished = CompositeDomainObjectSet.create(IvyArtifact.class, mainArtifacts, metadataArtifacts, existingDerivedArtifacts).matching(element -> {
+            if (gradleModuleDescriptorArtifact == element) {
+                // We temporarily want to allow skipping the publication of Gradle module metadata
+                return gradleModuleDescriptorArtifact.isEnabled();
             }
-        });
-        Set<IvyArtifact> artifactsToBePublished = CompositeDomainObjectSet.create(IvyArtifact.class, mainArtifacts, metadataArtifacts, existingDerivedArtifacts).matching(new Spec<IvyArtifact>() {
-            @Override
-            public boolean isSatisfiedBy(IvyArtifact element) {
-                if (gradleModuleDescriptorArtifact == element) {
-                    // We temporarily want to allow skipping the publication of Gradle module metadata
-                    return gradleModuleDescriptorArtifact.isEnabled();
-                }
-                return true;
-            }
+            return true;
         });
         return new IvyNormalizedPublication(name, getIdentity(), getIvyDescriptorFile(), artifactsToBePublished);
     }

@@ -88,14 +88,11 @@ public class DefaultPathKeyFileStore implements PathKeyFileStore {
     @Override
     public LocallyAvailableResource add(final String path, final Action<File> addAction) {
         try {
-            return doAdd(path, new Action<File>() {
-                @Override
-                public void execute(File file) {
-                    try {
-                        addAction.execute(file);
-                    } catch (Throwable e) {
-                        throw new FileStoreAddActionException(String.format("Failed to add into filestore '%s' at '%s' ", getBaseDir().getAbsolutePath(), path), e);
-                    }
+            return doAdd(path, file -> {
+                try {
+                    addAction.execute(file);
+                } catch (Throwable e) {
+                    throw new FileStoreAddActionException(String.format("Failed to add into filestore '%s' at '%s' ", getBaseDir().getAbsolutePath(), path), e);
                 }
             });
         } catch (FileStoreAddActionException e) {
@@ -112,14 +109,11 @@ public class DefaultPathKeyFileStore implements PathKeyFileStore {
         }
 
         try {
-            return doAdd(path, new Action<File>() {
-                @Override
-                public void execute(File file) {
-                    if (source.isDirectory()) {
-                        GFileUtils.moveExistingDirectory(source, file);
-                    } else {
-                        GFileUtils.moveExistingFile(source, file);
-                    }
+            return doAdd(path, file -> {
+                if (source.isDirectory()) {
+                    GFileUtils.moveExistingDirectory(source, file);
+                } else {
+                    GFileUtils.moveExistingFile(source, file);
                 }
             });
         } catch (Throwable e) {

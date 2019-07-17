@@ -17,7 +17,6 @@ package org.gradle.api.tasks.bundling;
 
 import groovy.lang.Closure;
 import org.gradle.api.Action;
-import org.gradle.api.Transformer;
 import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.copy.DefaultCopySpec;
@@ -41,18 +40,8 @@ import java.util.concurrent.Callable;
  */
 public class War extends Jar {
     public static final String WAR_EXTENSION = "war";
-    private static final Spec<File> IS_DIRECTORY = new Spec<File>() {
-        @Override
-        public boolean isSatisfiedBy(File element) {
-            return element.isDirectory();
-        }
-    };
-    private static final Spec<File> IS_FILE = new Spec<File>() {
-        @Override
-        public boolean isSatisfiedBy(File element) {
-            return element.isFile();
-        }
-    };
+    private static final Spec<File> IS_DIRECTORY = element -> element.isDirectory();
+    private static final Spec<File> IS_FILE = element -> element.isFile();
 
     private File webXml;
     private FileCollection classpath;
@@ -65,47 +54,17 @@ public class War extends Jar {
         // Add these as separate specs, so they are not affected by the changes to the main spec
 
         webInf = (DefaultCopySpec) getRootSpec().addChildBeforeSpec(getMainSpec()).into("WEB-INF");
-        webInf.into("classes", new Action<CopySpec>() {
-            @Override
-            public void execute(CopySpec copySpec) {
-                copySpec.from(new Callable<Iterable<File>>() {
-                    @Override
-                    public Iterable<File> call() {
-                        FileCollection classpath = getClasspath();
-                        return classpath != null ? classpath.filter(IS_DIRECTORY) : Collections.<File>emptyList();
-                    }
-                });
-            }
-        });
-        webInf.into("lib", new Action<CopySpec>() {
-            @Override
-            public void execute(CopySpec it) {
-                it.from(new Callable<Iterable<File>>() {
-                    @Override
-                    public Iterable<File> call() {
-                        FileCollection classpath = getClasspath();
-                        return classpath != null ? classpath.filter(IS_FILE) : Collections.<File>emptyList();
-                    }
-                });
-            }
-
-        });
-        webInf.into("", new Action<CopySpec>() {
-            @Override
-            public void execute(CopySpec it) {
-                it.from(new Callable<File>() {
-                    @Override
-                    public File call() {
-                        return getWebXml();
-                    }
-                });
-                it.rename(new Transformer<String, String>() {
-                    @Override
-                    public String transform(String it) {
-                        return "web.xml";
-                    }
-                });
-            }
+        webInf.into("classes", copySpec -> copySpec.from((Callable<Iterable<File>>) () -> {
+            FileCollection classpath = getClasspath();
+            return classpath != null ? classpath.filter(IS_DIRECTORY) : Collections.<File>emptyList();
+        }));
+        webInf.into("lib", it -> it.from((Callable<Iterable<File>>) () -> {
+            FileCollection classpath = getClasspath();
+            return classpath != null ? classpath.filter(IS_FILE) : Collections.<File>emptyList();
+        }));
+        webInf.into("", it -> {
+            it.from((Callable<File>) () -> getWebXml());
+            it.rename(it1 -> "web.xml");
         });
     }
 

@@ -17,8 +17,8 @@
 package org.gradle.tooling.internal.provider.serialization;
 
 import com.google.common.collect.Sets;
-import javax.annotation.concurrent.ThreadSafe;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.ArrayList;
@@ -100,31 +100,28 @@ public class ClientSidePayloadClassLoaderRegistry implements PayloadClassLoaderR
     @Override
     public DeserializeMap newDeserializeSession() {
         final DeserializeMap deserializeMap = delegate.newDeserializeSession();
-        return new DeserializeMap() {
-            @Override
-            public Class<?> resolveClass(ClassLoaderDetails classLoaderDetails, String className) throws ClassNotFoundException {
-                Set<ClassLoader> candidates;
-                lock.lock();
-                try {
-                    candidates = getClassLoaders(classLoaderDetails.uuid);
-                } finally {
-                    lock.unlock();
-                }
-                if (candidates != null) {
-                    // TODO:ADAM - This isn't quite right
-                    // MB: I think ^ refers to the first capable classloader loading the class. This could be different
-                    // from the loader which originally loaded it, which could pose equality and lifecycle issues.
-                    for (ClassLoader candidate : candidates) {
-                        try {
-                            return candidate.loadClass(className);
-                        } catch (ClassNotFoundException e) {
-                            // Ignore
-                        }
-                    }
-                    throw new UnsupportedOperationException("Unexpected class received in response.");
-                }
-                return deserializeMap.resolveClass(classLoaderDetails, className);
+        return (classLoaderDetails, className) -> {
+            Set<ClassLoader> candidates;
+            lock.lock();
+            try {
+                candidates = getClassLoaders(classLoaderDetails.uuid);
+            } finally {
+                lock.unlock();
             }
+            if (candidates != null) {
+                // TODO:ADAM - This isn't quite right
+                // MB: I think ^ refers to the first capable classloader loading the class. This could be different
+                // from the loader which originally loaded it, which could pose equality and lifecycle issues.
+                for (ClassLoader candidate : candidates) {
+                    try {
+                        return candidate.loadClass(className);
+                    } catch (ClassNotFoundException e) {
+                        // Ignore
+                    }
+                }
+                throw new UnsupportedOperationException("Unexpected class received in response.");
+            }
+            return deserializeMap.resolveClass(classLoaderDetails, className);
         };
     }
 

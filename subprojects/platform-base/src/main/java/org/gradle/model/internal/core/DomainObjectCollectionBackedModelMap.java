@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import org.gradle.api.Action;
 import org.gradle.api.DomainObjectCollection;
 import org.gradle.api.DomainObjectSet;
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.Actions;
 import org.gradle.internal.Cast;
 import org.gradle.internal.Specs;
@@ -233,12 +232,7 @@ public class DomainObjectCollectionBackedModelMap<T> extends ModelMapGroovyView<
 
     @Override
     public void named(final String name, Action<? super T> configAction) {
-        collection.matching(new Spec<T>() {
-            @Override
-            public boolean isSatisfiedBy(T element) {
-                return get(name) == element;
-            }
-        }).all(configAction);
+        collection.matching(element -> get(name) == element).all(configAction);
     }
 
     @Override

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.exceptions.DefaultMultiCauseException;
 import org.gradle.internal.operations.BuildOperationRef;
 import org.gradle.internal.resources.ProjectLeaseRegistry;
@@ -91,23 +90,13 @@ public class DefaultAsyncWorkTracker implements AsyncWorkTracker {
                     return;
                 }
                 projectLeaseRegistry.withoutProjectLock(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                waitForItemsAndGatherFailures(workItems);
-                            }
-                        }
+                    () -> waitForItemsAndGatherFailures(workItems)
                 );
         }
     }
 
     private boolean hasWorkInProgress(List<AsyncWorkCompletion> workItems) {
-        return CollectionUtils.any(workItems, new Spec<AsyncWorkCompletion>() {
-                        @Override
-                        public boolean isSatisfiedBy(AsyncWorkCompletion workCompletion) {
-                            return !workCompletion.isComplete();
-                        }
-                    });
+        return CollectionUtils.any(workItems, workCompletion -> !workCompletion.isComplete());
     }
 
     @Override

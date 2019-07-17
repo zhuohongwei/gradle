@@ -18,7 +18,6 @@ package org.gradle.internal.jacoco;
 
 import com.google.common.collect.ImmutableMap;
 import groovy.lang.GroovyObjectSupport;
-import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.project.IsolatedAntBuilder;
 import org.gradle.testing.jacoco.tasks.JacocoReportsContainer;
@@ -32,12 +31,7 @@ public class AntJacocoReport extends AbstractAntJacocoReport<JacocoReportsContai
     public void execute(FileCollection classpath, final String projectName,
                         final FileCollection allClassesDirs, final FileCollection allSourcesDirs,
                         final FileCollection executionData, final JacocoReportsContainer reports) {
-        configureAntReportTask(classpath, new Action<GroovyObjectSupport>() {
-            @Override
-            public void execute(GroovyObjectSupport antBuilder) {
-                invokeJacocoReport(antBuilder, projectName, allClassesDirs, allSourcesDirs, executionData, reports);
-            }
-        });
+        configureAntReportTask(classpath, antBuilder -> invokeJacocoReport(antBuilder, projectName, allClassesDirs, allSourcesDirs, executionData, reports));
     }
 
     @Override

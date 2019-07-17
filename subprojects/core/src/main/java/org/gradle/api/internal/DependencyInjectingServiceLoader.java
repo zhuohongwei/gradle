@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal;
 
-import com.google.common.base.Function;
 import org.gradle.internal.instantiation.InstantiatorFactory;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.internal.service.DefaultServiceLocator;
@@ -44,12 +43,7 @@ public class DependencyInjectingServiceLoader {
         final Instantiator instantiator = dependencyInjectingInstantiator();
         return transform(
             implementationsOf(serviceType, classLoader),
-            new Function<Class<? extends T>, T>() {
-                @Override
-                public T apply(Class<? extends T> serviceImplementation) {
-                    return instantiator.newInstance(serviceImplementation);
-                }
-            });
+            serviceImplementation -> instantiator.newInstance(serviceImplementation));
     }
 
     private <T> List<Class<? extends T>> implementationsOf(Class<T> serviceType, ClassLoader classLoader) {

@@ -22,7 +22,6 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.quality.FindBugsReports;
 import org.gradle.api.plugins.quality.internal.FindBugsReportsImpl;
 import org.gradle.api.reporting.internal.CustomizableHtmlReportImpl;
-import org.gradle.api.specs.Spec;
 import org.gradle.util.CollectionUtils;
 
 import javax.annotation.Nullable;
@@ -203,12 +202,7 @@ public class FindBugsSpecBuilder {
             args.add("-auxclasspath");
 
             // Filter unexisting files as FindBugs can't handle them.
-            args.add(classpath.filter(new Spec<File>() {
-                @Override
-                public boolean isSatisfiedBy(File element) {
-                    return element.exists();
-                }
-            }).getAsPath());
+            args.add(classpath.filter(element -> element.exists()).getAsPath());
         }
 
         if (has(effort)) {

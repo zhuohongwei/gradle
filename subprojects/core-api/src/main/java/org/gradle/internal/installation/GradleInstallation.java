@@ -24,12 +24,7 @@ import java.util.List;
 
 public class GradleInstallation {
 
-    public static final FileFilter DIRECTORY_FILTER = new FileFilter() {
-        @Override
-        public boolean accept(File pathname) {
-            return pathname.isDirectory();
-        }
-    };
+    public static final FileFilter DIRECTORY_FILTER = pathname -> pathname.isDirectory();
 
     private final File dir;
     private final List<File> libDirs;

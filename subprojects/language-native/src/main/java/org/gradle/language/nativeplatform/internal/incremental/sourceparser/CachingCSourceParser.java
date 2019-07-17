@@ -27,12 +27,7 @@ public class CachingCSourceParser implements CSourceParser {
 
     public CachingCSourceParser(FileContentCacheFactory cacheFactory) {
         final RegexBackedCSourceParser parser = new RegexBackedCSourceParser();
-        cache = cacheFactory.newCache("parsedCSource", 40000, new FileContentCacheFactory.Calculator<IncludeDirectives>() {
-            @Override
-            public IncludeDirectives calculate(File file, boolean isRegularFile) {
-                return parser.parseSource(file);
-            }
-        }, IncludeDirectivesSerializer.INSTANCE);
+        cache = cacheFactory.newCache("parsedCSource", 40000, (file, isRegularFile) -> parser.parseSource(file), IncludeDirectivesSerializer.INSTANCE);
     }
 
     @Override

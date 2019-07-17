@@ -16,11 +16,8 @@
 
 package org.gradle.buildinit.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.specs.Spec;
 import org.gradle.buildinit.plugins.internal.modifiers.BuildInitDsl;
 import org.gradle.buildinit.tasks.InitBuild;
 
@@ -34,36 +31,27 @@ public class BuildInitPlugin implements Plugin<Project> {
     @Override
     public void apply(final Project project) {
         if (project.getParent() == null) {
-            project.getTasks().register("init", InitBuild.class, new Action<InitBuild>() {
-                @Override
-                public void execute(InitBuild initBuild) {
-                    initBuild.setGroup("Build Setup");
-                    initBuild.setDescription("Initializes a new Gradle build.");
+            project.getTasks().register("init", InitBuild.class, initBuild -> {
+                initBuild.setGroup("Build Setup");
+                initBuild.setDescription("Initializes a new Gradle build.");
 
-                    initBuild.onlyIf(new Spec<Task>() {
-                        @Override
-                        public boolean isSatisfiedBy(Task element) {
-                            Object skippedMsg = reasonToSkip(project);
-                            if (skippedMsg != null) {
-                                project.getLogger().warn((String) skippedMsg);
-                                return false;
-                            }
+                initBuild.onlyIf(element -> {
+                    Object skippedMsg = reasonToSkip(project);
+                    if (skippedMsg != null) {
+                        project.getLogger().warn((String) skippedMsg);
+                        return false;
+                    }
 
-                            return true;
-                        }
-                    });
+                    return true;
+                });
 
-                    initBuild.dependsOn(new Callable<String>() {
-                        @Override
-                        public String call() throws Exception {
-                            if (reasonToSkip(project) == null) {
-                                return "wrapper";
-                            } else {
-                                return null;
-                            }
-                        }
-                    });
-                }
+                initBuild.dependsOn((Callable<String>) () -> {
+                    if (reasonToSkip(project) == null) {
+                        return "wrapper";
+                    } else {
+                        return null;
+                    }
+                });
             });
         }
     }

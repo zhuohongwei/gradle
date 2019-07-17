@@ -19,8 +19,8 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Interner;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.internal.artifacts.ImmutableModuleIdentifierFactory;
-import org.gradle.api.internal.artifacts.ivyservice.ArtifactCacheMetadata;
 import org.gradle.api.internal.artifacts.ivyservice.ArtifactCacheLockingManager;
+import org.gradle.api.internal.artifacts.ivyservice.ArtifactCacheMetadata;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.AttributeContainerSerializer;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.ComponentIdentifierSerializer;
 import org.gradle.api.internal.artifacts.repositories.metadata.IvyMutableModuleMetadataFactory;
@@ -68,24 +68,21 @@ public class PersistentModuleMetadataCache extends AbstractModuleMetadataCache {
     @Override
     protected CachedMetadata get(ModuleComponentAtRepositoryKey key) {
         final PersistentIndexedCache<ModuleComponentAtRepositoryKey, ModuleMetadataCacheEntry> cache = getCache();
-        return artifactCacheLockingManager.useCache(new Factory<CachedMetadata>() {
-            @Override
-            public CachedMetadata create() {
-                ModuleMetadataCacheEntry entry = cache.get(key);
-                if (entry == null) {
-                    return null;
-                }
-                if (entry.isMissing()) {
-                    return new DefaultCachedMetadata(entry, null, timeProvider);
-                }
-                MutableModuleComponentResolveMetadata metadata = moduleMetadataStore.getModuleDescriptor(key);
-                if (metadata == null) {
-                    // Descriptor file has been deleted - ignore the entry
-                    cache.remove(key);
-                    return null;
-                }
-                return new DefaultCachedMetadata(entry, entry.configure(metadata), timeProvider);
+        return artifactCacheLockingManager.useCache((Factory<CachedMetadata>) () -> {
+            ModuleMetadataCacheEntry entry = cache.get(key);
+            if (entry == null) {
+                return null;
             }
+            if (entry.isMissing()) {
+                return new DefaultCachedMetadata(entry, null, timeProvider);
+            }
+            MutableModuleComponentResolveMetadata metadata = moduleMetadataStore.getModuleDescriptor(key);
+            if (metadata == null) {
+                // Descriptor file has been deleted - ignore the entry
+                cache.remove(key);
+                return null;
+            }
+            return new DefaultCachedMetadata(entry, entry.configure(metadata), timeProvider);
         });
     }
 
@@ -95,13 +92,10 @@ public class PersistentModuleMetadataCache extends AbstractModuleMetadataCache {
             getCache().put(key, entry);
         } else {
             // Need to lock the cache in order to write to the module metadata store
-            artifactCacheLockingManager.useCache(new Runnable() {
-                @Override
-                public void run() {
-                    final ModuleComponentResolveMetadata metadata = cachedMetadata.getMetadata();
-                    moduleMetadataStore.putModuleDescriptor(key, metadata);
-                    getCache().put(key, entry);
-                }
+            artifactCacheLockingManager.useCache(() -> {
+                final ModuleComponentResolveMetadata metadata = cachedMetadata.getMetadata();
+                moduleMetadataStore.putModuleDescriptor(key, metadata);
+                getCache().put(key, entry);
             });
         }
     }

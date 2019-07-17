@@ -67,12 +67,7 @@ public class GeneratedArchiveBuildOutcomeComparator implements BuildOutcomeCompa
             targetEntries = Collections.emptySet();
         }
 
-        CollectionUtils.SetDiff<ArchiveEntry> diff = CollectionUtils.diffSetsBy(sourceEntries, targetEntries, new Transformer<ArchiveEntry.Path, ArchiveEntry>() {
-            @Override
-            public ArchiveEntry.Path transform(ArchiveEntry entry) {
-                return entry.getPath();
-            }
-        });
+        CollectionUtils.SetDiff<ArchiveEntry> diff = CollectionUtils.diffSetsBy(sourceEntries, targetEntries, (Transformer<ArchiveEntry.Path, ArchiveEntry>) entry -> entry.getPath());
 
         SortedSet<ArchiveEntryComparison> entryComparisons = new TreeSet<ArchiveEntryComparison>();
 

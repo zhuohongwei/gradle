@@ -118,12 +118,7 @@ public class ModelTypeInitializationException extends GradleException {
     }
 
     private static String describe(Iterable<? extends ModelType<?>> types) {
-        return Joiner.on(", ").join(ImmutableSet.copyOf(Iterables.transform(types, new Function<ModelType<?>, String>() {
-            @Override
-            public String apply(ModelType<?> input) {
-                return input.getDisplayName();
-            }
-        })));
+        return Joiner.on(", ").join(ImmutableSet.copyOf(Iterables.transform(types, (Function<ModelType<?>, String>) input -> input.getDisplayName())));
     }
 
     private static boolean isManagedCollection(ModelType<?> type) {

@@ -62,17 +62,14 @@ public abstract class DefaultNativeComponent {
         for (String sourceExtension : sourceExtensions) {
             patternSet.include("**/*." + sourceExtension);
         }
-        return getProjectLayout().files(new Callable<Object>() {
-            @Override
-            public Object call() {
-                FileTree tree;
-                if (source.getFrom().isEmpty()) {
-                    tree = getProjectLayout().getProjectDirectory().dir(defaultLocation).getAsFileTree();
-                } else {
-                    tree = source.getAsFileTree();
-                }
-                return tree.matching(patternSet);
+        return getProjectLayout().files((Callable<Object>) () -> {
+            FileTree tree;
+            if (source.getFrom().isEmpty()) {
+                tree = getProjectLayout().getProjectDirectory().dir(defaultLocation).getAsFileTree();
+            } else {
+                tree = source.getAsFileTree();
             }
+            return tree.matching(patternSet);
         });
     }
 }

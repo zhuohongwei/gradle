@@ -16,9 +16,15 @@
 
 package org.gradle.model.internal.inspect;
 
-import org.gradle.internal.BiAction;
 import org.gradle.model.InvalidModelRuleDeclarationException;
-import org.gradle.model.internal.core.*;
+import org.gradle.model.internal.core.ModelAction;
+import org.gradle.model.internal.core.ModelActionRole;
+import org.gradle.model.internal.core.ModelPath;
+import org.gradle.model.internal.core.ModelReference;
+import org.gradle.model.internal.core.ModelRegistrations;
+import org.gradle.model.internal.core.ModelTypeInitializationException;
+import org.gradle.model.internal.core.NodeInitializer;
+import org.gradle.model.internal.core.NodeInitializerRegistry;
 import org.gradle.model.internal.core.rule.describe.ModelRuleDescriptor;
 import org.gradle.model.internal.manage.schema.ModelSchema;
 import org.gradle.model.internal.manage.schema.ModelSchemaStore;
@@ -100,16 +106,13 @@ public class ManagedModelCreationRuleExtractor extends AbstractModelCreationRule
             if (modelSchema instanceof SpecializedMapSchema) {
                 registration.actions(SpecializedMapNodeInitializer.getActions(ModelReference.of(modelPath), descriptor, (SpecializedMapSchema<S, ?>) modelSchema));
             } else {
-                registration.action(ModelActionRole.Discover, Collections.singletonList(ModelReference.of(NODE_INITIALIZER_REGISTRY)), new BiAction<MutableModelNode, List<ModelView<?>>>() {
-                    @Override
-                    public void execute(MutableModelNode node, List<ModelView<?>> modelViews) {
-                        NodeInitializerRegistry nodeInitializerRegistry = (NodeInitializerRegistry) modelViews.get(0).getInstance();
-                        NodeInitializer initializer = getNodeInitializer(descriptor, modelSchema, nodeInitializerRegistry);
-                        for (Map.Entry<ModelActionRole, ModelAction> actionInRole : initializer.getActions(ModelReference.of(modelPath), descriptor).entries()) {
-                            ModelActionRole role = actionInRole.getKey();
-                            ModelAction action = actionInRole.getValue();
-                            node.applyToSelf(role, action);
-                        }
+                registration.action(ModelActionRole.Discover, Collections.singletonList(ModelReference.of(NODE_INITIALIZER_REGISTRY)), (node, modelViews) -> {
+                    NodeInitializerRegistry nodeInitializerRegistry = (NodeInitializerRegistry) modelViews.get(0).getInstance();
+                    NodeInitializer initializer = getNodeInitializer(descriptor, modelSchema, nodeInitializerRegistry);
+                    for (Map.Entry<ModelActionRole, ModelAction> actionInRole : initializer.getActions(ModelReference.of(modelPath), descriptor).entries()) {
+                        ModelActionRole role = actionInRole.getKey();
+                        ModelAction action = actionInRole.getValue();
+                        node.applyToSelf(role, action);
                     }
                 });
             }

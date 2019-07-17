@@ -18,7 +18,6 @@ package org.gradle.tooling.internal.provider.serialization;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import javax.annotation.concurrent.ThreadSafe;
 import org.gradle.api.Transformer;
 import org.gradle.internal.classloader.ClassLoaderSpec;
 import org.gradle.internal.classloader.ClassLoaderVisitor;
@@ -28,6 +27,7 @@ import org.gradle.util.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,12 +86,9 @@ public class DefaultPayloadClassLoaderRegistry implements PayloadClassLoaderRegi
 
     @Override
     public DeserializeMap newDeserializeSession() {
-        return new DeserializeMap() {
-            @Override
-            public Class<?> resolveClass(ClassLoaderDetails classLoaderDetails, String className) throws ClassNotFoundException {
-                ClassLoader classLoader = getClassLoader(classLoaderDetails);
-                return Class.forName(className, false, classLoader);
-            }
+        return (classLoaderDetails, className) -> {
+            ClassLoader classLoader = getClassLoader(classLoaderDetails);
+            return Class.forName(className, false, classLoader);
         };
     }
 

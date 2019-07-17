@@ -15,7 +15,6 @@
  */
 package org.gradle.plugins.ide.internal.generator;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import groovy.lang.Closure;
@@ -106,12 +105,7 @@ public abstract class XmlPersistableConfigurationObject extends AbstractPersista
 
     @Nullable
     protected static Node findFirstWithAttributeValue(@Nullable List<Node> nodes, final String attribute, final String value) {
-        return nodes == null ? null : Iterables.getFirst(Iterables.filter(nodes, new Predicate<Node>() {
-            @Override
-            public boolean apply(Node node) {
-                return value.equals(node.attribute(attribute));
-            }
-        }), null);
+        return nodes == null ? null : Iterables.getFirst(Iterables.filter(nodes, node -> value.equals(node.attribute(attribute))), null);
     }
 
     public static Node findOrCreateFirstChildNamed(Node root, String name) {

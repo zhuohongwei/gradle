@@ -16,7 +16,6 @@
 package org.gradle.plugins.ide.idea.internal;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
@@ -25,11 +24,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import groovy.util.Node;
 import org.gradle.BuildAdapter;
-import org.gradle.api.Action;
 import org.gradle.api.GradleScriptException;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.XmlProvider;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.invocation.Gradle;
@@ -76,36 +72,20 @@ public class IdeaScalaConfigurer {
                 final boolean useScalaSdk = ideaTargetVersion == null || IDEA_VERSION_WHEN_SCALA_SDK_WAS_INTRODUCED.compareTo(ideaTargetVersion) <= 0;
                 final Collection<Project> scalaProjects = findProjectsApplyingIdeaAndScalaPlugins();
                 final Map<String, ProjectLibrary> scalaCompilerLibraries = Maps.newLinkedHashMap();
-                rootProject.getTasks().named("ideaProject", new Action<Task>() {
-                    @Override
-                    public void execute(Task task) {
-                        task.doFirst(new Action<Task>() {
-                            @Override
-                            public void execute(Task task) {
-                                if (scalaProjects.size() > 0) {
-                                    scalaCompilerLibraries.clear();
-                                    scalaCompilerLibraries.putAll(resolveScalaCompilerLibraries(scalaProjects, useScalaSdk));
-                                    declareUniqueProjectLibraries(Sets.newLinkedHashSet(scalaCompilerLibraries.values()));
-                                }
-                            }
-                        });
+                rootProject.getTasks().named("ideaProject", task -> task.doFirst(task1 -> {
+                    if (scalaProjects.size() > 0) {
+                        scalaCompilerLibraries.clear();
+                        scalaCompilerLibraries.putAll(resolveScalaCompilerLibraries(scalaProjects, useScalaSdk));
+                        declareUniqueProjectLibraries(Sets.newLinkedHashSet(scalaCompilerLibraries.values()));
                     }
-                });
-                rootProject.configure(scalaProjects, new Action<Project>() {
-                    @Override
-                    public void execute(final Project project) {
-                        project.getExtensions().getByType(IdeaModel.class).getModule().getIml().withXml(new Action<XmlProvider>() {
-                            @Override
-                            public void execute(XmlProvider xmlProvider) {
-                                if (useScalaSdk) {
-                                    declareScalaSdk(scalaCompilerLibraries.get(project.getPath()), xmlProvider.asNode());
-                                } else {
-                                    declareScalaFacet(scalaCompilerLibraries.get(project.getPath()), xmlProvider.asNode());
-                                }
-                            }
-                        });
+                }));
+                rootProject.configure(scalaProjects, project -> project.getExtensions().getByType(IdeaModel.class).getModule().getIml().withXml(xmlProvider -> {
+                    if (useScalaSdk) {
+                        declareScalaSdk(scalaCompilerLibraries.get(project.getPath()), xmlProvider.asNode());
+                    } else {
+                        declareScalaFacet(scalaCompilerLibraries.get(project.getPath()), xmlProvider.asNode());
                     }
-                });
+                }));
             }
         });
     }
@@ -183,12 +163,7 @@ public class IdeaScalaConfigurer {
     }
 
     private static boolean containsLibraryWithSameName(Set<ProjectLibrary> libraries, final String name) {
-        return Iterables.any(libraries, new Predicate<ProjectLibrary>() {
-            @Override
-            public boolean apply(ProjectLibrary library) {
-                return Objects.equal(library.getName(), name);
-            }
-        });
+        return Iterables.any(libraries, library -> Objects.equal(library.getName(), name));
     }
 
     private static void declareScalaSdk(ProjectLibrary scalaSdkLibrary, Node iml) {
@@ -219,12 +194,7 @@ public class IdeaScalaConfigurer {
     }
 
     private Collection<Project> findProjectsApplyingIdeaAndScalaPlugins() {
-        return Collections2.filter(rootProject.getAllprojects(), new Predicate<Project>() {
-            @Override
-            public boolean apply(Project project) {
-                return project.getPlugins().hasPlugin(IdeaPlugin.class) && (project.getPlugins().hasPlugin(ScalaBasePlugin.class) || project.getPlugins().hasPlugin(ScalaLanguagePlugin.class));
-            }
-        });
+        return Collections2.filter(rootProject.getAllprojects(), project -> project.getPlugins().hasPlugin(IdeaPlugin.class) && (project.getPlugins().hasPlugin(ScalaBasePlugin.class) || project.getPlugins().hasPlugin(ScalaLanguagePlugin.class)));
     }
 
     private VersionNumber findIdeaTargetVersion() {

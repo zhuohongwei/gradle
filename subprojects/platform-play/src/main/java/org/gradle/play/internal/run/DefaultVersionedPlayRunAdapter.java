@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.ref.SoftReference;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -65,43 +64,40 @@ public abstract class DefaultVersionedPlayRunAdapter implements VersionedPlayRun
         final ClassLoader assetsClassLoader = createAssetsClassLoader(assetsJar, assetsDirs, classLoader);
         final Class<? extends Throwable> playExceptionClass = Cast.uncheckedCast(classLoader.loadClass(PLAY_EXCEPTION_CLASSNAME));
 
-        return Proxy.newProxyInstance(classLoader, new Class<?>[]{getBuildLinkClass(classLoader)}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (method.getName().equals("projectPath")) {
-                    return projectPath;
-                } else if (method.getName().equals("reload")) {
-                    Reloader.Result result = reloader.requireUpToDate();
+        return Proxy.newProxyInstance(classLoader, new Class<?>[]{getBuildLinkClass(classLoader)}, (proxy, method, args) -> {
+            if (method.getName().equals("projectPath")) {
+                return projectPath;
+            } else if (method.getName().equals("reload")) {
+                Reloader.Result result = reloader.requireUpToDate();
 
-                    // We can't close replaced loaders immediately, because their classes may be used during shutdown,
-                    // after the return of the reload() call that caused the loader to be swapped out.
-                    // We have no way of knowing when the loader is actually done with, so we use the request after the request
-                    // that triggered the reload as the trigger point to close the replaced loader.
-                    closeOldLoaders();
-                    if (result.changed) {
-                        ClassPath classpath = DefaultClassPath.of(applicationJar).plus(DefaultClassPath.of(changingClasspath));
-                        URLClassLoader currentClassLoader = new URLClassLoader(classpath.getAsURLArray(), assetsClassLoader);
-                        storeClassLoader(currentClassLoader);
-                        return currentClassLoader;
+                // We can't close replaced loaders immediately, because their classes may be used during shutdown,
+                // after the return of the reload() call that caused the loader to be swapped out.
+                // We have no way of knowing when the loader is actually done with, so we use the request after the request
+                // that triggered the reload as the trigger point to close the replaced loader.
+                closeOldLoaders();
+                if (result.changed) {
+                    ClassPath classpath = DefaultClassPath.of(applicationJar).plus(DefaultClassPath.of(changingClasspath));
+                    URLClassLoader currentClassLoader = new URLClassLoader(classpath.getAsURLArray(), assetsClassLoader);
+                    storeClassLoader(currentClassLoader);
+                    return currentClassLoader;
+                } else {
+                    Throwable failure = result.failure;
+                    if (failure == null) {
+                        return null;
                     } else {
-                        Throwable failure = result.failure;
-                        if (failure == null) {
-                            return null;
-                        } else {
-                            try {
-                                return DirectInstantiator.instantiate(playExceptionClass, "Gradle Build Failure", failure.getMessage(), failure);
-                            } catch (Exception e) {
-                                LOGGER.warn("Could not translate " + failure + " to " + PLAY_EXCEPTION_CLASSNAME, e);
-                                return failure;
-                            }
+                        try {
+                            return DirectInstantiator.instantiate(playExceptionClass, "Gradle Build Failure", failure.getMessage(), failure);
+                        } catch (Exception e) {
+                            LOGGER.warn("Could not translate " + failure + " to " + PLAY_EXCEPTION_CLASSNAME, e);
+                            return failure;
                         }
                     }
-                } else if (method.getName().equals("settings")) {
-                    return new HashMap<String, String>();
                 }
-                //TODO: all methods
-                return null;
+            } else if (method.getName().equals("settings")) {
+                return new HashMap<String, String>();
             }
+            //TODO: all methods
+            return null;
         });
     }
 

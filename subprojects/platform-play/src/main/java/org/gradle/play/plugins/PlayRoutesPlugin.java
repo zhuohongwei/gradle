@@ -16,7 +16,6 @@
 
 package org.gradle.play.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.Task;
@@ -60,12 +59,9 @@ public class PlayRoutesPlugin extends RuleSource {
 
     @Mutate
     void createGeneratedScalaSourceSets(@Path("binaries") ModelMap<PlayApplicationBinarySpecInternal> binaries, final ObjectFactory objectFactory) {
-        binaries.all(new Action<PlayApplicationBinarySpecInternal>() {
-            @Override
-            public void execute(PlayApplicationBinarySpecInternal playApplicationBinarySpec) {
-                for (LanguageSourceSet languageSourceSet : playApplicationBinarySpec.getInputs().withType(RoutesSourceSet.class)) {
-                    playApplicationBinarySpec.addGeneratedScala(languageSourceSet, objectFactory);
-                }
+        binaries.all(playApplicationBinarySpec -> {
+            for (LanguageSourceSet languageSourceSet : playApplicationBinarySpec.getInputs().withType(RoutesSourceSet.class)) {
+                playApplicationBinarySpec.addGeneratedScala(languageSourceSet, objectFactory);
             }
         });
     }

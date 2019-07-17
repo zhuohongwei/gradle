@@ -23,7 +23,6 @@ import org.gradle.api.internal.PolymorphicNamedEntityInstantiator;
 import org.gradle.api.internal.rules.DefaultRuleAwarePolymorphicNamedEntityInstantiator;
 import org.gradle.api.internal.rules.RuleAwarePolymorphicNamedEntityInstantiator;
 import org.gradle.internal.Actions;
-import org.gradle.internal.BiAction;
 import org.gradle.internal.Factories;
 import org.gradle.internal.Factory;
 import org.gradle.model.ModelMap;
@@ -105,42 +104,27 @@ public class ModelRegistryHelperExtension {
     }
 
     public static <I> ModelRegistry registerModelMap(ModelRegistry modelRegistry, String path, final Class<I> itemType, final Action<? super PolymorphicNamedEntityInstantiator<I>> registrations) {
-        configure(modelRegistry, Initialize, ModelReference.of(path, ModelRegistryHelper.instantiatorType(itemType)), new Action<RuleAwarePolymorphicNamedEntityInstantiator<I>>() {
+        configure(modelRegistry, Initialize, ModelReference.of(path, ModelRegistryHelper.instantiatorType(itemType)), instantiator -> registrations.execute(new PolymorphicNamedEntityInstantiator<I>() {
             @Override
-            public void execute(final RuleAwarePolymorphicNamedEntityInstantiator<I> instantiator) {
-                registrations.execute(new PolymorphicNamedEntityInstantiator<I>() {
-                    @Override
-                    public Set<? extends Class<? extends I>> getCreatableTypes() {
-                        return instantiator.getCreatableTypes();
-                    }
-
-                    @Override
-                    public <U extends I> void registerFactory(Class<U> type, NamedDomainObjectFactory<? extends U> factory) {
-                        instantiator.registerFactory(type, factory, new SimpleModelRuleDescriptor("ModelRegistryHelper.modelMap"));
-                    }
-
-                    @Override
-                    public <S extends I> S create(String name, Class<S> type) {
-                        return instantiator.create(name, type);
-                    }
-                });
+            public Set<? extends Class<? extends I>> getCreatableTypes() {
+                return instantiator.getCreatableTypes();
             }
-        });
-        return register(modelRegistry, path, new Transformer<ModelRegistration, ModelRegistrations.Builder>() {
+
             @Override
-            public ModelRegistration transform(ModelRegistrations.Builder modelRegistrationBuilder) {
-                return modelMap(modelRegistrationBuilder, itemType);
+            public <U extends I> void registerFactory(Class<U> type, NamedDomainObjectFactory<? extends U> factory) {
+                instantiator.registerFactory(type, factory, new SimpleModelRuleDescriptor("ModelRegistryHelper.modelMap"));
             }
-        });
+
+            @Override
+            public <S extends I> S create(String name, Class<S> type) {
+                return instantiator.create(name, type);
+            }
+        }));
+        return register(modelRegistry, path, modelRegistrationBuilder -> modelMap(modelRegistrationBuilder, itemType));
     }
 
     public static <I> ModelRegistry mutateModelMap(ModelRegistry modelRegistry, final String path, final Class<I> itemType, final Action<? super ModelMap<I>> action) {
-        return mutate(modelRegistry, new Transformer<ModelAction, ModelActionBuilder<Object>>() {
-            @Override
-            public ModelAction transform(ModelActionBuilder<Object> builder) {
-                return builder.path(path).type(ModelTypes.modelMap(itemType)).action(action);
-            }
-        });
+        return mutate(modelRegistry, builder -> builder.path(path).type(ModelTypes.modelMap(itemType)).action(action));
     }
 
     private static ModelRegistrations.Builder registration(ModelPath path) {
@@ -176,30 +160,15 @@ public class ModelRegistryHelperExtension {
     }
 
     public static ModelRegistry mutate(ModelRegistry modelRegistry, final String path, final Action<? super MutableModelNode> action) {
-        return configure(modelRegistry, Mutate, new Transformer<ModelAction, ModelActionBuilder<Object>>() {
-            @Override
-            public ModelAction transform(ModelActionBuilder<Object> objectModelActionBuilder) {
-                return objectModelActionBuilder.path(path).node(action);
-            }
-        });
+        return configure(modelRegistry, Mutate, objectModelActionBuilder -> objectModelActionBuilder.path(path).node(action));
     }
 
     public static ModelRegistry apply(ModelRegistry modelRegistry, String path, final Class<? extends RuleSource> rules) {
-        return mutate(modelRegistry, path, new Action<MutableModelNode>() {
-            @Override
-            public void execute(MutableModelNode mutableModelNode) {
-                mutableModelNode.applyToSelf(rules);
-            }
-        });
+        return mutate(modelRegistry, path, mutableModelNode -> mutableModelNode.applyToSelf(rules));
     }
 
     public static <T> ModelRegistry configure(ModelRegistry modelRegistry, ModelActionRole role, final ModelReference<T> reference, final Action<? super T> action) {
-        return configure(modelRegistry, role, new Transformer<ModelAction, ModelActionBuilder<Object>>() {
-            @Override
-            public ModelAction transform(ModelActionBuilder<Object> objectModelActionBuilder) {
-                return objectModelActionBuilder.path(reference.getPath()).type(reference.getType()).action(action);
-            }
-        });
+        return configure(modelRegistry, role, objectModelActionBuilder -> objectModelActionBuilder.path(reference.getPath()).type(reference.getType()).action(action));
     }
 
     public static <T> T get(ModelRegistry modelRegistry, String path, Class<T> type) {
@@ -240,12 +209,7 @@ public class ModelRegistryHelperExtension {
         return builder.action(
             ModelActionRole.Create,
             ModelReference.of(inputPath, ModelType.UNTYPED, inputDescriptor),
-            new BiAction<MutableModelNode, Object>() {
-                @Override
-                public void execute(MutableModelNode mutableModelNode, Object input) {
-                    mutableModelNode.setPrivateData(modelType, action.transform(input));
-                }
-            }
+            (mutableModelNode, input) -> mutableModelNode.setPrivateData(modelType, action.transform(input))
         )
             .withProjection(new UnmanagedModelProjection<C>(modelType))
             .build();
@@ -259,12 +223,7 @@ public class ModelRegistryHelperExtension {
         return builder.action(
             ModelActionRole.Create,
             ModelReference.of(inputModelType),
-            new BiAction<MutableModelNode, I>() {
-                @Override
-                public void execute(MutableModelNode mutableModelNode, I input) {
-                    mutableModelNode.setPrivateData(modelType, action.transform(input));
-                }
-            })
+            (mutableModelNode, input) -> mutableModelNode.setPrivateData(modelType, action.transform(input)))
             .withProjection(new UnmanagedModelProjection<C>(modelType))
             .build();
     }
@@ -279,12 +238,7 @@ public class ModelRegistryHelperExtension {
 
     private static <C> ModelRegistration unmanaged(ModelRegistrations.Builder builder, final ModelType<C> modelType, final Factory<? extends C> initializer) {
         return builder.action(ModelActionRole.Create,
-            new Action<MutableModelNode>() {
-                @Override
-                public void execute(MutableModelNode mutableModelNode) {
-                    mutableModelNode.setPrivateData(modelType, initializer.create());
-                }
-            })
+            mutableModelNode -> mutableModelNode.setPrivateData(modelType, initializer.create()))
             .withProjection(UnmanagedModelProjection.of(modelType))
             .build();
     }
@@ -304,12 +258,9 @@ public class ModelRegistryHelperExtension {
     }
 
     public static <C> ModelRegistration unmanaged(ModelRegistrations.Builder builder, final C c, final Action<? super C> action) {
-        return unmanaged(builder, ModelType.typeOf(c).getConcreteClass(), new Factory<C>() {
-            @Override
-            public C create() {
-                action.execute(c);
-                return c;
-            }
+        return unmanaged(builder, ModelType.typeOf(c).getConcreteClass(), (Factory<C>) () -> {
+            action.execute(c);
+            return c;
         });
     }
 
@@ -322,14 +273,11 @@ public class ModelRegistryHelperExtension {
 
         ModelType<I> modelType = ModelType.of(itemType);
         return builder.action(ModelActionRole.Create,
-            new Action<MutableModelNode>() {
-                @Override
-                public void execute(MutableModelNode mutableModelNode) {
-                    RuleAwarePolymorphicNamedEntityInstantiator<I> instantiator = new DefaultRuleAwarePolymorphicNamedEntityInstantiator<I>(
-                        new DefaultPolymorphicNamedEntityInstantiator<I>(itemType, "this collection")
-                    );
-                    mutableModelNode.setPrivateData(instantiatorType, instantiator);
-                }
+            mutableModelNode -> {
+                RuleAwarePolymorphicNamedEntityInstantiator<I> instantiator = new DefaultRuleAwarePolymorphicNamedEntityInstantiator<I>(
+                    new DefaultPolymorphicNamedEntityInstantiator<I>(itemType, "this collection")
+                );
+                mutableModelNode.setPrivateData(instantiatorType, instantiator);
             })
             .withProjection(ModelMapModelProjection.unmanaged(
                 modelType,

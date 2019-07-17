@@ -37,9 +37,7 @@ import org.gradle.internal.fingerprint.FileCollectionFingerprint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.function.Predicate;
 
 /**
  * A {@link TaskExecuter} which skips tasks whose source file collection is empty.
@@ -74,17 +72,7 @@ public class SkipEmptySourceFilesTaskExecuter implements TaskExecuter {
                 LOGGER.info("Skipping {} as it has no source files and no previous output files.", task);
             } else {
                 outputChangeListener.beforeOutputChange();
-                OutputsCleaner outputsCleaner = new OutputsCleaner(new Predicate<File>() {
-                    @Override
-                    public boolean test(File file) {
-                        return buildOutputCleanupRegistry.isOutputOwnedByBuild(file);
-                    }
-                }, new Predicate<File>() {
-                    @Override
-                    public boolean test(File dir) {
-                        return buildOutputCleanupRegistry.isOutputOwnedByBuild(dir);
-                    }
-                });
+                OutputsCleaner outputsCleaner = new OutputsCleaner(file -> buildOutputCleanupRegistry.isOutputOwnedByBuild(file), dir -> buildOutputCleanupRegistry.isOutputOwnedByBuild(dir));
                 for (FileCollectionFingerprint outputFingerprints : outputFiles.values()) {
                     try {
                         outputsCleaner.cleanupOutputs(outputFingerprints);

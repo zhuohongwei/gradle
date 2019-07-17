@@ -15,7 +15,6 @@
  */
 package org.gradle.api.internal.tasks;
 
-import org.gradle.api.Namer;
 import org.gradle.api.internal.AbstractValidatingNamedDomainObjectContainer;
 import org.gradle.api.internal.CollectionCallbackActionDecorator;
 import org.gradle.api.internal.file.FileCollectionFactory;
@@ -38,12 +37,7 @@ public class DefaultSourceSetContainer extends AbstractValidatingNamedDomainObje
 
     @Inject
     public DefaultSourceSetContainer(FileResolver fileResolver, FileCollectionFactory fileCollectionFactory, Instantiator classGenerator, ObjectFactory objectFactory, CollectionCallbackActionDecorator collectionCallbackActionDecorator) {
-        super(SourceSet.class, classGenerator, new Namer<SourceSet>() {
-            @Override
-            public String determineName(SourceSet ss) {
-                return ss.getName();
-            }
-        }, collectionCallbackActionDecorator);
+        super(SourceSet.class, classGenerator, ss -> ss.getName(), collectionCallbackActionDecorator);
         this.fileResolver = fileResolver;
         this.fileCollectionFactory = fileCollectionFactory;
         this.instantiator = classGenerator;

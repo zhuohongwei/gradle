@@ -33,7 +33,6 @@ import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublicationArtifact;
 import org.gradle.api.publish.internal.PublicationInternal;
 import org.gradle.api.tasks.TaskContainer;
-import org.gradle.internal.Factory;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.plugins.signing.signatory.Signatory;
 import org.gradle.plugins.signing.signatory.SignatoryProvider;
@@ -99,12 +98,7 @@ public class SigningExtension {
         this.configuration = getDefaultConfiguration();
         this.signatureTypes = createSignatureTypeProvider();
         this.signatories = createSignatoryProvider();
-        project.getTasks().withType(Sign.class, new Action<Sign>() {
-            @Override
-            public void execute(Sign task) {
-                addSignatureSpecConventions(task);
-            }
-        });
+        project.getTasks().withType(Sign.class, task -> addSignatureSpecConventions(task));
     }
 
     public final Project getProject() {
@@ -270,24 +264,9 @@ public class SigningExtension {
         }
 
         ConventionMapping conventionMapping = ((IConventionAware) spec).getConventionMapping();
-        conventionMapping.map("signatory", new Callable<Signatory>() {
-            @Override
-            public Signatory call() {
-                return getSignatory();
-            }
-        });
-        conventionMapping.map("signatureType", new Callable<SignatureType>() {
-            @Override
-            public SignatureType call() {
-                return getSignatureType();
-            }
-        });
-        conventionMapping.map("required", new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                return isRequired();
-            }
-        });
+        conventionMapping.map("signatory", (Callable<Signatory>) () -> getSignatory());
+        conventionMapping.map("signatureType", (Callable<SignatureType>) () -> getSignatureType());
+        conventionMapping.map("required", (Callable<Boolean>) () -> isRequired());
     }
 
     /**
@@ -304,12 +283,9 @@ public class SigningExtension {
         List<Sign> result = new ArrayList<Sign>(tasks.length);
         for (final Task taskToSign : tasks) {
             result.add(
-                createSignTaskFor(taskToSign.getName(), new Action<Sign>() {
-                    @Override
-                    public void execute(Sign task) {
-                        task.setDescription("Signs the archive produced by the '" + taskToSign.getName() + "' task.");
-                        task.sign(taskToSign);
-                    }
+                createSignTaskFor(taskToSign.getName(), task -> {
+                    task.setDescription("Signs the archive produced by the '" + taskToSign.getName() + "' task.");
+                    task.sign(taskToSign);
                 })
             );
         }
@@ -330,12 +306,9 @@ public class SigningExtension {
         List<Sign> result = new ArrayList<Sign>(configurations.length);
         for (final Configuration configurationToSign : configurations) {
             result.add(
-                createSignTaskFor(configurationToSign.getName(), new Action<Sign>() {
-                    @Override
-                    public void execute(Sign task) {
-                        task.setDescription("Signs all artifacts in the '" + configurationToSign.getName() + "' configuration.");
-                        task.sign(configurationToSign);
-                    }
+                createSignTaskFor(configurationToSign.getName(), task -> {
+                    task.setDescription("Signs all artifacts in the '" + configurationToSign.getName() + "' configuration.");
+                    task.sign(configurationToSign);
                 })
             );
         }
@@ -378,52 +351,30 @@ public class SigningExtension {
     @Incubating
     public List<Sign> sign(DomainObjectCollection<Publication> publications) {
         final List<Sign> result = new ArrayList<Sign>();
-        publications.all(new Action<Publication>() {
-            @Override
-            public void execute(Publication publication) {
-                result.add(createSignTaskFor((PublicationInternal<?>) publication));
-            }
-        });
-        publications.whenObjectRemoved(new Action<Publication>() {
-            @Override
-            public void execute(Publication publication) {
-                TaskContainer tasks = project.getTasks();
-                Task task = tasks.getByName(determineSignTaskNameForPublication(publication));
-                tasks.remove(task);
-                result.remove(task);
-            }
+        publications.all((Action<Publication>) publication -> result.add(createSignTaskFor((PublicationInternal<?>) publication)));
+        publications.whenObjectRemoved(publication -> {
+            TaskContainer tasks = project.getTasks();
+            Task task = tasks.getByName(determineSignTaskNameForPublication(publication));
+            tasks.remove(task);
+            result.remove(task);
         });
         return result;
     }
 
     private <T extends PublicationArtifact> Sign createSignTaskFor(final PublicationInternal<T> publicationToSign) {
-        final Sign signTask = project.getTasks().create(determineSignTaskNameForPublication(publicationToSign), Sign.class, new Action<Sign>() {
-            @Override
-            public void execute(Sign task) {
-                task.setDescription("Signs all artifacts in the '" + publicationToSign.getName() + "' publication.");
-                task.sign(publicationToSign);
-            }
+        final Sign signTask = project.getTasks().create(determineSignTaskNameForPublication(publicationToSign), Sign.class, task -> {
+            task.setDescription("Signs all artifacts in the '" + publicationToSign.getName() + "' publication.");
+            task.sign(publicationToSign);
         });
         final Map<Signature, T> artifacts = new HashMap<Signature, T>();
-        signTask.getSignatures().all(new Action<Signature>() {
-            @Override
-            public void execute(final Signature signature) {
-                T artifact = publicationToSign.addDerivedArtifact((T) signature.getSource(), new Factory<File>() {
-                    @Override
-                    public File create() {
-                        return signature.getFile();
-                    }
-                });
-                artifact.builtBy(signTask);
-                artifacts.put(signature, artifact);
-            }
+        signTask.getSignatures().all(signature -> {
+            T artifact = publicationToSign.addDerivedArtifact((T) signature.getSource(), () -> signature.getFile());
+            artifact.builtBy(signTask);
+            artifacts.put(signature, artifact);
         });
-        signTask.getSignatures().whenObjectRemoved(new Action<Signature>() {
-            @Override
-            public void execute(Signature signature) {
-                T artifact = artifacts.remove(signature);
-                publicationToSign.removeDerivedArtifact(artifact);
-            }
+        signTask.getSignatures().whenObjectRemoved(signature -> {
+            T artifact = artifacts.remove(signature);
+            publicationToSign.removeDerivedArtifact(artifact);
         });
         return signTask;
     }
@@ -439,18 +390,8 @@ public class SigningExtension {
     }
 
     protected Object addSignaturesToConfiguration(Sign task, final Configuration configuration) {
-        task.getSignatures().all(new Action<Signature>() {
-            @Override
-            public void execute(Signature sig) {
-                configuration.getArtifacts().add(sig);
-            }
-        });
-        return task.getSignatures().whenObjectRemoved(new Action<Signature>() {
-            @Override
-            public void execute(Signature sig) {
-                configuration.getArtifacts().remove(sig);
-            }
-        });
+        task.getSignatures().all(sig -> configuration.getArtifacts().add(sig));
+        return task.getSignatures().whenObjectRemoved(sig -> configuration.getArtifacts().remove(sig));
     }
 
     /**
@@ -463,12 +404,7 @@ public class SigningExtension {
      * @return The executed {@link SignOperation sign operation}
      */
     public SignOperation sign(final PublishArtifact... publishArtifacts) {
-        return doSignOperation(new Action<SignOperation>() {
-            @Override
-            public void execute(SignOperation operation) {
-                operation.sign(publishArtifacts);
-            }
-        });
+        return doSignOperation(operation -> operation.sign(publishArtifacts));
     }
 
     /**
@@ -481,12 +417,7 @@ public class SigningExtension {
      * @return The executed {@link SignOperation sign operation}.
      */
     public SignOperation sign(final File... files) {
-        return doSignOperation(new Action<SignOperation>() {
-            @Override
-            public void execute(SignOperation operation) {
-                operation.sign(files);
-            }
-        });
+        return doSignOperation(operation -> operation.sign(files));
     }
 
     /**
@@ -500,12 +431,7 @@ public class SigningExtension {
      * @return The executed {@link SignOperation sign operation}.
      */
     public SignOperation sign(final String classifier, final File... files) {
-        return doSignOperation(new Action<SignOperation>() {
-            @Override
-            public void execute(SignOperation operation) {
-                operation.sign(classifier, files);
-            }
-        });
+        return doSignOperation(operation -> operation.sign(classifier, files));
     }
 
     /**
@@ -548,12 +474,9 @@ public class SigningExtension {
      * @return the generated signature artifact
      */
     public Signature signPom(final MavenDeployment mavenDeployment, final Closure closure) {
-        SignOperation signOperation = doSignOperation(new Action<SignOperation>() {
-            @Override
-            public void execute(SignOperation so) {
-                so.sign(mavenDeployment.getPomArtifact());
-                so.configure(closure);
-            }
+        SignOperation signOperation = doSignOperation(so -> {
+            so.sign(mavenDeployment.getPomArtifact());
+            so.configure(closure);
         });
 
         Signature pomSignature = signOperation.getSingleSignature();
@@ -600,12 +523,7 @@ public class SigningExtension {
     }
 
     protected SignOperation doSignOperation(final Closure setup) {
-        return doSignOperation(new Action<SignOperation>() {
-            @Override
-            public void execute(SignOperation operation) {
-                operation.configure(setup);
-            }
-        });
+        return doSignOperation(operation -> operation.configure(setup));
     }
 
     protected SignOperation doSignOperation(Action<SignOperation> setup) {

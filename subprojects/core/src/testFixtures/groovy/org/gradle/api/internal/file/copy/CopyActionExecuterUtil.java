@@ -16,7 +16,6 @@
 
 package org.gradle.api.internal.file.copy;
 
-import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
 
 import java.util.Arrays;
@@ -24,12 +23,9 @@ import java.util.Arrays;
 public class CopyActionExecuterUtil {
 
     public static WorkResult visit(CopyAction visitor, final Iterable<FileCopyDetailsInternal> details) {
-        return visitor.execute(new CopyActionProcessingStream() {
-            @Override
-            public void process(CopyActionProcessingStreamAction action) {
-                for (FileCopyDetailsInternal detailsInternal : details) {
-                    action.processFile(detailsInternal);
-                }
+        return visitor.execute(action -> {
+            for (FileCopyDetailsInternal detailsInternal : details) {
+                action.processFile(detailsInternal);
             }
         });
     }

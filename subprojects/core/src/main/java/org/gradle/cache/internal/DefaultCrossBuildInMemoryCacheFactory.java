@@ -228,12 +228,7 @@ public class DefaultCrossBuildInMemoryCacheFactory implements CrossBuildInMemory
         private Map<Class<?>, V> getCacheScope(Class<?> type) {
             ClassLoader classLoader = type.getClassLoader();
             if (classLoader instanceof VisitableURLClassLoader) {
-                return ((VisitableURLClassLoader) classLoader).getUserData(this, new Factory<Map<Class<?>, V>>() {
-                    @Override
-                    public Map<Class<?>, V> create() {
-                        return new HashMap<>();
-                    }
-                });
+                return ((VisitableURLClassLoader) classLoader).getUserData(this, (Factory<Map<Class<?>, V>>) () -> new HashMap<>());
             }
             return leakyValues;
         }

@@ -16,16 +16,12 @@
 
 package org.gradle.plugin.devel.plugins;
 
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.XmlProvider;
 import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.internal.FeaturePreviews;
 import org.gradle.api.publish.PublicationContainer;
 import org.gradle.api.publish.PublishingExtension;
-import org.gradle.api.publish.ivy.IvyModuleDescriptorDescription;
-import org.gradle.api.publish.ivy.IvyModuleDescriptorSpec;
 import org.gradle.api.publish.ivy.IvyPublication;
 import org.gradle.api.publish.ivy.internal.publication.IvyPublicationInternal;
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension;
@@ -49,26 +45,18 @@ class IvyPluginPublishingPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
-        project.afterEvaluate(new Action<Project>() {
-            @Override
-            public void execute(final Project project) {
-                configurePublishing(project);
-            }
-        });
+        project.afterEvaluate(project1 -> configurePublishing(project1));
     }
 
     private void configurePublishing(final Project project) {
-        project.getExtensions().configure(PublishingExtension.class, new Action<PublishingExtension>() {
-            @Override
-            public void execute(PublishingExtension publishing) {
-                final GradlePluginDevelopmentExtension pluginDevelopment = project.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
-                if (!pluginDevelopment.isAutomatedPublishing()) {
-                    return;
-                }
-                SoftwareComponent mainComponent = project.getComponents().getByName("java");
-                IvyPublication mainPublication = addMainPublication(publishing, mainComponent);
-                addMarkerPublications(mainPublication, publishing, pluginDevelopment);
+        project.getExtensions().configure(PublishingExtension.class, publishing -> {
+            final GradlePluginDevelopmentExtension pluginDevelopment = project.getExtensions().getByType(GradlePluginDevelopmentExtension.class);
+            if (!pluginDevelopment.isAutomatedPublishing()) {
+                return;
             }
+            SoftwareComponent mainComponent = project.getComponents().getByName("java");
+            IvyPublication mainPublication = addMainPublication(publishing, mainComponent);
+            addMarkerPublications(mainPublication, publishing, pluginDevelopment);
         });
     }
 
@@ -90,34 +78,23 @@ class IvyPluginPublishingPlugin implements Plugin<Project> {
         publication.setAlias(true);
         publication.setOrganisation(pluginId);
         publication.setModule(pluginId + PLUGIN_MARKER_SUFFIX);
-        publication.descriptor(new Action<IvyModuleDescriptorSpec>() {
-            @Override
-            public void execute(IvyModuleDescriptorSpec descriptor) {
-                descriptor.description(new Action<IvyModuleDescriptorDescription>() {
-                    @Override
-                    public void execute(IvyModuleDescriptorDescription description) {
-                        description.getText().set(declaration.getDescription());
-                    }
-                });
-                descriptor.withXml(new Action<XmlProvider>() {
-                    @Override
-                    public void execute(XmlProvider xmlProvider) {
-                        Element root = xmlProvider.asElement();
-                        Document document = root.getOwnerDocument();
-                        Node dependencies = root.getElementsByTagName("dependencies").item(0);
-                        Node dependency = dependencies.appendChild(document.createElement("dependency"));
-                        Attr org = document.createAttribute("org");
-                        org.setValue(mainPublication.getOrganisation());
-                        dependency.getAttributes().setNamedItem(org);
-                        Attr name = document.createAttribute("name");
-                        name.setValue(mainPublication.getModule());
-                        dependency.getAttributes().setNamedItem(name);
-                        Attr rev = document.createAttribute("rev");
-                        rev.setValue(mainPublication.getRevision());
-                        dependency.getAttributes().setNamedItem(rev);
-                    }
-                });
-            }
+        publication.descriptor(descriptor -> {
+            descriptor.description(description -> description.getText().set(declaration.getDescription()));
+            descriptor.withXml(xmlProvider -> {
+                Element root = xmlProvider.asElement();
+                Document document = root.getOwnerDocument();
+                Node dependencies = root.getElementsByTagName("dependencies").item(0);
+                Node dependency = dependencies.appendChild(document.createElement("dependency"));
+                Attr org = document.createAttribute("org");
+                org.setValue(mainPublication.getOrganisation());
+                dependency.getAttributes().setNamedItem(org);
+                Attr name = document.createAttribute("name");
+                name.setValue(mainPublication.getModule());
+                dependency.getAttributes().setNamedItem(name);
+                Attr rev = document.createAttribute("rev");
+                rev.setValue(mainPublication.getRevision());
+                dependency.getAttributes().setNamedItem(rev);
+            });
         });
     }
 }

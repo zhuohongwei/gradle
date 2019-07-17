@@ -33,7 +33,6 @@ import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.internal.DefaultPublicationContainer;
 import org.gradle.api.publish.internal.DefaultPublishingExtension;
 import org.gradle.api.publish.internal.PublicationInternal;
-import org.gradle.internal.model.RuleBasedPluginListener;
 import org.gradle.internal.reflect.Instantiator;
 
 import javax.inject.Inject;
@@ -107,12 +106,7 @@ public class PublishingPlugin implements Plugin<Project> {
     }
 
     private void bridgeToSoftwareModelIfNeeded(ProjectInternal project) {
-        project.addRuleBasedPluginListener(new RuleBasedPluginListener() {
-            @Override
-            public void prepareForRuleBasedPlugins(Project project) {
-                project.getPluginManager().apply(PublishingPluginRules.class);
-            }
-        });
+        project.addRuleBasedPluginListener(project1 -> project1.getPluginManager().apply(PublishingPluginRules.class));
     }
 
 }

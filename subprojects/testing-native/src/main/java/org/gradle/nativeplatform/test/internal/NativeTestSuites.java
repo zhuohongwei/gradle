@@ -16,7 +16,6 @@
 
 package org.gradle.nativeplatform.test.internal;
 
-import org.gradle.api.Action;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.model.ModelMap;
 import org.gradle.nativeplatform.NativeBinarySpec;
@@ -69,33 +68,27 @@ public class NativeTestSuites {
         final BinaryNamingScheme namingScheme = namingSchemeFor(testSuite, (NativeBinarySpecInternal) testedBinary, typeString);
         final NativeDependencyResolver resolver = serviceRegistry.get(NativeDependencyResolver.class);
 
-        binaries.create(namingScheme.getBinaryName(), testSuiteBinaryClass, new Action<S>() {
-            @Override
-            public void execute(S binary) {
-                final NativeTestSuiteBinarySpecInternal testBinary = (NativeTestSuiteBinarySpecInternal) binary;
-                testBinary.setTestedBinary((NativeBinarySpecInternal) testedBinary);
-                testBinary.setNamingScheme(namingScheme);
-                testBinary.setResolver(resolver);
-                testBinary.setToolChain(testedBinary.getToolChain());
-                NativeExecutableFileSpec executable = testBinary.getExecutable();
-                NativeInstallationSpec installation = testBinary.getInstallation();
-                executable.setToolChain(testedBinary.getToolChain());
-                executable.setFile(executableFileFor(testBinary, buildDir));
-                installation.setDirectory(installationDirFor(testBinary, buildDir));
-                NativeComponents.createInstallTask(testBinary, installation, executable, namingScheme);
-                NativeComponents.createExecutableTask(testBinary, testBinary.getExecutableFile());
-                createRunTask(testBinary, namingScheme.getTaskName("run"));
-            }
+        binaries.create(namingScheme.getBinaryName(), testSuiteBinaryClass, binary -> {
+            final NativeTestSuiteBinarySpecInternal testBinary = (NativeTestSuiteBinarySpecInternal) binary;
+            testBinary.setTestedBinary((NativeBinarySpecInternal) testedBinary);
+            testBinary.setNamingScheme(namingScheme);
+            testBinary.setResolver(resolver);
+            testBinary.setToolChain(testedBinary.getToolChain());
+            NativeExecutableFileSpec executable = testBinary.getExecutable();
+            NativeInstallationSpec installation = testBinary.getInstallation();
+            executable.setToolChain(testedBinary.getToolChain());
+            executable.setFile(executableFileFor(testBinary, buildDir));
+            installation.setDirectory(installationDirFor(testBinary, buildDir));
+            NativeComponents.createInstallTask(testBinary, installation, executable, namingScheme);
+            NativeComponents.createExecutableTask(testBinary, testBinary.getExecutableFile());
+            createRunTask(testBinary, namingScheme.getTaskName("run"));
         });
     }
 
     private static void createRunTask(final NativeTestSuiteBinarySpecInternal testBinary, String name) {
-        testBinary.getTasks().create(name, RunTestExecutable.class, new Action<RunTestExecutable>() {
-            @Override
-            public void execute(RunTestExecutable runTask) {
-                runTask.setDescription("Runs the " + testBinary);
-                testBinary.getTasks().add(runTask);
-            }
+        testBinary.getTasks().create(name, RunTestExecutable.class, runTask -> {
+            runTask.setDescription("Runs the " + testBinary);
+            testBinary.getTasks().add(runTask);
         });
     }
     public static Collection<NativeBinarySpec> testedBinariesOf(NativeTestSuiteSpec testSuite) {
@@ -120,12 +113,7 @@ public class NativeTestSuites {
     public static <S extends NativeTestSuiteSpec> void createConventionalTestSuites(TestSuiteContainer testSuites, ModelMap<NativeComponentSpec> components, Class<S> testSuiteSpecClass) {
         for (final NativeComponentSpec component : components.values()) {
             final String suiteName = component.getName() + "Test";
-            testSuites.create(suiteName, testSuiteSpecClass, new Action<S>() {
-                @Override
-                public void execute(S testSuite) {
-                    testSuite.testing(component);
-                }
-            });
+            testSuites.create(suiteName, testSuiteSpecClass, testSuite -> testSuite.testing(component));
         }
     }
 }

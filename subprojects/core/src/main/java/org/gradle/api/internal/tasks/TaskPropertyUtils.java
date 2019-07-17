@@ -18,7 +18,6 @@ package org.gradle.api.internal.tasks;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.NonNullApi;
-import org.gradle.api.Transformer;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.tasks.properties.PropertyVisitor;
 import org.gradle.api.internal.tasks.properties.PropertyWalker;
@@ -88,12 +87,7 @@ public class TaskPropertyUtils {
                 Collections.sort(problems);
                 message = String.format("Some problems were found with the configuration of %s.", task);
             }
-            throw new TaskValidationException(message, CollectionUtils.collect(problems, new Transformer<InvalidUserDataException, String>() {
-                @Override
-                public InvalidUserDataException transform(String message) {
-                    return new InvalidUserDataException(message);
-                }
-            }));
+            throw new TaskValidationException(message, CollectionUtils.collect(problems, message1 -> new InvalidUserDataException(message1)));
         }
 
         @Override

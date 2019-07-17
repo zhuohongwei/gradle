@@ -35,12 +35,7 @@ public class InputUsingModelAction<T> extends AbstractModelActionWithView<T> {
     }
 
     public static <T, I> InputUsingModelAction<T> single(ModelReference<T> modelReference, ModelRuleDescriptor descriptor, final ModelReference<I> input, final BiAction<? super T, ? super I> initializer) {
-        return new InputUsingModelAction<T>(modelReference, descriptor, Collections.<ModelReference<?>>singletonList(input), new BiAction<T, List<ModelView<?>>>() {
-            @Override
-            public void execute(T t, List<ModelView<?>> modelViews) {
-                initializer.execute(t, ModelViews.assertType(modelViews.get(0), input.getType()).getInstance());
-            }
-        });
+        return new InputUsingModelAction<T>(modelReference, descriptor, Collections.<ModelReference<?>>singletonList(input), (t, modelViews) -> initializer.execute(t, ModelViews.assertType(modelViews.get(0), input.getType()).getInstance()));
     }
 
     @Override

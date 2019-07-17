@@ -67,12 +67,7 @@ public class FixedExclusiveModeCrossProcessCacheAccess extends AbstractCrossProc
         try {
             boolean rebuild = initializationAction.requiresInitialization(fileLock);
             if (rebuild) {
-                fileLock.writeFile(new Runnable() {
-                    @Override
-                    public void run() {
-                        initializationAction.initialize(fileLock);
-                    }
-                });
+                fileLock.writeFile(() -> initializationAction.initialize(fileLock));
             }
             onOpenAction.execute(fileLock);
         } catch (Exception e) {
