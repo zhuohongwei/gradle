@@ -18,6 +18,7 @@ package org.gradle.performance.results;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
@@ -43,10 +44,15 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
                 List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).collect(toList());
                 System.out.println("Fetched " + executions.size() + " executions for " + testName + "");
 
-                if(executions.isEmpty()) {
+                if (executions.isEmpty()) {
                     continue;
                 }
-                String content = executions.stream().map(ExecutionData::getLine).collect(Collectors.joining("\n"));
+                String content;
+                try {
+                    content = executions.stream().map(ExecutionData::getLine).collect(Collectors.joining("\n"));
+                } catch (Exception e) {
+                    content = ExceptionUtils.getFullStackTrace(e);
+                }
 
                 FileUtils.write(new File(projectDir, testName + ".csv"), "difference, confidence\n" + content, Charset.defaultCharset(), true);
             }
