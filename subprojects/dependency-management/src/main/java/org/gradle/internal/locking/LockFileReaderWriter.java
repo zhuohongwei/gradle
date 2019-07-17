@@ -24,6 +24,7 @@ import org.gradle.api.logging.Logging;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -36,7 +37,7 @@ public class LockFileReaderWriter {
 
     static final String FILE_SUFFIX = ".lockfile";
     static final String DEPENDENCY_LOCKING_FOLDER = "gradle/dependency-locks";
-    static final Charset CHARSET = Charset.forName("UTF-8");
+    static final Charset CHARSET = StandardCharsets.UTF_8;
     static final String LOCKFILE_HEADER = "# This is a Gradle generated file for dependency locking.\n" +
                                                  "# Manual edits can break the build and are not advised.\n" +
                                                  "# This file is expected to be part of source control.\n";

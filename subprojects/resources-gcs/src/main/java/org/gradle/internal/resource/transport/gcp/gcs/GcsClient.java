@@ -32,7 +32,6 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.resources.ResourceException;
-import org.gradle.internal.UncheckedException;
 import org.gradle.internal.resource.ResourceExceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,11 +157,7 @@ public class GcsClient {
 
     private static String cleanResourcePath(URI uri) {
         String path;
-        try {
-            path = URLDecoder.decode(uri.getPath(), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw UncheckedException.throwAsUncheckedException(e); // fail fast, this should not happen
-        }
+        path = URLDecoder.decode(uri.getPath(), StandardCharsets.UTF_8);
         while (path.startsWith("/")) {
             path = path.substring(1);
         }

@@ -38,13 +38,14 @@ import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A {@link TextResource} implementation backed by a URI. Defaults content encoding to UTF-8.
  */
 public class UriTextResource implements TextResource {
     private static final HashCode SIGNATURE = Hashing.signature(UriTextResource.class);
-    protected static final Charset DEFAULT_ENCODING = Charset.forName("utf-8");
+    protected static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
     private static final String USER_AGENT;
 
     static {

@@ -20,7 +20,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -110,7 +116,7 @@ public final class PomDomParser {
             }
 
             int bytesToSkip = 0;
-            LineNumberReader reader = new LineNumberReader(new InputStreamReader(this.in, "UTF-8"), 100);
+            LineNumberReader reader = new LineNumberReader(new InputStreamReader(this.in, StandardCharsets.UTF_8), 100);
             String firstLine = reader.readLine();
             if (firstLine != null) {
                 String trimmed = firstLine.trim();

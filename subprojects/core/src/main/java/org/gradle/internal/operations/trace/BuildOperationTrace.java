@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -470,7 +471,7 @@ public class BuildOperationTrace implements Stoppable {
                         if (indent) {
                             logOutputStream.write(INDENT);
                         }
-                        logOutputStream.write(json.getBytes("UTF-8"));
+                        logOutputStream.write(json.getBytes(StandardCharsets.UTF_8));
                         logOutputStream.write(NEWLINE);
                         logOutputStream.flush();
                     }

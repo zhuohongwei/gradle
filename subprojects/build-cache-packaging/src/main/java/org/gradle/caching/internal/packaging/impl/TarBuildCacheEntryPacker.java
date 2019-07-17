@@ -58,9 +58,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -328,19 +328,11 @@ public class TarBuildCacheEntryPacker implements BuildCacheEntryPacker {
     }
 
     private static String escape(String name) {
-        try {
-            return URLEncoder.encode(name, "utf-8");
-        } catch (UnsupportedEncodingException ignored) {
-            throw new AssertionError();
-        }
+        return URLEncoder.encode(name, StandardCharsets.UTF_8);
     }
 
     private static String unescape(String name) {
-        try {
-            return URLDecoder.decode(name, "utf-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e);
-        }
+        return URLDecoder.decode(name, StandardCharsets.UTF_8);
     }
 
     private static class PackingVisitor implements FileSystemSnapshotVisitor {

@@ -52,6 +52,7 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -215,7 +216,7 @@ public class XmlTransformer implements Transformer<String, String> {
 
         public void writeTo(OutputStream stream) {
             try {
-                Writer writer = new OutputStreamWriter(stream, "UTF-8");
+                Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8);
                 doWriteTo(writer, "UTF-8");
                 writer.flush();
             } catch (IOException e) {
