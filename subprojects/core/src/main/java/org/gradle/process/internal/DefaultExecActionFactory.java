@@ -18,7 +18,6 @@ package org.gradle.process.internal;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.DefaultFileCollectionFactory;
@@ -32,7 +31,6 @@ import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.concurrent.DefaultExecutorFactory;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.concurrent.Stoppable;
-import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.internal.reflect.Instantiator;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecResult;
@@ -96,7 +94,7 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     @Override
     public JavaForkOptionsInternal newJavaForkOptions() {
-        throw new UnsupportedOperationException();
+        return new DefaultJavaForkOptions(fileResolver, fileCollectionFactory, new DefaultJavaDebugOptions());
     }
 
     @Override
@@ -113,7 +111,7 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     @Override
     public JavaExecAction newJavaExecAction() {
-        return new DefaultJavaExecAction(fileResolver, fileCollectionFactory, executor, buildCancellationToken, null);
+        return new DefaultJavaExecAction(fileResolver, fileCollectionFactory, executor, buildCancellationToken, this);
     }
 
     @Override
@@ -123,7 +121,7 @@ public class DefaultExecActionFactory implements ExecFactory {
 
     @Override
     public JavaExecHandleBuilder newJavaExec() {
-        return new JavaExecHandleBuilder(fileResolver, fileCollectionFactory, executor, buildCancellationToken, null);
+        return new JavaExecHandleBuilder(fileResolver, fileCollectionFactory, executor, buildCancellationToken, this);
     }
 
     @Override
@@ -168,12 +166,13 @@ public class DefaultExecActionFactory implements ExecFactory {
 
         @Override
         public JavaExecAction newDecoratedJavaExecAction() {
-            return instantiator.newInstance(DefaultJavaExecAction.class, fileResolver, fileCollectionFactory, executor, buildCancellationToken, objectFactory);
+            return instantiator.newInstance(DefaultJavaExecAction.class, fileResolver, fileCollectionFactory, executor, buildCancellationToken, this);
         }
 
         @Override
         public JavaForkOptionsInternal newJavaForkOptions() {
-            return instantiator.newInstance(DefaultJavaForkOptions.class, fileResolver, fileCollectionFactory, objectFactory);
+            JavaDebugOptions javaDebugOptions = objectFactory.newInstance(DefaultJavaDebugOptions.class, objectFactory);
+            return instantiator.newInstance(DefaultJavaForkOptions.class, fileResolver, fileCollectionFactory, javaDebugOptions);
         }
     }
 
@@ -370,11 +369,6 @@ public class DefaultExecActionFactory implements ExecFactory {
         }
 
         @Override
-        public void debugOptions(Closure closure) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public void debugOptions(Action<JavaDebugOptions> action) {
             throw new UnsupportedOperationException();
         }
@@ -397,11 +391,6 @@ public class DefaultExecActionFactory implements ExecFactory {
         @Override
         public JavaForkOptions copyTo(JavaForkOptions options) {
             return delegate.copyTo(options);
-        }
-
-        @Override
-        public JavaForkOptionsInternal mergeWith(JavaForkOptions options) {
-            return new ImmutableJavaForkOptions(delegate.mergeWith(options));
         }
 
         @Override

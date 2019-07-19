@@ -18,7 +18,6 @@
 package org.gradle.process.internal
 
 import org.gradle.api.internal.file.TestFiles
-import org.gradle.process.JavaDebugOptions
 import org.gradle.process.JavaForkOptions
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -143,6 +142,7 @@ class JvmOptionsTest extends Specification {
         1 * target.systemProperties({
             it == new TreeMap(["file.encoding": "UTF-16"] + localeProperties())
         })
+        1 * target.getDebugOptions() >> new DefaultJavaDebugOptions()
     }
 
     @Unroll
@@ -213,9 +213,9 @@ class JvmOptionsTest extends Specification {
 
         when:
         opts.debug = true
-        opts.debugOptionsFacade.port = port
-        opts.debugOptionsFacade.server = server
-        opts.debugOptionsFacade.suspend = suspend
+        opts.debugOptions.port.set(port)
+        opts.debugOptions.server.set(server)
+        opts.debugOptions.suspend.set(suspend)
 
         then:
         opts.allJvmArgs.findAll { it.contains 'jdwp' } == [expected]

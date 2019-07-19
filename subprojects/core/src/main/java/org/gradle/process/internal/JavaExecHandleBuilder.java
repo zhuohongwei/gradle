@@ -16,13 +16,11 @@
 package org.gradle.process.internal;
 
 import com.google.common.collect.Iterables;
-import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionFactory;
 import org.gradle.api.internal.file.FileResolver;
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.JavaDebugOptions;
@@ -39,8 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import static org.gradle.util.ConfigureUtil.*;
-
 /**
  * Use {@link JavaExecHandleFactory} instead.
  */
@@ -52,10 +48,10 @@ public class JavaExecHandleBuilder extends AbstractExecHandleBuilder implements 
     private final JavaForkOptions javaOptions;
     private final List<CommandLineArgumentProvider> argumentProviders = new ArrayList<CommandLineArgumentProvider>();
 
-    public JavaExecHandleBuilder(FileResolver fileResolver, FileCollectionFactory fileCollectionFactory, Executor executor, BuildCancellationToken buildCancellationToken, ObjectFactory objectFactory) {
+    public JavaExecHandleBuilder(FileResolver fileResolver, FileCollectionFactory fileCollectionFactory, Executor executor, BuildCancellationToken buildCancellationToken, JavaForkOptionsFactory javaForkOptionsFactory) {
         super(fileResolver, executor, buildCancellationToken);
         this.fileCollectionFactory = fileCollectionFactory;
-        javaOptions = new DefaultJavaForkOptions(fileResolver, fileCollectionFactory, objectFactory);
+        this.javaOptions = javaForkOptionsFactory.newJavaForkOptions();
         executable(javaOptions.getExecutable());
     }
 
@@ -207,11 +203,6 @@ public class JavaExecHandleBuilder extends AbstractExecHandleBuilder implements 
     @Override
     public JavaDebugOptions getDebugOptions() {
         return javaOptions.getDebugOptions();
-    }
-
-    @Override
-    public void debugOptions(Closure closure) {
-        debugOptions(configureUsing(closure));
     }
 
     @Override

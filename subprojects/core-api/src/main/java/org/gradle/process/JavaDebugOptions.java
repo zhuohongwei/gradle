@@ -17,6 +17,7 @@
 package org.gradle.process;
 
 import org.gradle.api.Incubating;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 
 /**
@@ -26,8 +27,9 @@ import org.gradle.api.tasks.Input;
  */
 @Incubating
 public interface JavaDebugOptions {
-    @Input boolean isEnabled();
-    @Input int getPort();
-    @Input boolean isServer();
-    @Input boolean isSuspend();
+    // TODO: Docs
+    @Input Property<Boolean> getEnabled();
+    @Input Property<Integer> getPort();
+    @Input Property<Boolean> getServer();
+    @Input Property<Boolean> getSuspend();
 }
