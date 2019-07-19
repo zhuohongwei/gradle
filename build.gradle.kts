@@ -167,6 +167,12 @@ allprojects {
                 includeGroup("org.openjdk.jmc")
             }
         }
+        maven {
+            url = uri("https://jitpack.io")
+            content {
+                includeGroup("org.spockframework.spock")
+            }
+        }
     }
 
     // patchExternalModules lives in the root project - we need to activate normalization there, too.

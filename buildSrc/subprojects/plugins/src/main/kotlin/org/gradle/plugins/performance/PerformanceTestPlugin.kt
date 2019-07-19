@@ -11,7 +11,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskCollection
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.Zip
-import org.gradle.api.tasks.testing.junit.JUnitOptions
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.internal.hash.HashUtil
 import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.ide.eclipse.EclipsePlugin
@@ -225,11 +225,11 @@ class PerformanceTestPlugin : Plugin<Project> {
         }
 
         create("performanceTest") {
-            (options as JUnitOptions).excludeCategories(performanceExperimentCategory)
+            (options as JUnitPlatformOptions).excludeTags(performanceExperimentCategory)
         }
 
         create("performanceExperiment") {
-            (options as JUnitOptions).includeCategories(performanceExperimentCategory)
+            (options as JUnitPlatformOptions).includeTags(performanceExperimentCategory)
         }
 
         create("fullPerformanceTest")
@@ -252,11 +252,11 @@ class PerformanceTestPlugin : Plugin<Project> {
         }
 
         create("distributedPerformanceTest", RerunableDistributedPerformanceTest::class) {
-            (options as JUnitOptions).excludeCategories(performanceExperimentCategory)
+            (options as JUnitPlatformOptions).excludeTags(performanceExperimentCategory)
             channel = "commits"
         }
         create("distributedPerformanceExperiment", RerunableDistributedPerformanceTest::class) {
-            (options as JUnitOptions).includeCategories(performanceExperimentCategory)
+            (options as JUnitPlatformOptions).includeTags(performanceExperimentCategory)
             channel = "experiments"
         }
         create("distributedFullPerformanceTest", DistributedPerformanceTest::class) {
@@ -265,7 +265,7 @@ class PerformanceTestPlugin : Plugin<Project> {
             channel = "historical"
         }
         create("distributedFlakinessDetection", DistributedPerformanceTest::class) {
-            (options as JUnitOptions).excludeCategories(performanceExperimentCategory)
+            (options as JUnitPlatformOptions).excludeTags(performanceExperimentCategory)
             reportGeneratorClass = "org.gradle.performance.results.FlakinessReportGenerator"
             repeat = 3
             checks = "none"

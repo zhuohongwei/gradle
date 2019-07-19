@@ -207,6 +207,10 @@ class UnitTestAndCompilePlugin : Plugin<Project> {
         tasks.withType<Test>().configureEach {
             maxParallelForks = project.maxParallelForks
 
+            useJUnitPlatform {
+                includeEngines("spock")
+            }
+
             configureJvmForTest()
 
             doFirst {
