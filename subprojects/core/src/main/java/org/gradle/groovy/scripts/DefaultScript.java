@@ -41,6 +41,7 @@ import org.gradle.api.internal.plugins.DefaultObjectConfigurationAction;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.logging.LoggingManager;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.resources.ResourceHandler;
@@ -94,12 +95,13 @@ public abstract class DefaultScript extends BasicScript {
             FileHasher fileHasher = services.get(FileHasher.class);
             TextResourceLoader textResourceLoader = services.get(TextResourceLoader.class);
             FileCollectionFactory fileCollectionFactory = services.get(FileCollectionFactory.class);
+            ObjectFactory objectFactory = services.get(ObjectFactory.class);
             File sourceFile = getScriptSource().getResource().getLocation().getFile();
             if (sourceFile != null) {
                 FileResolver resolver = fileLookup.getFileResolver(sourceFile.getParentFile());
                 DefaultFileCollectionFactory fileCollectionFactoryWithBase = new DefaultFileCollectionFactory(resolver, null);
                 fileOperations = new DefaultFileOperations(resolver, null, null, instantiator, fileLookup, directoryFileTreeFactory, streamHasher, fileHasher, textResourceLoader, fileCollectionFactoryWithBase, fileSystem, clock);
-                processOperations = services.get(ExecFactory.class).forContext(resolver, fileCollectionFactoryWithBase, instantiator);
+                processOperations = services.get(ExecFactory.class).forContext(resolver, fileCollectionFactoryWithBase, instantiator, objectFactory);
             } else {
                 fileOperations = new DefaultFileOperations(fileLookup.getFileResolver(), null, null, instantiator, fileLookup, directoryFileTreeFactory, streamHasher, fileHasher, textResourceLoader, fileCollectionFactory, fileSystem, clock);
                 processOperations = services.get(ExecFactory.class);

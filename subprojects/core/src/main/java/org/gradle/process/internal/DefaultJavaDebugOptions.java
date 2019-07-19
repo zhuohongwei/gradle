@@ -16,11 +16,25 @@
 
 package org.gradle.process.internal;
 
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.process.JavaDebugOptions;
 
 import java.util.Objects;
 
 public class DefaultJavaDebugOptions implements JavaDebugOptions {
+    private static ObjectFactory objectFactory;
+
+    // TODO use Property API
+
+    public DefaultJavaDebugOptions(ObjectFactory objectFactory) {
+        if (DefaultJavaDebugOptions.objectFactory  == null) {
+            DefaultJavaDebugOptions.objectFactory = objectFactory;
+        }
+    }
+
+    public ObjectFactory getObjectFactory() {
+        return objectFactory;
+    }
 
     private boolean enabled = false;
     private int port = 5005;

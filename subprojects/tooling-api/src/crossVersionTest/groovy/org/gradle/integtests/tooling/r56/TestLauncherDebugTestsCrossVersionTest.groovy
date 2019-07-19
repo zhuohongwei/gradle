@@ -77,8 +77,7 @@ class TestLauncherDebugTestsCrossVersionTest extends ToolingApiSpecification {
     }
 
     def "can launch tests in debug mode"() {
-        setup:
-        jdwpClient.listen()
+        setupjdwpClient.listen()
 
         when:
         withConnection { connection ->

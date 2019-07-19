@@ -18,7 +18,6 @@ package org.gradle.process.internal;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
-import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionFactory;
@@ -71,7 +70,7 @@ public class JvmOptions {
     private String maxHeapSize;
     private boolean assertionsEnabled;
 
-    private DefaultJavaDebugOptions debugOptions = new DefaultJavaDebugOptions();;
+    private JavaDebugOptionsFacade debugOptions = new JavaDebugOptionsFacade();
 
     protected final Map<String, Object> immutableSystemProperties = new TreeMap<String, Object>();
 
@@ -206,7 +205,7 @@ public class JvmOptions {
                 debugArgs.add(extraJvmArgString);
             }
         }
-        if (!debugArgs.isEmpty() && getDebugOptions().isEnabled()) {
+        if (!debugArgs.isEmpty() && debugOptions.isEnabled()) {
             LOGGER.warn("Debug configuration ignored in favor of the supplied JVM arguments: " + debugArgs);
             debugOptions.setEnabled(false);
         }
@@ -307,11 +306,19 @@ public class JvmOptions {
     }
 
     public JavaDebugOptions getDebugOptions() {
-        return debugOptions;
-  }
+        return debugOptions.getJavaDebugOptions();
+    }
 
-    public void setDebugOptions(JavaDebugOptions debugOptions) {
-        this.debugOptions = (DefaultJavaDebugOptions) debugOptions;
+    public JavaDebugOptionsFacade getDebugOptionsFacade() {
+        return debugOptions;
+    }
+
+    public void setDebugOptions(JavaDebugOptions options) {
+        this.debugOptions.setJavaDebugOptions((DefaultJavaDebugOptions) options);
+    }
+
+    private void setDebugOptions(JavaDebugOptionsFacade options) {
+        this.debugOptions = options;
     }
 
     public void copyTo(JavaForkOptions target) {
@@ -321,14 +328,7 @@ public class JvmOptions {
         target.setMaxHeapSize(maxHeapSize);
         target.setBootstrapClasspath(getBootstrapClasspath());
         target.setEnableAssertions(assertionsEnabled);
-        if (debugOptions != null) {
-            target.debugOptions(new Action<JavaDebugOptions>() {
-                @Override
-                public void execute(JavaDebugOptions p) {
-                    debugOptions.applyTo(p);
-                }
-            });
-        }
+        target.debugOptions(options -> debugOptions.applyTo(options));
         target.systemProperties(immutableSystemProperties);
     }
 
@@ -349,5 +349,77 @@ public class JvmOptions {
 
     public static List<String> fromString(String input) {
         return ArgumentsSplitter.split(input);
+    }
+
+    public static class JavaDebugOptionsFacade {
+        private boolean enabled = false;
+        private int port = 5005;
+        private boolean server = true;
+        private boolean suspend = true;
+
+        private DefaultJavaDebugOptions javaDebugOptions;
+
+        public DefaultJavaDebugOptions getJavaDebugOptions() {
+            return javaDebugOptions;
+        }
+
+        public void setJavaDebugOptions(DefaultJavaDebugOptions javaDebugOptions) {
+            this.javaDebugOptions = javaDebugOptions;
+        }
+
+        public boolean isEnabled() {
+            return javaDebugOptions == null ? enabled : javaDebugOptions.isEnabled();
+        }
+
+        public void setEnabled(boolean enabled) {
+            if (javaDebugOptions == null) {
+                this.enabled = enabled;
+            } else {
+                javaDebugOptions.setEnabled(enabled);
+            }
+        }
+
+        public int getPort() {
+            return javaDebugOptions == null ? port : javaDebugOptions.getPort();
+        }
+
+        public void setPort(int port) {
+            if (javaDebugOptions == null) {
+                this.port = port;
+            } else {
+                javaDebugOptions.setPort(port);
+            }
+        }
+
+        public boolean isServer() {
+            return javaDebugOptions == null ? server : javaDebugOptions.isServer();
+        }
+
+        public void setServer(boolean server) {
+            if (javaDebugOptions == null) {
+                this.server = server;
+            } else {
+                javaDebugOptions.setServer(server);
+            }
+        }
+
+        public boolean isSuspend() {
+            return javaDebugOptions == null ? suspend : javaDebugOptions.isSuspend();
+        }
+
+        public void setSuspend(boolean suspend) {
+            if (javaDebugOptions == null) {
+                this.suspend = suspend;
+            } else {
+                javaDebugOptions.setSuspend(suspend);
+            }
+        }
+
+        public void applyTo(JavaDebugOptions options) {
+            ((DefaultJavaDebugOptions) options).setEnabled(isEnabled());
+            ((DefaultJavaDebugOptions) options).setPort(getPort());
+            ((DefaultJavaDebugOptions) options).setServer(isServer());
+            ((DefaultJavaDebugOptions) options).setSuspend(isSuspend());
+        }
     }
 }
