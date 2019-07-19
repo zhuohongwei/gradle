@@ -16,7 +16,9 @@
 
 package org.gradle.api.tasks;
 
+import groovy.lang.Closure;
 import org.apache.tools.ant.types.Commandline;
+import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.file.FileCollection;
@@ -24,6 +26,7 @@ import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.jvm.inspection.JvmVersionDetector;
 import org.gradle.process.CommandLineArgumentProvider;
+import org.gradle.process.JavaDebugOptions;
 import org.gradle.process.JavaExecSpec;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.process.ProcessForkOptions;
@@ -38,6 +41,8 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static org.gradle.util.ConfigureUtil.configureUsing;
 
 /**
  * Executes a Java application in a child process.
@@ -303,6 +308,21 @@ public class JavaExec extends ConventionTask implements JavaExecSpec {
     @Option(option = "debug-jvm", description = "Enable debugging for the process. The process is started suspended and listening on port 5005.")
     public void setDebug(boolean enabled) {
         javaExecHandleBuilder.setDebug(enabled);
+    }
+
+    @Override
+    public JavaDebugOptions getDebugOptions() {
+        return javaExecHandleBuilder.getDebugOptions();
+    }
+
+    @Override
+    public void debugOptions(Closure closure) {
+        debugOptions(configureUsing(closure));
+    }
+
+    @Override
+    public void debugOptions(Action<JavaDebugOptions> action) {
+        javaExecHandleBuilder.debugOptions(action);
     }
 
     /**

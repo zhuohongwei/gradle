@@ -21,15 +21,17 @@ import org.apache.commons.lang.StringUtils;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionFactory;
+import org.gradle.process.JavaDebugOptions;
 import org.gradle.process.JavaForkOptions;
 import org.gradle.util.GUtil;
 import org.gradle.util.internal.ArgumentsSplitter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +51,8 @@ public class JvmOptions {
     public static final String JMX_REMOTE_KEY = "com.sun.management.jmxremote";
     public static final String JAVA_IO_TMPDIR_KEY = "java.io.tmpdir";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(JvmOptions.class);
+
     public static final Set<String> IMMUTABLE_SYSTEM_PROPERTIES = ImmutableSet.of(
         FILE_ENCODING_KEY, USER_LANGUAGE_KEY, USER_COUNTRY_KEY, USER_VARIANT_KEY, JMX_REMOTE_KEY, JAVA_IO_TMPDIR_KEY
     );
@@ -65,7 +69,8 @@ public class JvmOptions {
     private String minHeapSize;
     private String maxHeapSize;
     private boolean assertionsEnabled;
-    private boolean debug;
+
+    private JavaDebugOptionsFacade debugOptions = new JavaDebugOptionsFacade();
 
     protected final Map<String, Object> immutableSystemProperties = new TreeMap<String, Object>();
 
@@ -135,8 +140,9 @@ public class JvmOptions {
         if (assertionsEnabled) {
             args.add("-ea");
         }
-        if (debug) {
-            args.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+
+        if (debugOptions.isEnabled()) {
+            args.add("-agentlib:jdwp=transport=dt_socket,server=" + (debugOptions.isServer() ? 'y' : 'n') + ",suspend=" + (debugOptions.isSuspend() ? 'y' : 'n') + ",address=" + debugOptions.getPort());
         }
         return args;
     }
@@ -147,7 +153,7 @@ public class JvmOptions {
         maxHeapSize = null;
         extraJvmArgs.clear();
         assertionsEnabled = false;
-        debug = false;
+        debugOptions.setEnabled(false);
         jvmArgs(arguments);
     }
 
@@ -192,25 +198,16 @@ public class JvmOptions {
             }
         }
 
-        boolean xdebugFound = false;
-        boolean xrunjdwpFound = false;
-        boolean xagentlibJdwpFound = false;
-        Set<Object> matches = new HashSet<Object>();
+        List<String> debugArgs = new ArrayList<>();
         for (Object extraJvmArg : extraJvmArgs) {
-            if (extraJvmArg.toString().equals("-Xdebug")) {
-                xdebugFound = true;
-                matches.add(extraJvmArg);
-            } else if (extraJvmArg.toString().equals("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005")) {
-                xrunjdwpFound = true;
-                matches.add(extraJvmArg);
-            } else if (extraJvmArg.toString().equals("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005")) {
-                xagentlibJdwpFound = true;
-                matches.add(extraJvmArg);
+            String extraJvmArgString = extraJvmArg.toString();
+            if (extraJvmArgString.equals("-Xdebug") || extraJvmArgString.startsWith("-Xrunjdwp") || extraJvmArgString.startsWith("-agentlib:jdwp")) {
+                debugArgs.add(extraJvmArgString);
             }
         }
-        if (xdebugFound && xrunjdwpFound || xagentlibJdwpFound) {
-            debug = true;
-            extraJvmArgs.removeAll(matches);
+        if (!debugArgs.isEmpty() && debugOptions.isEnabled()) {
+            LOGGER.warn("Debug configuration ignored in favor of the supplied JVM arguments: " + debugArgs);
+            debugOptions.setEnabled(false);
         }
     }
 
@@ -301,11 +298,27 @@ public class JvmOptions {
     }
 
     public boolean getDebug() {
-        return debug;
+        return debugOptions.isEnabled();
     }
 
     public void setDebug(boolean enabled) {
-        debug = enabled;
+        debugOptions.setEnabled(enabled);
+    }
+
+    public JavaDebugOptions getDebugOptions() {
+        return debugOptions.getJavaDebugOptions();
+    }
+
+    public JavaDebugOptionsFacade getDebugOptionsFacade() {
+        return debugOptions;
+    }
+
+    public void setDebugOptions(JavaDebugOptions options) {
+        this.debugOptions.setJavaDebugOptions((DefaultJavaDebugOptions) options);
+    }
+
+    private void setDebugOptions(JavaDebugOptionsFacade options) {
+        this.debugOptions = options;
     }
 
     public void copyTo(JavaForkOptions target) {
@@ -315,7 +328,7 @@ public class JvmOptions {
         target.setMaxHeapSize(maxHeapSize);
         target.setBootstrapClasspath(getBootstrapClasspath());
         target.setEnableAssertions(assertionsEnabled);
-        target.setDebug(debug);
+        target.debugOptions(options -> debugOptions.applyTo(options));
         target.systemProperties(immutableSystemProperties);
     }
 
@@ -329,12 +342,84 @@ public class JvmOptions {
             target.setBootstrapClasspath(getBootstrapClasspath());
         }
         target.setEnableAssertions(assertionsEnabled);
-        target.setDebug(debug);
+        target.setDebugOptions(debugOptions);
         target.systemProperties(immutableSystemProperties);
         return target;
     }
 
     public static List<String> fromString(String input) {
         return ArgumentsSplitter.split(input);
+    }
+
+    public static class JavaDebugOptionsFacade {
+        private boolean enabled = false;
+        private int port = 5005;
+        private boolean server = true;
+        private boolean suspend = true;
+
+        private DefaultJavaDebugOptions javaDebugOptions;
+
+        public DefaultJavaDebugOptions getJavaDebugOptions() {
+            return javaDebugOptions;
+        }
+
+        public void setJavaDebugOptions(DefaultJavaDebugOptions javaDebugOptions) {
+            this.javaDebugOptions = javaDebugOptions;
+        }
+
+        public boolean isEnabled() {
+            return javaDebugOptions == null ? enabled : javaDebugOptions.isEnabled();
+        }
+
+        public void setEnabled(boolean enabled) {
+            if (javaDebugOptions == null) {
+                this.enabled = enabled;
+            } else {
+                javaDebugOptions.setEnabled(enabled);
+            }
+        }
+
+        public int getPort() {
+            return javaDebugOptions == null ? port : javaDebugOptions.getPort();
+        }
+
+        public void setPort(int port) {
+            if (javaDebugOptions == null) {
+                this.port = port;
+            } else {
+                javaDebugOptions.setPort(port);
+            }
+        }
+
+        public boolean isServer() {
+            return javaDebugOptions == null ? server : javaDebugOptions.isServer();
+        }
+
+        public void setServer(boolean server) {
+            if (javaDebugOptions == null) {
+                this.server = server;
+            } else {
+                javaDebugOptions.setServer(server);
+            }
+        }
+
+        public boolean isSuspend() {
+            return javaDebugOptions == null ? suspend : javaDebugOptions.isSuspend();
+        }
+
+        public void setSuspend(boolean suspend) {
+            if (javaDebugOptions == null) {
+                this.suspend = suspend;
+            } else {
+                javaDebugOptions.setSuspend(suspend);
+            }
+        }
+
+        public void applyTo(JavaDebugOptions options) {
+            ((DefaultJavaDebugOptions) options).setEnabled(isEnabled());
+            ((DefaultJavaDebugOptions) options).setPort(getPort());
+            ((DefaultJavaDebugOptions) options).setServer(isServer());
+            ((DefaultJavaDebugOptions) options).setSuspend(isSuspend());
+        }
     }
 }

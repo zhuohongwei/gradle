@@ -22,7 +22,9 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.file.TestFiles
 import org.gradle.internal.jvm.Jvm
 import org.gradle.process.CommandLineArgumentProvider
+import org.gradle.process.JavaDebugOptions
 import org.gradle.process.JavaForkOptions
+import org.gradle.process.internal.DefaultJavaDebugOptions
 import org.gradle.process.internal.DefaultJavaForkOptions
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
 import org.gradle.util.UsesNativeServices
@@ -276,65 +278,14 @@ class DefaultJavaForkOptionsTest extends Specification {
         options.allJvmArgs == [fileEncodingProperty(), *localeProperties(), '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005']
     }
 
-    def "debug is enabled when set using jvmArgs"() {
+    def "can set debug options"() {
         when:
-        options.jvmArgs('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005')
+        options.debugOptions {
+            port = 2233
+        }
 
         then:
-        options.debug
-        options.jvmArgs == []
-
-        when:
-        options.allJvmArgs = []
-
-        then:
-        !options.debug
-
-        when:
-        options.debug = false
-        options.jvmArgs = ['-Xdebug']
-
-        then:
-        !options.debug
-        options.jvmArgs == ['-Xdebug']
-
-        when:
-        options.jvmArgs = ['-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005']
-
-        then:
-        !options.debug
-        options.jvmArgs == ['-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005']
-
-        when:
-        options.jvmArgs '-Xdebug'
-
-        then:
-        options.debug
-        options.jvmArgs == []
-
-        when:
-        options.debug = false
-        options.jvmArgs = ['-Xdebug', '-Xrunjdwp:transport=other']
-
-        then:
-        !options.debug
-        options.jvmArgs == ['-Xdebug', '-Xrunjdwp:transport=other']
-
-        when:
-        options.debug = false
-        options.allJvmArgs = ['-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005', '-Xdebug']
-
-        then:
-        options.debug
-        options.jvmArgs == []
-
-        when:
-        options.debug = false
-        options.allJvmArgs = ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005']
-
-        then:
-        options.debug
-        options.jvmArgs == []
+        options.debugOptions.port == 2233
     }
 
     def "can set bootstrapClasspath"() {
@@ -408,7 +359,11 @@ class DefaultJavaForkOptionsTest extends Specification {
         1 * target.setMaxHeapSize('1g')
         1 * target.setBootstrapClasspath(options.bootstrapClasspath)
         1 * target.setEnableAssertions(false)
-        1 * target.setDebug(false)
+        1 * target.debugOptions({ action ->
+            JavaDebugOptions debugOptions = new DefaultJavaDebugOptions()
+            action.execute(debugOptions)
+            !debugOptions.enabled
+        })
 
         then:
         1 * target.jvmArgs(['argFromProvider'])

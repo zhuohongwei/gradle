@@ -17,12 +17,17 @@
 package org.gradle.process.internal;
 
 import com.google.common.collect.Maps;
+import groovy.lang.Closure;
+import org.apache.tools.ant.BuildException;
+import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.file.FileCollectionFactory;
 import org.gradle.api.internal.file.UnionFileCollection;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.internal.jvm.Jvm;
 import org.gradle.process.CommandLineArgumentProvider;
+import org.gradle.process.JavaDebugOptions;
 import org.gradle.process.JavaForkOptions;
 
 import java.util.ArrayList;
@@ -36,22 +41,25 @@ import static org.gradle.process.internal.util.MergeOptionsUtil.containsAll;
 import static org.gradle.process.internal.util.MergeOptionsUtil.getHeapSizeMb;
 import static org.gradle.process.internal.util.MergeOptionsUtil.mergeHeapSize;
 import static org.gradle.process.internal.util.MergeOptionsUtil.normalized;
+import static org.gradle.util.ConfigureUtil.configureUsing;
 
 public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements JavaForkOptionsInternal {
     private final PathToFileResolver resolver;
     private final JvmOptions options;
     private final FileCollectionFactory fileCollectionFactory;
+    private ObjectFactory objectFactory;
     private List<CommandLineArgumentProvider> jvmArgumentProviders;
 
-    public DefaultJavaForkOptions(PathToFileResolver resolver, FileCollectionFactory fileCollectionFactory) {
-        this(resolver, fileCollectionFactory, Jvm.current());
+    public DefaultJavaForkOptions(PathToFileResolver resolver, FileCollectionFactory fileCollectionFactory, ObjectFactory objectFactory) {
+        this(resolver, fileCollectionFactory, Jvm.current(), objectFactory);
     }
 
-    public DefaultJavaForkOptions(PathToFileResolver resolver, FileCollectionFactory fileCollectionFactory, Jvm jvm) {
+    public DefaultJavaForkOptions(PathToFileResolver resolver, FileCollectionFactory fileCollectionFactory, Jvm jvm, ObjectFactory objectFactory) {
         super(resolver);
         this.resolver = resolver;
         options = new JvmOptions(fileCollectionFactory);
         this.fileCollectionFactory = fileCollectionFactory;
+        this.objectFactory = objectFactory;
         setExecutable(jvm.getJavaExecutable());
     }
 
@@ -207,6 +215,25 @@ public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements
         options.setDebug(enabled);
     }
 
+    public JavaDebugOptions getDebugOptions() {
+        return options.getDebugOptions();
+    }
+
+    @Override
+    public void debugOptions(Closure closure) {
+        debugOptions(configureUsing(closure));
+    }
+
+    @Override
+    public void debugOptions(Action<JavaDebugOptions> action) {
+        JavaDebugOptions o = options.getDebugOptions();
+        if (o == null) {
+            o = new DefaultJavaDebugOptions(objectFactory);
+        }
+        action.execute(o);
+        options.setDebugOptions(o);
+    }
+
     @Override
     public JavaForkOptions copyTo(JavaForkOptions target) {
         super.copyTo(target);
@@ -224,7 +251,7 @@ public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements
         if (hasJvmArgumentProviders(this) || hasJvmArgumentProviders(options)) {
             throw new UnsupportedOperationException("Cannot merge options with jvmArgumentProviders.");
         }
-        JavaForkOptionsInternal mergedOptions = new DefaultJavaForkOptions(resolver, fileCollectionFactory);
+        JavaForkOptionsInternal mergedOptions = new DefaultJavaForkOptions(resolver, fileCollectionFactory, objectFactory);
 
         if (!canBeMerged(getExecutable(), options.getExecutable())) {
             throw new IllegalArgumentException("Cannot merge a fork options object with a different executable (this: " + getExecutable() + ", other: " + options.getExecutable() + ").");
@@ -294,4 +321,7 @@ public class DefaultJavaForkOptions extends DefaultProcessForkOptions implements
         return forkOptions.jvmArgumentProviders != null && !forkOptions.jvmArgumentProviders.isEmpty();
     }
 
+    public void setObjectFactory(ObjectFactory objectFactory) {
+        this.objectFactory = objectFactory;
+    }
 }
