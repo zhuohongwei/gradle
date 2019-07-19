@@ -26,6 +26,7 @@ class ArchiveTreePerformanceTest extends AbstractCrossVersionPerformanceTest {
     def "visiting zip trees"() {
         given:
         runner.testProject = "archivePerformanceProject"
+        runner.gradleOpts = ["-Xms2g", "-Xmx2g"]
         runner.tasksToRun = ['visitZip']
 
         when:
@@ -37,6 +38,7 @@ class ArchiveTreePerformanceTest extends AbstractCrossVersionPerformanceTest {
     def "visiting tar trees"() {
         given:
         runner.testProject = "archivePerformanceProject"
+        runner.gradleOpts = ["-Xms2g", "-Xmx2g"]
         runner.tasksToRun = ['visitTar']
 
         when:
@@ -49,6 +51,7 @@ class ArchiveTreePerformanceTest extends AbstractCrossVersionPerformanceTest {
     def "visiting gzip tar trees"() {
         given:
         runner.testProject = "archivePerformanceProject"
+        runner.gradleOpts = ["-Xms2g", "-Xmx2g"]
         runner.tasksToRun = ['visitTarGz']
 
         when:
