@@ -30,6 +30,7 @@ import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.api.plugins.JavaTestFixturesPlugin
 import org.gradle.api.plugins.internal.JvmPluginsHelper
 import org.gradle.language.jvm.tasks.ProcessResources
+import testLibraries
 import testLibrary
 import java.io.File
 import java.util.Locale
@@ -85,7 +86,7 @@ open class TestFixturesPlugin : Plugin<Project> {
             // add a set of default dependencies for fixture implementation
             testFixturesImplementation(library("junit"))
             testFixturesImplementation(library("groovy"))
-            testFixturesImplementation(testLibrary("spock"))
+            testLibraries("spock").forEach { testFixturesImplementation(it) }
             testFixturesRuntimeOnly(testLibrary("bytebuddy"))
             testFixturesRuntimeOnly(testLibrary("cglib"))
         }

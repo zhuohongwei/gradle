@@ -18,7 +18,10 @@ ext {
 }
 
 // Test classpath libraries
-testLibraries.spock =   'org.spockframework.spock:spock-core:96093b823d'
+testLibraries.spock = [
+    'org.spockframework.spock:spock-core:96093b823d',
+    'org.spockframework.spock:spock-junit4:96093b823d'
+]
 testLibraries.bytebuddy = 'net.bytebuddy:byte-buddy:1.8.21'
 testLibraries.jsoup =   'org.jsoup:jsoup:1.11.3'
 testLibraries.xmlunit = 'xmlunit:xmlunit:1.6'

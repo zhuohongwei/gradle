@@ -55,7 +55,7 @@ dependencies {
     implementation(project(":internalIntegTesting"))
 
     implementation(library("junit"))
-    implementation(testLibrary("spock"))
+    testLibraries("spock").forEach { implementation(it) }
     implementation(library("groovy"))
     implementation(library("slf4j_api"))
     implementation(library("joda"))

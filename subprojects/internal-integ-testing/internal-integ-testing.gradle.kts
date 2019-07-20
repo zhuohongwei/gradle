@@ -44,7 +44,7 @@ dependencies {
 
     implementation(library("groovy"))
     implementation(library("junit"))
-    implementation(testLibrary("spock"))
+    testLibraries("spock").forEach { implementation(it) }
     implementation(library("nativePlatform"))
     implementation(library("commons_lang"))
     implementation(library("commons_io"))

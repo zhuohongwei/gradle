@@ -33,7 +33,7 @@ dependencies {
     implementation(library("asm"))
     implementation(library("asm_tree"))
     implementation(library("junit"))
-    implementation(testLibrary("spock"))
+    testLibraries("spock").forEach { implementation(it) }
     implementation(testLibrary("jsoup"))
 
     runtimeOnly(testLibrary("bytebuddy"))

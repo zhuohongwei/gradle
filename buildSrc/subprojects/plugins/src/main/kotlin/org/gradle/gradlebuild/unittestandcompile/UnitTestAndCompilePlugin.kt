@@ -40,6 +40,7 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.plugins.ide.idea.IdeaPlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.process.CommandLineArgumentProvider
+import testLibraries
 import testLibrary
 import java.util.concurrent.Callable
 import java.util.jar.Attributes
@@ -155,7 +156,7 @@ class UnitTestAndCompilePlugin : Plugin<Project> {
             val testRuntimeOnly = configurations.getByName("testRuntimeOnly")
             testImplementation(library("junit"))
             testImplementation(library("groovy"))
-            testImplementation(testLibrary("spock"))
+            testLibraries("spock").forEach { testImplementation(it) }
             testRuntimeOnly(testLibrary("bytebuddy"))
             testRuntimeOnly(library("objenesis"))
         }

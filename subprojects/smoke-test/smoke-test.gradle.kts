@@ -49,7 +49,7 @@ dependencies {
     smokeTestImplementation(project(":internalIntegTesting"))
     smokeTestImplementation(library("commons_io"))
     smokeTestImplementation(library("jgit"))
-    smokeTestImplementation(testLibrary("spock"))
+    testLibraries("spock").forEach { smokeTestImplementation(it) }
 
     smokeTestRuntimeOnly(project(":kotlinDsl"))
     smokeTestRuntimeOnly(project(":codeQuality"))
