@@ -58,14 +58,13 @@ class ForkingGradleSession implements GradleSession {
         return { MeasuredOperation measuredOperation ->
             def cleanTasks = invocation.cleanTasks
             if (cleanTasks) {
-                System.out.println("Cleaning up by running Gradle tasks: " + Joiner.on(" ").join(cleanTasks));
+                System.out.println("Cleaning up by running Gradle tasks: " + Joiner.on(" ").join(cleanTasks))
                 run(invocationInfo, invocation, cleanTasks)
             }
             def tasksToRun = invocation.tasksToRun
-            System.out.println("Measuring Gradle tasks: " + Joiner.on(" ").join(tasksToRun));
-            DurationMeasurementImpl.measure(measuredOperation) {
-                run(invocationInfo, invocation, tasksToRun)
-            }
+            System.out.println("Measuring Gradle tasks: " + Joiner.on(" ").join(tasksToRun))
+            new DurationMeasurementImpl(measuredOperation)
+                .measure { run(invocationInfo, invocation, tasksToRun) }
         } as Action<MeasuredOperation>
     }
 
