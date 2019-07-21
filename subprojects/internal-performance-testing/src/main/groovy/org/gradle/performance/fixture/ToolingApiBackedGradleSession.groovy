@@ -73,12 +73,8 @@ class ToolingApiBackedGradleSession implements GradleSession {
                 cleanLauncher.run()
             }
             System.out.println("Measuring Gradle tasks: " + Joiner.on(" ").join(tasksToRun));
-            DurationMeasurementImpl.measure(measuredOperation, new Runnable() {
-                @Override
-                void run() {
-                    buildLauncher.run()
-                }
-            })
+            new DurationMeasurementImpl(measuredOperation)
+                .measure { buildLauncher.run() }
         } as Action<MeasuredOperation>
     }
 
