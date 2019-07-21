@@ -26,6 +26,8 @@ import org.gradle.performance.measure.MeasuredOperation
 
 import java.lang.ProcessBuilder.Redirect
 
+import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess
+
 /**
  * A performance test session that runs Gradle from the command line.
  *
@@ -79,10 +81,7 @@ class ForkingGradleSession implements GradleSession {
     private void run(BuildExperimentInvocationInfo invocationInfo, GradleInvocationSpec invocation, List<String> tasks) {
         String jvmArgs = invocation.jvmOpts.join(' ')
         Map<String, String> env = [:]
-        List<String> args = []
-        if (OperatingSystem.current().isWindows()) {
-            args << "cmd.exe" << "/C"
-        }
+        def args = initArgs()
         args << new File(invocation.gradleDistribution.gradleHomeDir, "bin/gradle").absolutePath
         args << "--gradle-user-home" << invocationInfo.gradleUserHome.absolutePath
         args << "--stacktrace"
@@ -106,6 +105,17 @@ class ForkingGradleSession implements GradleSession {
         if (exitCode != 0 && !invocation.expectFailure) {
             throw new IllegalStateException("Build with args: ${args} envs: ${env} failed, see ${invocationInfo.buildLog} for details")
         }
+    }
+
+    private static List<String> initArgs() {
+        OperatingSystem.current().isWindows()
+            ? ['cmd.exe', '/C']
+            : withCpuIsolation()
+    }
+
+    private static List<String> withCpuIsolation() {
+        assert executeProcess('nproc --all').toInteger() == 8
+        return ['taskset', '--cpu-list', '0,1,2,3'] // https://github.com/gradle/dev-infrastructure/blob/master/salt/common/hetzner/performance.sls#L30
     }
 
     private static ProcessBuilder newProcessBuilder(BuildExperimentInvocationInfo invocationInfo, List<String> args, Map<String, String> env) {
