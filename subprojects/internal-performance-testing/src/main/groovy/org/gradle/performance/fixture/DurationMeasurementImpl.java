@@ -30,28 +30,28 @@ public class DurationMeasurementImpl implements DurationMeasurement {
         this.measuredOperation = measuredOperation;
     }
 
+    public void measure(Runnable runnable) {
+        try {
+            start();
+            runnable.run();
+        } finally {
+            stop();
+        }
+    }
+
     @Override
     public void start() {
-        start = DateTime.now();
-        startNanos = System.nanoTime();
+        this.start = DateTime.now();
+        this.startNanos = System.nanoTime();
     }
 
     @Override
     public void stop() {
-        DateTime end = DateTime.now();
         long endNanos = System.nanoTime();
+        DateTime end = DateTime.now();
+
         measuredOperation.setStart(start);
         measuredOperation.setEnd(end);
         measuredOperation.setTotalTime(Duration.millis((endNanos - startNanos) / 1000000L));
-    }
-
-    public static void measure(MeasuredOperation measuredOperation, Runnable runnable) {
-        DurationMeasurementImpl durationMeasurement = new DurationMeasurementImpl(measuredOperation);
-        durationMeasurement.start();
-        try {
-            runnable.run();
-        } finally {
-            durationMeasurement.stop();
-        }
     }
 }

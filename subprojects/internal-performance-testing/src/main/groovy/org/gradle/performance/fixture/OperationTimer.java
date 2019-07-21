@@ -21,8 +21,9 @@ import org.gradle.performance.measure.MeasuredOperation;
 
 public class OperationTimer {
     public MeasuredOperation measure(final Action<? super MeasuredOperation> action) {
-        final MeasuredOperation result = new MeasuredOperation();
-        DurationMeasurementImpl.measure(result, () -> action.execute(result));
+        MeasuredOperation result = new MeasuredOperation();
+        new DurationMeasurementImpl(result)
+            .measure(() -> action.execute(result));
         return result;
     }
 }
