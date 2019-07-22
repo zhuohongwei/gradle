@@ -42,7 +42,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
             String testName = "visiting tar trees";
                 System.out.println("Start fetching " + testName + " ...");
                 PerformanceTestHistory history = store.getTestResults(testName, 10000, 365, null);
-                List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).collect(toList());
+                List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).filter(Objects::nonNull).collect(toList());
                 System.out.println("Fetched " + executions.size() + " executions for " + testName + "");
 
 //                if (executions.isEmpty()) {
