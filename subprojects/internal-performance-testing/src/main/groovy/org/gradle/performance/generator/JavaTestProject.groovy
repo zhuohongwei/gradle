@@ -27,14 +27,14 @@ enum JavaTestProject {
         .withSourceFiles(500)
         .withSubProjects(500)
         .withDaemonMemory('2g')
-        .withCompilerMemory('2g')
+        .withCompilerMemory('1g')
         .testChangeFile(450, 2250, 45000).create()
     ),
     LARGE_MONOLITHIC_JAVA_PROJECT(new TestProjectGeneratorConfigurationBuilder("largeMonolithicJavaProject")
         .withSourceFiles(50000)
         .withSubProjects(0)
         .withDaemonMemory('2g')
-        .withCompilerMemory('6g')
+        .withCompilerMemory('4g')
         .assembleChangeFile(-1)
         .testChangeFile(-1)
         .create()),
@@ -42,7 +42,7 @@ enum JavaTestProject {
         .withSourceFiles(100)
         .withSubProjects(500)
         .withDaemonMemory('2g')
-        .withCompilerMemory('512m')
+        .withCompilerMemory('256m')
         .assembleChangeFile()
         .testChangeFile(450, 2250, 45000).create()),
     LARGE_MONOLITHIC_GROOVY_PROJECT(new TestProjectGeneratorConfigurationBuilder("largeMonolithicGroovyProject", Language.GROOVY)
