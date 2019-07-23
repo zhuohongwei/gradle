@@ -18,6 +18,7 @@ package org.gradle.api.internal.tasks.compile;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.internal.tasks.compile.processing.AnnotationProcessorDeclaration;
 import org.gradle.api.internal.tasks.compile.reflect.GradleStandardJavaFileManager;
+import org.gradle.api.internal.tasks.compile.reflect.ForwardingJavaFileManagerProxy;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.Factory;
 import org.gradle.internal.classpath.DefaultClassPath;
@@ -65,8 +66,17 @@ public class JdkJavaCompiler implements Compiler<JavaCompileSpec>, Serializable 
         Charset charset = compileOptions.getEncoding() != null ? Charset.forName(compileOptions.getEncoding()) : null;
         StandardJavaFileManager standardFileManager = compiler.getStandardFileManager(null, null, charset);
         Iterable<? extends JavaFileObject> compilationUnits = standardFileManager.getJavaFileObjectsFromFiles(spec.getSourceFiles());
-        boolean hasEmptySourcepaths = JavaVersion.current().isJava9Compatible() && emptySourcepathIn(options);
-        JavaFileManager fileManager = GradleStandardJavaFileManager.wrap(standardFileManager, DefaultClassPath.of(spec.getAnnotationProcessorPath()), hasEmptySourcepaths);
+
+        JavaFileManager fileManager;
+        // ForwardingJavaFileManager is broken in JDK 9, so we use proxy classes to inject functionality related to handling empty source paths
+        // and injecting filtered classloaders.  For other versions, we use our standard forwarding file manager.
+        if (JavaVersion.current().isJava9()) {
+            fileManager = (StandardJavaFileManager) ForwardingJavaFileManagerProxy.proxy(standardFileManager, StandardJavaFileManager.class, emptySourcepathIn(options));
+        } else {
+            boolean hasEmptySourcepaths = JavaVersion.current().isJava9Compatible() && emptySourcepathIn(options);
+            fileManager = GradleStandardJavaFileManager.wrap(standardFileManager, DefaultClassPath.of(spec.getAnnotationProcessorPath()), hasEmptySourcepaths);
+        }
+
         JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, options, spec.getClasses(), compilationUnits);
 
         Set<AnnotationProcessorDeclaration> annotationProcessors = spec.getEffectiveAnnotationProcessors();
