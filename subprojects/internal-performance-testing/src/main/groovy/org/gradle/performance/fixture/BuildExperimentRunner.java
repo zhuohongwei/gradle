@@ -143,6 +143,16 @@ public class BuildExperimentRunner {
             return;
         }
         setOSSchedulerStates(false);
+        setNetworkManagerState(false);
+    }
+
+    /**
+     * Temporarily disable all network traffic during benchmarking.
+     */
+    private static void setNetworkManagerState(boolean enabled) {
+        String command = enabled ? "start" : "stop";
+        System.out.println(String.format("Network manager will %s now.", command));
+        executeProcess(String.format("sudo systemctl %s networking", command));
     }
 
     /**
@@ -162,6 +172,7 @@ public class BuildExperimentRunner {
             return;
         }
 
+        setNetworkManagerState(true);
         setOSSchedulerStates(true);
     }
 
