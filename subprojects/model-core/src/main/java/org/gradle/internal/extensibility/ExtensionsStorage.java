@@ -41,7 +41,7 @@ public class ExtensionsStorage {
             throw new IllegalArgumentException(
                 format("Cannot add extension with name '%s', as there is an extension already registered with that name.", name));
         }
-        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension, ExceptionUtils.getStackTrace(new Exception())));
+        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension, new Exception()));
     }
 
     public boolean hasExtension(String name) {
@@ -156,13 +156,13 @@ public class ExtensionsStorage {
         private final String name;
         private final TypeOf<T> publicType;
         protected final T extension;
-        private final String stacktrace;
+        private final Exception stacktrace;
 
-        private ExtensionHolder(String name, TypeOf<T> publicType, T extension, String stacktrace) {
+        private ExtensionHolder(String name, TypeOf<T> publicType, T extension, Exception exception) {
             this.name = name;
             this.publicType = publicType;
             this.extension = extension;
-            this.stacktrace = stacktrace;
+            this.stacktrace = exception;
         }
 
         @Override
@@ -188,7 +188,7 @@ public class ExtensionsStorage {
         public String toString() {
             return "ExtensionHolder{" +
                 "name='" + name + '\'' +
-                ", stacktrace='" + stacktrace + '\'' +
+                ", stacktrace='" + ExceptionUtils.getStackTrace(stacktrace) + '\'' +
                 '}';
         }
     }
