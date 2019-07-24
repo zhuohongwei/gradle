@@ -145,6 +145,8 @@ public class BuildExperimentRunner {
         setOSSchedulerStates(false);
         setNetworkManagerState(false);
 
+        stabilizeSystem();
+
         assertOSPerformanceSettings();
     }
 
@@ -173,6 +175,13 @@ public class BuildExperimentRunner {
         System.out.println(executeProcess("df --human-readable ")); // Disk space
         System.out.println(executeProcess("systemctl | grep 'running'")); // Running services
         System.out.println(executeProcess("ps ax | egrep '[Gg]radle'\n")); // Running Gradle processes
+    }
+
+    /**
+     * Disable swap completely, auditing, turbo boost, etc.
+     */
+    private static void stabilizeSystem() {
+        System.out.println(executeProcess("sudo swapoff --all --verbose")); // Disable devices and files for paging and swapping.
     }
 
     private static void afterIterations() {
