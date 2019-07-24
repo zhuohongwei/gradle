@@ -62,11 +62,16 @@ class BaselineVersion implements VersionResults {
             sb.append("Difference: ${diff.abs().format()} $desc (${toMillis(diff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
             sb.append(current.speedStats)
             sb.append(results.speedStats)
+            sb.append(meanSquaredError(current))
             sb.append("\n")
             sb.toString()
         } else {
             sb.append("Speed measurement is not available (probably due to a build failure)")
         }
+    }
+
+    def meanSquaredError(MeasuredOperationList current) {
+        [current.totalTime, results.totalTime].transpose().collect { a, b -> (a - b)**2 }.with { sum() / size() }
     }
 
     boolean significantlyFasterThan(MeasuredOperationList other, double minConfidence = MINIMUM_CONFIDENCE) {

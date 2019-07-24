@@ -144,7 +144,7 @@ public class BuildExperimentRunner {
             return;
         }
         setOSSchedulerStates(false);
-        setNetworkManagerState(false);
+        //setNetworkManagerState(false);
 
         stabilizeSystem();
         dropFileCaches();
@@ -187,6 +187,12 @@ public class BuildExperimentRunner {
 
         System.out.println(executeProcess("sudo sysctl vm.overcommit_memory=2")); // disable overcommit, see https://github.com/softdevteam/krun/blob/da9e46f1207a4ba99df6ae896f8fc24036b648dc/krun/platform.py#L1401
         System.out.println(executeProcess("sudo sysctl --write kernel.randomize_va_space=0")); // Disable address space randomization https://llvm.org/docs/Benchmarking.html#linux
+
+        // TODO clearTemp();
+        // TODO killLeftoverGradleProcesses();
+
+        // TODO executeProcess("sudo systemctl disable turbo-boost.service") // make cpu and temp more consistent
+        // TODO executeProcess("sudo systemctl disable auditd") // disable the Linux Auditing System
     }
 
     /**
@@ -196,6 +202,22 @@ public class BuildExperimentRunner {
         System.out.println("Dropping file caches");
         sync();
         executeProcess("sudo sysctl vm.drop_caches=3");
+    }
+
+    /**
+     * Clear leftover temporary Gradle files.
+     */
+    private static void clearTemp() {
+        System.out.println("Clearing temp directory");
+        executeProcess("sudo rm -rfd /tmp/*gradle*");
+    }
+
+    /**
+     * Clear leftover Gradle processes.
+     */
+    private static void killLeftoverGradleProcesses() {
+        System.out.println("Clearing leftover Gradle processes");
+        executeProcess("ps ax | egrep 'GradleDaemon|GradleWorkerMain' | awk '{print $1}' | xargs kill -9");
     }
 
     private static void afterIterations() {
