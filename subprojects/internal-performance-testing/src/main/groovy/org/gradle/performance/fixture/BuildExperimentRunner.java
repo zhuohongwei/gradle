@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.gradle.performance.fixture.DurationMeasurementImpl.printProcess;
+
 public class BuildExperimentRunner {
 
     private final GradleSessionProvider executerProvider;
@@ -96,6 +98,9 @@ public class BuildExperimentRunner {
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
+
+            displayInfo();
+
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
         }
@@ -128,6 +133,20 @@ public class BuildExperimentRunner {
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.WARMUP, i + 1, warmUpCount);
             runOnce(session, new MeasuredOperationList(), info);
         }
+    }
+
+    /**
+     * Show the currently running services, CPU speeds, temperatures, free space, etc.
+     */
+    private static void displayInfo() {
+        printProcess("CPU temperatures", "sensors | grep 'Core ' | awk '{print $3}' | xargs");
+        printProcess("CPU speed", " lscpu | grep 'CPU MHz:' | awk '{print $3 \" Mhz\"}'");
+        printProcess("Used memory", "awk '/MemFree/ { printf \"%.3f Gb\\n\", $2/1024/1024 }' /proc/meminfo");
+        printProcess("Disk space", "df --human | awk '{print $1 \" \" $4}' | xargs");
+        printProcess("Running service count", "systemctl | grep 'running' | awk '{print $1}' | wc --lines");
+        printProcess("Process count", "ps aux | wc --lines");
+        printProcess("Gradle process count", "ps aux | egrep '[Gg]radle' | wc --lines");
+        printProcess("Temp directory gradle file count", "find /tmp -type f -name '*gradle*' 2>/dev/null | wc --lines");
     }
 
     private static String getExperimentOverride(String key) {
