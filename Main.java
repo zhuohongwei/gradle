@@ -134,21 +134,11 @@ public class Main {
 
     private static void prepareForExperiment(String version) {
         initDirectory(getGradleUserHome(version));
-        initExpProject(getExpProject(version));
+        deleteDirectory(getExpProject(version));
 
-//        deleteDirectory(getExpProject(version));
-
-//        run(projectDir, "cp", "-r",
-//            projectDirPath + "/subprojects/performance/build/" + template,
-//            getExpProject(version).getAbsolutePath());
-    }
-
-    private static void initExpProject(File expProject) {
-        deleteDirectory(new File(expProject, ".gradle"));
-        deleteDirectory(new File(expProject, "build"));
-        deleteDirectory(new File(expProject, "buildSrc/.gradle"));
-        deleteDirectory(new File(expProject, "buildSrc/build"));
-        deleteDirectory(new File(expProject, "pid"));
+        run(projectDir, "cp", "-r",
+            projectDirPath + "/subprojects/performance/build/" + template,
+            getExpProject(version).getAbsolutePath());
     }
 
     private static void stopDaemon(String version) {
@@ -156,8 +146,6 @@ public class Main {
     }
 
     private static Experiment runExperiment(String version) {
-        run(projectDir, "sh", "-c", "rm -rf /tmp/*");
-
         int daemonPid = doWarmUp(version);
 
         Map<String, String> envs = getEnvs();
@@ -275,7 +263,7 @@ public class Main {
     }
 
     private static File getExpProject(String version) {
-        return new File(projectDirPath, "ExpProject");
+        return new File(projectDirPath, version + "ExpProject");
     }
 
     private static File getPidFile(String version) {
