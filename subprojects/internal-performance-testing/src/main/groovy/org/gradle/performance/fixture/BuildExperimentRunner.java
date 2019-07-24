@@ -182,6 +182,8 @@ public class BuildExperimentRunner {
      */
     private static void stabilizeSystem() {
         System.out.println(executeProcess("sudo swapoff --all --verbose")); // Disable devices and files for paging and swapping.
+
+        System.out.println(executeProcess("sudo sysctl vm.overcommit_memory=2")); // disable overcommit, see https://github.com/softdevteam/krun/blob/da9e46f1207a4ba99df6ae896f8fc24036b648dc/krun/platform.py#L1401
     }
 
     private static void afterIterations() {
