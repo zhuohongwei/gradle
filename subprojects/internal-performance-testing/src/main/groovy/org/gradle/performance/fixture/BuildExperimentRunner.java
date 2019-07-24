@@ -186,6 +186,7 @@ public class BuildExperimentRunner {
         System.out.println(executeProcess("sudo swapoff --all --verbose")); // Disable devices and files for paging and swapping.
 
         System.out.println(executeProcess("sudo sysctl vm.overcommit_memory=2")); // disable overcommit, see https://github.com/softdevteam/krun/blob/da9e46f1207a4ba99df6ae896f8fc24036b648dc/krun/platform.py#L1401
+        System.out.println(executeProcess("sudo sysctl --write kernel.randomize_va_space=0")); // Disable address space randomization https://llvm.org/docs/Benchmarking.html#linux
     }
 
     /**
