@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess;
+import static org.gradle.performance.fixture.DurationMeasurementImpl.sync;
 
 public class BuildExperimentRunner {
 
@@ -146,6 +147,7 @@ public class BuildExperimentRunner {
         setNetworkManagerState(false);
 
         stabilizeSystem();
+        dropFileCaches();
 
         assertOSPerformanceSettings();
     }
@@ -184,6 +186,15 @@ public class BuildExperimentRunner {
         System.out.println(executeProcess("sudo swapoff --all --verbose")); // Disable devices and files for paging and swapping.
 
         System.out.println(executeProcess("sudo sysctl vm.overcommit_memory=2")); // disable overcommit, see https://github.com/softdevteam/krun/blob/da9e46f1207a4ba99df6ae896f8fc24036b648dc/krun/platform.py#L1401
+    }
+
+    /**
+     * Clear PageCache, dentries and inodes.
+     */
+    private static void dropFileCaches() {
+        System.out.println("Dropping file caches");
+        sync();
+        executeProcess("sudo sysctl vm.drop_caches=3");
     }
 
     private static void afterIterations() {
