@@ -24,7 +24,7 @@ import java.util.*;
 import java.text.*;
 
 public class Main {
-    private static String projectDirPath = "/home/tcagent1/agent/work/668602365d1521fc";
+    private static String projectDirPath = "/home/tcagent1/agent/work/my-tmpfs";
     private static String asyncProfiler = "/home/tcagent1/agent/work/async-profiler/profiler.sh";
     private static File projectDir = new File(projectDirPath);
     private static Map<String, String> gradleBinary = new HashMap<>();
@@ -49,9 +49,9 @@ public class Main {
         gradleBinary.put("baseline4",
             projectDirPath + "/intTestHomeDir/previousVersion/5.2-20181211000030+0000/gradle-5.2-20181211000030+0000-4/bin/gradle");
         gradleBinary.put("current1",
-            projectDirPath + "/subprojects/performance/build/integ test/bin/gradle");
+            projectDirPath + "/current1Gradle/bin/gradle");
         gradleBinary.put("current2",
-            projectDirPath + "/subprojects/performance/build/integ test-2/bin/gradle");
+            projectDirPath + "/current2Gradle/bin/gradle");
     }
 
     private static class Experiment {
