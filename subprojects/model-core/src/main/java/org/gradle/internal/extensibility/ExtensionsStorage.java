@@ -16,7 +16,6 @@
 
 package org.gradle.internal.extensibility;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.api.Action;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.logging.Logging;
@@ -41,7 +40,7 @@ public class ExtensionsStorage {
             throw new IllegalArgumentException(
                 format("Cannot add extension with name '%s', as there is an extension already registered with that name.", name));
         }
-        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension, new Exception()));
+        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension));
     }
 
     public boolean hasExtension(String name) {
@@ -156,13 +155,11 @@ public class ExtensionsStorage {
         private final String name;
         private final TypeOf<T> publicType;
         protected final T extension;
-        private final Exception stacktrace;
 
-        private ExtensionHolder(String name, TypeOf<T> publicType, T extension, Exception exception) {
+        private ExtensionHolder(String name, TypeOf<T> publicType, T extension) {
             this.name = name;
             this.publicType = publicType;
             this.extension = extension;
-            this.stacktrace = exception;
         }
 
         @Override
@@ -188,7 +185,8 @@ public class ExtensionsStorage {
         public String toString() {
             return "ExtensionHolder{" +
                 "name='" + name + '\'' +
-                ", stacktrace='" + ExceptionUtils.getStackTrace(stacktrace) + '\'' +
+                ", publicType=" + publicType +
+                ", extension=" + extension +
                 '}';
         }
     }
