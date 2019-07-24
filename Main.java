@@ -88,7 +88,7 @@ public class Main {
 
             String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-result.txt";
             run(projectDir, "touch", fileName);
-            writeFile(new File(fileName), toString());
+            writeFile(new File(projectDir, fileName), toString());
         }
 
         public String toString() {
