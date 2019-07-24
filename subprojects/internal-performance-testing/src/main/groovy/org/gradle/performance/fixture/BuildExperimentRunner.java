@@ -184,6 +184,7 @@ public class BuildExperimentRunner {
             return;
         }
         runGcOnAllJvms();
+        setOSSchedulerStates(false);
     }
 
     /**
@@ -212,6 +213,19 @@ public class BuildExperimentRunner {
         if (!OperatingSystem.current().isLinux()) {
             return;
         }
+
+        setOSSchedulerStates(true);
+    }
+
+    /**
+     * Temporarily disable cron and atd to make sure nothing unexpected happens during benchmarking.
+     * See: https://github.com/softdevteam/krun#step-4-audit-system-services
+     */
+    private static void setOSSchedulerStates(boolean enabled) {
+        String command = enabled ? "start" : "stop";
+        System.out.println(String.format("Cron & Atd will %s now.", command));
+        executeProcess(String.format("sudo systemctl %s cron", command)); // daemon to execute scheduled commands
+        executeProcess(String.format("sudo systemctl %s atd", command)); // run jobs queued for later execution
     }
 
     private static void printAllChangedProcesses(Map<String, String> previousAllProcesses) {
