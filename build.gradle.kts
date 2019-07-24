@@ -403,3 +403,9 @@ allprojects {
     }
 }
 
+allprojects {
+    tasks.withType<Test>().configureEach {
+        isEnabled = false
+    }
+}
+

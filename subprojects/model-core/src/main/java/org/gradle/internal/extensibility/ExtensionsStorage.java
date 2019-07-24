@@ -16,13 +16,16 @@
 
 package org.gradle.internal.extensibility;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.api.Action;
 import org.gradle.api.UnknownDomainObjectException;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.ExtensionsSchema;
 import org.gradle.api.reflect.TypeOf;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +34,6 @@ import static java.lang.String.format;
 import static org.gradle.internal.Cast.uncheckedCast;
 
 public class ExtensionsStorage {
-
     private final Map<String, ExtensionHolder> extensions = new LinkedHashMap<String, ExtensionHolder>();
 
     public <T> void add(TypeOf<T> publicType, String name, T extension) {
@@ -39,7 +41,7 @@ public class ExtensionsStorage {
             throw new IllegalArgumentException(
                 format("Cannot add extension with name '%s', as there is an extension already registered with that name.", name));
         }
-        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension));
+        extensions.put(name, new ExtensionHolder<T>(name, publicType, extension, ExceptionUtils.getStackTrace(new Exception())));
     }
 
     public boolean hasExtension(String name) {
@@ -97,10 +99,15 @@ public class ExtensionsStorage {
 
     @Nullable
     private <T> ExtensionHolder<T> firstHolderWithExactPublicType(TypeOf<T> type) {
-        for (ExtensionHolder extensionHolder : extensions.values()) {
-            if (type.equals(extensionHolder.getPublicType())) {
-                return uncheckedCast(extensionHolder);
+        try {
+            for (ExtensionHolder extensionHolder : extensions.values()) {
+                if (type.equals(extensionHolder.getPublicType())) {
+                    return uncheckedCast(extensionHolder);
+                }
             }
+        } catch (ConcurrentModificationException e) {
+            Logging.getLogger(getClass()).quiet(extensions.toString());
+            throw e;
         }
         return null;
     }
@@ -138,6 +145,7 @@ public class ExtensionsStorage {
 
     /**
      * Doesn't actually return anything. Always throws a {@link UnknownDomainObjectException}.
+     *
      * @return Nothing.
      */
     private UnknownDomainObjectException unknownExtensionException(final String name) {
@@ -148,11 +156,13 @@ public class ExtensionsStorage {
         private final String name;
         private final TypeOf<T> publicType;
         protected final T extension;
+        private final String stacktrace;
 
-        private ExtensionHolder(String name, TypeOf<T> publicType, T extension) {
+        private ExtensionHolder(String name, TypeOf<T> publicType, T extension, String stacktrace) {
             this.name = name;
             this.publicType = publicType;
             this.extension = extension;
+            this.stacktrace = stacktrace;
         }
 
         @Override
@@ -172,6 +182,14 @@ public class ExtensionsStorage {
         public T configure(Action<? super T> action) {
             action.execute(extension);
             return extension;
+        }
+
+        @Override
+        public String toString() {
+            return "ExtensionHolder{" +
+                "name='" + name + '\'' +
+                ", stacktrace='" + stacktrace + '\'' +
+                '}';
         }
     }
 }
