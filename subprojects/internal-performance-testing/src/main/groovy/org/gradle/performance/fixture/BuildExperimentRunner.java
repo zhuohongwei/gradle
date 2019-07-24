@@ -18,6 +18,7 @@ package org.gradle.performance.fixture;
 
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.CompositeStoppable;
+import org.gradle.internal.os.OperatingSystem;
 import org.gradle.performance.measure.MeasuredOperation;
 import org.gradle.performance.results.MeasuredOperationList;
 import org.gradle.util.GFileUtils;
@@ -72,8 +73,10 @@ public class BuildExperimentRunner {
             GradleSession session = executerProvider.session(buildSpec);
             session.prepare();
             try {
+                beforeIterations();
                 performMeasurements(session, experiment, results, workingDirectory);
             } finally {
+                afterIterations();
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
             }
@@ -135,6 +138,13 @@ public class BuildExperimentRunner {
         }
     }
 
+    private static void beforeIterations() {
+        if (!OperatingSystem.current().isLinux()) {
+            return;
+        }
+        setOSSchedulerStates(false);
+    }
+
     /**
      * Show the currently running services, CPU speeds, temperatures, free space, etc.
      */
@@ -145,6 +155,25 @@ public class BuildExperimentRunner {
         System.out.println(executeProcess("df --human-readable ")); // Disk space
         System.out.println(executeProcess("systemctl | grep 'running'")); // Running services
         System.out.println(executeProcess("ps ax | egrep '[Gg]radle'\n")); // Running Gradle processes
+    }
+
+    private static void afterIterations() {
+        if (!OperatingSystem.current().isLinux()) {
+            return;
+        }
+
+        setOSSchedulerStates(true);
+    }
+
+    /**
+     * Temporarily disable cron and atd to make sure nothing unexpected happens during benchmarking.
+     * See: https://github.com/softdevteam/krun#step-4-audit-system-services
+     */
+    private static void setOSSchedulerStates(boolean enabled) {
+        String command = enabled ? "start" : "stop";
+        System.out.println(String.format("Cron & Atd will %s now.", command));
+        executeProcess(String.format("sudo systemctl %s cron", command)); // daemon to execute scheduled commands
+        executeProcess(String.format("sudo systemctl %s atd", command)); // run jobs queued for later execution
     }
 
     private static String getExperimentOverride(String key) {
