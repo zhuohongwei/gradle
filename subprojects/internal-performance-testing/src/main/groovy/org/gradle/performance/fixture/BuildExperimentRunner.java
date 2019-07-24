@@ -144,6 +144,8 @@ public class BuildExperimentRunner {
         }
         setOSSchedulerStates(false);
         setNetworkManagerState(false);
+
+        assertOSPerformanceSettings();
     }
 
     /**
@@ -153,6 +155,12 @@ public class BuildExperimentRunner {
         String command = enabled ? "start" : "stop";
         System.out.println(String.format("Network manager will %s now.", command));
         executeProcess(String.format("sudo systemctl %s networking", command));
+    }
+
+    private static void assertOSPerformanceSettings() {
+        assert executeProcess("cat /etc/default/cpufrequtils").contains("performance"); // CPU should not be in powersave - https://github.com/gradle/dev-infrastructure/pull/269/files
+        // assert executeProcess("cat /proc/cmdline").contains("intel_pstate=disable"); // https://github.com/softdevteam/krun#step-2-linux-only-kernel-and-os-setup
+        assert executeProcess("cat /sys/devices/system/cpu/isolated").contains("0-3"); // https://vstinner.github.io/journey-to-stable-benchmark-system.html#cpu-isolation
     }
 
     /**
