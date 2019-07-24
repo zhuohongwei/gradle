@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess;
+
 public class BuildExperimentRunner {
 
     private final GradleSessionProvider executerProvider;
@@ -96,6 +98,9 @@ public class BuildExperimentRunner {
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
+
+            displayInfo();
+
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
         }
@@ -128,6 +133,18 @@ public class BuildExperimentRunner {
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.WARMUP, i + 1, warmUpCount);
             runOnce(session, new MeasuredOperationList(), info);
         }
+    }
+
+    /**
+     * Show the currently running services, CPU speeds, temperatures, free space, etc.
+     */
+    private static void displayInfo() {
+        System.out.println(executeProcess("sensors | grep 'Core '")); // CPU temperature
+        System.out.println(executeProcess("lscpu | grep 'CPU MHz:'")); // CPU speed
+        System.out.println(executeProcess("free --human")); // Used memory
+        System.out.println(executeProcess("df --human-readable ")); // Disk space
+        System.out.println(executeProcess("systemctl | grep 'running' | awk '{print $1}' | xargs")); // Running services
+        System.out.println(executeProcess("pgrep '[Gg]radle' --count ")); // Running Gradle processes
     }
 
     private static String getExperimentOverride(String key) {

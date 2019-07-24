@@ -16,10 +16,13 @@
 
 package org.gradle.performance.fixture;
 
+import com.google.common.io.ByteStreams;
 import org.gradle.integtests.fixtures.executer.DurationMeasurement;
 import org.gradle.performance.measure.Duration;
 import org.gradle.performance.measure.MeasuredOperation;
 import org.joda.time.DateTime;
+
+import java.io.IOException;
 
 public class DurationMeasurementImpl implements DurationMeasurement {
     private DateTime start;
@@ -36,6 +39,24 @@ public class DurationMeasurementImpl implements DurationMeasurement {
             runnable.run();
         } finally {
             stop();
+        }
+    }
+
+    /**
+     * Execute command with root privileges.
+     *
+     * @return the output of the process.
+     */
+    public static String executeProcess(String command) {
+        try {
+            Process exec = Runtime.getRuntime()
+                .exec(new String[]{"/bin/bash", "-c", command});
+            int exitValue = exec.waitFor();
+            assert exitValue == 0 : String.format("Failed executing '%s': %s", command, new String(ByteStreams.toByteArray(exec.getErrorStream())));
+
+            return new String(ByteStreams.toByteArray(exec.getInputStream()));
+        } catch (IOException | InterruptedException e) {
+            throw new IllegalStateException(e);
         }
     }
 
