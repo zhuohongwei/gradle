@@ -24,6 +24,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -112,10 +113,11 @@ public class DataSeries<Q> extends ArrayList<Amount<Q>> {
     }
 
     public List<Double> asDoubleList() {
+        assert stream().allMatch(v -> Objects.equals(get(0).getUnits(), v.getUnits())); // only drop the units, if they're the same
         return stream().map(Amount::getValue).map(BigDecimal::doubleValue).collect(Collectors.toList());
     }
 
     private double[] asDoubleArray() {
-        return stream().map(Amount::getValue).mapToDouble(BigDecimal::doubleValue).toArray();
+        return asDoubleList().stream().mapToDouble(v -> v).toArray();
     }
 }

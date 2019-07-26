@@ -22,21 +22,23 @@ import org.gradle.performance.measure.Duration
 import org.gradle.performance.measure.MeasuredOperation
 
 @CompileStatic
-public class MeasuredOperationList extends LinkedList<MeasuredOperation> {
+class MeasuredOperationList extends LinkedList<MeasuredOperation> {
     String name
 
     DataSeries<Duration> getTotalTime() {
-        return new DataSeries<Duration>(this.collect { it.totalTime })
+        new DataSeries<Duration>(this.collect { it.totalTime })
     }
 
     String getSpeedStats() {
-        format(totalTime)
-    }
-
-    private String format(DataSeries<?> measurement) {
-        """  ${name} median: ${measurement.median.format()} min: ${measurement.min.format()}, max: ${measurement.max.format()}, se: ${measurement.standardError.format()}}
-  > ${measurement.collect { it.format() }}
-"""
-
+        def time = getTotalTime()
+        """
+            ${name}
+                > median: ${time.median.format()},
+                > min: ${time.min.format()}, 
+                > max: ${time.max.format()},
+                > se: ${time.standardError.format()}
+                > ${time*.format()}
+            
+        """.stripIndent("        ".size())
     }
 }

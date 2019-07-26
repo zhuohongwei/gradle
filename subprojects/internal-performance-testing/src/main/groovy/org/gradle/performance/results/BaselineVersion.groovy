@@ -17,6 +17,7 @@
 package org.gradle.performance.results
 
 import groovy.transform.CompileStatic
+import org.gradle.performance.measure.Amount
 import org.gradle.performance.measure.DataSeries
 import org.gradle.performance.measure.Duration
 
@@ -57,15 +58,106 @@ class BaselineVersion implements VersionResults {
             String confidencePercent = DataSeries.confidenceInDifference(results.totalTime, current.totalTime) * 100 as int
             sb.append(" with " + confidencePercent + "% confidence.\n")
 
-            def diff = currentVersionMean - thisVersionMean
-            def desc = diff > Duration.millis(0) ? "slower" : "faster"
-            sb.append("Difference: ${diff.abs().format()} $desc (${toMillis(diff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
+            def meanDiff = currentVersionMean - thisVersionMean
+            def desc = meanDiff > Duration.millis(0) ? "slower" : "faster"
+            sb.append("\nDifference: ${meanDiff.abs().format()} $desc (${toMillis(meanDiff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
+
+            def sortedMean = calculateSortedMean(current)
+            sb.append("Sorted mean: \tstandardError: " + standardError(sortedMean) + ", \t measurementMean: " + measurementMean(sortedMean) + ", " + sortedMean + "\n")
+
+            def mean = calculateMean(current)
+            sb.append("Mean: \tstandardError: " + standardError(mean) + ", \t measurementMean: " + measurementMean(mean) + ", " + mean + "\n")
+
+            def absDiff = calculateAbsDiff(current)
+            sb.append("Abs Diff: \tstandardError: " + standardError(absDiff) + ", \t measurementMean: " + measurementMean(absDiff) + ", " + absDiff + "\n")
+
+            def diffSquared = calculateDiffSquared(current)
+            sb.append("Diff squared: \tstandardError: " + standardError(diffSquared) + ", \t measurementMean: " + measurementMean(diffSquared) + ", " + diffSquared + "\n")
+
+            def ratio = calculateRatio(current)
+            sb.append("Ratio: \tstandardError: " + standardError(ratio) + ", \t measurementMean: " + measurementMean(ratio) + ", " + ratio + "\n")
+
             sb.append(current.speedStats)
             sb.append(results.speedStats)
-            sb.append("\n")
             sb.toString()
         } else {
             sb.append("Speed measurement is not available (probably due to a build failure)")
+        }
+    }
+
+    private BigDecimal standardError(List<Amount<Duration>> values) {
+        new DataSeries(values).standardError.value
+    }
+
+    private Amount measurementMean(List<Amount<Duration>> values) {
+        def sum = values*.value.sum() as BigDecimal
+        def mean = sum / values.size()
+        Amount.valueOf(mean, values.first().units);
+    }
+
+    List<Amount<Duration>> calculateDiffSquared(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList().sort(), currentTotalTime.asDoubleList().sort()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf((resultsTime - currentTime)**2 as BigDecimal, unit)
+        }
+    }
+
+    List<Amount<Duration>> calculateSortedMean(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList().sort(), currentTotalTime.asDoubleList().sort()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf((resultsTime + currentTime) / 2 as BigDecimal, unit)
+        }
+    }
+
+    List<Amount<Duration>> calculateMean(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList(), currentTotalTime.asDoubleList()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf((resultsTime + currentTime) / 2 as BigDecimal, unit)
+        }
+    }
+
+    List<Amount<Duration>> calculateAbsDiff(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList(), currentTotalTime.asDoubleList()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf(Math.abs(resultsTime - currentTime) as BigDecimal, unit)
+        }
+    }
+
+    // TODO dedup
+    List<Amount<Duration>> calculateRatio(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList(), currentTotalTime.asDoubleList()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf(100 * (resultsTime / currentTime) as BigDecimal, unit)
         }
     }
 
