@@ -18,6 +18,8 @@ package org.gradle.performance.fixture
 
 import com.google.common.base.Joiner
 import groovy.transform.CompileStatic
+import groovy.transform.TypeChecked
+import groovy.transform.TypeCheckingMode
 import org.gradle.api.Action
 import org.gradle.integtests.fixtures.RepoScriptBlockUtil
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
@@ -25,6 +27,7 @@ import org.gradle.internal.os.OperatingSystem
 import org.gradle.performance.measure.MeasuredOperation
 
 import java.lang.ProcessBuilder.Redirect
+import java.math.RoundingMode
 
 /**
  * A performance test session that runs Gradle from the command line.
@@ -77,7 +80,11 @@ class ForkingGradleSession implements GradleSession {
     }
 
     private void run(BuildExperimentInvocationInfo invocationInfo, GradleInvocationSpec invocation, List<String> tasks) {
-        String jvmArgs = invocation.jvmOpts.join(' ')
+        File logGc = getGcDumpFile(invocation)
+
+        def gcJvmArgs = ["-Xloggc:\"${logGc.absolutePath}\"".toString(), '-XX:+PrintGCDateStamps']
+        String jvmArgs = (gcJvmArgs + invocation.jvmOpts).join(' ')
+
         Map<String, String> env = [:]
         List<String> args = []
         if (OperatingSystem.current().isWindows()) {
@@ -106,7 +113,25 @@ class ForkingGradleSession implements GradleSession {
         if (exitCode != 0 && !invocation.expectFailure) {
             throw new IllegalStateException("Build with args: ${args} envs: ${env} failed, see ${invocationInfo.buildLog} for details")
         }
+        println "Gc pause time: ${getTotalGcTime(logGc)} seconds"
     }
+
+    @TypeChecked(TypeCheckingMode.SKIP)
+    private static BigDecimal getTotalGcTime(File log) {
+        (log.text =~ /, (\d+\.\d+) secs]/)
+            .collect { it[1] as BigDecimal }
+            .sum()
+            .setScale(2, RoundingMode.HALF_UP)
+    }
+
+    private File getGcDumpFile(GradleInvocationSpec invocation) {
+        File log = new File(new File(invocation.workingDirectory, "${System.currentTimeMillis()}"), "log.txt")
+        log.parentFile.mkdirs()
+        log.createNewFile()
+        log.deleteOnExit()
+        log
+    }
+
 
     private static ProcessBuilder newProcessBuilder(BuildExperimentInvocationInfo invocationInfo, List<String> args, Map<String, String> env) {
         def builder = new ProcessBuilder()
