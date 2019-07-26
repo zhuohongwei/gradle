@@ -17,6 +17,7 @@
 package org.gradle.performance.results
 
 import groovy.transform.CompileStatic
+import org.gradle.performance.measure.Amount
 import org.gradle.performance.measure.DataSeries
 import org.gradle.performance.measure.Duration
 
@@ -57,15 +58,36 @@ class BaselineVersion implements VersionResults {
             String confidencePercent = DataSeries.confidenceInDifference(results.totalTime, current.totalTime) * 100 as int
             sb.append(" with " + confidencePercent + "% confidence.\n")
 
-            def diff = currentVersionMean - thisVersionMean
-            def desc = diff > Duration.millis(0) ? "slower" : "faster"
-            sb.append("Difference: ${diff.abs().format()} $desc (${toMillis(diff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
+            def meanDiff = currentVersionMean - thisVersionMean
+            def desc = meanDiff > Duration.millis(0) ? "slower" : "faster"
+            sb.append("\nMean difference: ${meanDiff.abs().format()} $desc (${toMillis(meanDiff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
+
+            sb.append("Sorted abs diff:\n")
+            def sortedMean = calculateSortedAbsDiffMean(current)
+            def series = new DataSeries(sortedMean)
+            sb.append("Average: " + series.average + "\n")
+            sb.append("Median: " + series.median + "\n")
+            sb.append("StandardError: " + series.standardError + "\n")
+            sb.append("Values: " + series + "\n")
+
             sb.append(current.speedStats)
             sb.append(results.speedStats)
-            sb.append("\n")
             sb.toString()
         } else {
             sb.append("Speed measurement is not available (probably due to a build failure)")
+        }
+    }
+
+    List<Amount<Duration>> calculateSortedAbsDiffMean(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList().sort(), currentTotalTime.asDoubleList().sort()].transpose()
+        zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf(Math.abs(resultsTime - currentTime) as BigDecimal, unit)
         }
     }
 
