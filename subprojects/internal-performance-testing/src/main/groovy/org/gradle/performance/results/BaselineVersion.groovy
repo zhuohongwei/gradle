@@ -17,6 +17,7 @@
 package org.gradle.performance.results
 
 import groovy.transform.CompileStatic
+import org.gradle.performance.measure.Amount
 import org.gradle.performance.measure.DataSeries
 import org.gradle.performance.measure.Duration
 
@@ -60,13 +61,29 @@ class BaselineVersion implements VersionResults {
             def diff = currentVersionMean - thisVersionMean
             def desc = diff > Duration.millis(0) ? "slower" : "faster"
             sb.append("Difference: ${diff.abs().format()} $desc (${toMillis(diff.abs())}), ${PrettyCalculator.percentChange(currentVersionMean, thisVersionMean)}%\n")
+            sb.append("\n\n standardError: " + standardError(current) + "\n\n")
             sb.append(current.speedStats)
+            sb.append("\n")
             sb.append(results.speedStats)
             sb.append("\n")
             sb.toString()
         } else {
             sb.append("Speed measurement is not available (probably due to a build failure)")
         }
+    }
+
+    def standardError(MeasuredOperationList current) {
+        assert results.size() == current.size()
+
+        def (resultsTotalTime, currentTotalTime) = [results.totalTime, current.totalTime]
+        def unit = resultsTotalTime.first().units
+        assert currentTotalTime.first().units == unit
+
+        def zippedValues = [resultsTotalTime.asDoubleList(), currentTotalTime.asDoubleList()].transpose()
+        def diffs = zippedValues.collect { double resultsTime, double currentTime ->
+            Amount.valueOf((resultsTime - currentTime) as BigDecimal, unit)
+        }
+        new DataSeries(diffs).standardError
     }
 
     boolean significantlyFasterThan(MeasuredOperationList other, double minConfidence = MINIMUM_CONFIDENCE) {
