@@ -26,7 +26,7 @@ class CsvLine {
     }
 
     static String getTitleLine() {
-        "scenario, branch, channel, time, commitId, baselineVersion, baselineAverage, baselineMedian, currentVersion, currentAverage, currentMedian, averageDiff, medianDiff, confidence, host, jvm, template, tasks, jvmOpts, daemon\n"
+        "scenario,branch,channel,time,commitId,baselineVersion,baselineAverage,baselineMedian,currentVersion,currentAverage,currentMedian,averageDiff,medianDiff,confidence,host,jvm,template,tasks,jvmOpts,daemon\n"
     }
 
     String toLine() {
@@ -53,6 +53,6 @@ class CsvLine {
             data.execution.getTasks()?.join(" ") ?: '',
             data.execution.getGradleOpts()?.join(" ") ?: '',
             data.execution.getDaemon() ? "1" : "0"
-        ].join(", ") + "\n"
+        ].join(",") + "\n"
     }
 }
