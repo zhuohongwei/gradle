@@ -33,7 +33,7 @@ class CsvLine {
         double currentAverage = data.currentVersion.totalTime.average.value.doubleValue()
         double baselineAverage = data.baseVersion.totalTime.average.value.doubleValue()
         [
-            scenario,
+            scenario.replace(',','_'),
             data.execution.getVcsBranch(),
             data.execution.getChannel(),
             FormatSupport.timestamp(data.time),
