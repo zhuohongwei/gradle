@@ -127,6 +127,11 @@ public class CrossBuildPerformanceTestHistory implements PerformanceTestHistory 
         }
 
         @Override
+        public String getChannel() {
+            return results.getChannel();
+        }
+
+        @Override
         public String getExecutionId() {
             return String.valueOf(Math.abs(getVcsCommits() != null ? getVcsCommits().hashCode() : hashCode()));
         }

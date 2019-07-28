@@ -18,7 +18,6 @@ package org.gradle.performance.results;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
@@ -29,7 +28,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionData;
@@ -38,23 +36,18 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
         File projectDir = new File(args[0]);
         try (ResultsStore store = getResultsStore()) {
+            File csvFile = new File(projectDir, String.format("data-%s.csv", FormatSupport.executionTimestamp()));
+            FileUtils.write(csvFile, CsvLine.getTitleLine(), Charset.defaultCharset(), true);
             for (String testName : store.getTestNames()) {
                 System.out.println("Start fetching " + testName + " ...");
-                PerformanceTestHistory history = store.getTestResults(testName, 10000, 365, null);
+                PerformanceTestHistory history = store.getTestResults(testName, 10, 365, null);
                 List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).filter(Objects::nonNull).collect(toList());
                 System.out.println("Fetched " + executions.size() + " executions for " + testName + "");
 
-                if (executions.isEmpty()) {
-                    continue;
+                for (ExecutionData executionData : executions) {
+                    CsvLine line = new CsvLine(testName, executionData);
+                    FileUtils.write(csvFile, line.toLine(), Charset.defaultCharset(), true);
                 }
-                String content;
-                try {
-                    content = executions.stream().map(ExecutionData::getLine).collect(Collectors.joining("\n"));
-                } catch (Exception e) {
-                    content = ExceptionUtils.getStackTrace(e);
-                }
-
-                FileUtils.write(new File(projectDir, testName + ".csv"), "difference, confidence\n" + content, Charset.defaultCharset(), true);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -94,7 +87,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
             .collect(toList());
         if (nonEmptyExecutions.size() > 1) {
             int size = nonEmptyExecutions.size();
-            return new ExecutionData(performanceTestExecution.getStartTime(), getCommit(performanceTestExecution), nonEmptyExecutions.get(size - 2), nonEmptyExecutions.get(size - 1));
+            return new ExecutionData(performanceTestExecution.getStartTime(), getCommit(performanceTestExecution), nonEmptyExecutions.get(size - 2), nonEmptyExecutions.get(size - 1), performanceTestExecution);
         } else {
             return null;
         }

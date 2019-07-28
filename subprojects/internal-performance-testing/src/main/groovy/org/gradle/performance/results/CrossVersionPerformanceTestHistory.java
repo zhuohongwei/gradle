@@ -159,6 +159,11 @@ public class CrossVersionPerformanceTestHistory implements PerformanceTestHistor
         }
 
         @Override
+        public String getChannel() {
+            return result.getChannel();
+        }
+
+        @Override
         public String getExecutionId() {
             return String.valueOf(Math.abs(getVcsCommits() != null ? getVcsCommits().hashCode() : hashCode()));
         }

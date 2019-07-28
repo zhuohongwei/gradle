@@ -111,13 +111,19 @@ class ScenarioBuildResultData {
         String shortCommitId
         MeasuredOperationList baseVersion
         MeasuredOperationList currentVersion
+        PerformanceTestExecution execution
 
         ExecutionData(long time, String commitId, MeasuredOperationList baseVersion, MeasuredOperationList currentVersion) {
+            this(time, commitId, baseVersion, currentVersion, null)
+        }
+
+        ExecutionData(long time, String commitId, MeasuredOperationList baseVersion, MeasuredOperationList currentVersion, PerformanceTestExecution execution) {
             this.time = new Date(time)
             this.commitId = commitId
             this.shortCommitId = commitId.substring(0, Math.min(7, commitId.length()))
             this.baseVersion = baseVersion
             this.currentVersion = currentVersion
+            this.execution = execution
         }
 
         String getDifferenceDisplay() {
