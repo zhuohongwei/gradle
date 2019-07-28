@@ -36,7 +36,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
         File projectDir = new File(args[0]);
         try (ResultsStore store = getResultsStore()) {
-            File csvFile = new File(projectDir, String.format("data-%s.csv", FormatSupport.executionTimestamp()));
+            File csvFile = new File(projectDir, String.format("data-%s.csv", FormatSupport.executionTimestamp().replace(' ', '-')));
             FileUtils.write(csvFile, CsvLine.getTitleLine(), Charset.defaultCharset(), true);
             for (String testName : store.getTestNames()) {
                 System.out.println("Start fetching " + testName + " ...");

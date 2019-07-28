@@ -50,8 +50,8 @@ class CsvLine {
             data.execution.getHost(),
             data.execution.getJvm(),
             data.execution.getTestProject(),
-            data.execution.getTasks().join(" "),
-            data.execution.getGradleOpts().join(" "),
+            data.execution.getTasks()?.join(" ") ?: '',
+            data.execution.getGradleOpts()?.join(" ") ?: '',
             data.execution.getDaemon() ? "1" : "0"
         ].join(", ") + "\n"
     }
