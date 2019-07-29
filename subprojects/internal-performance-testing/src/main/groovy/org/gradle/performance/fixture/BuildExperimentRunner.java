@@ -18,6 +18,8 @@ package org.gradle.performance.fixture;
 
 import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.apache.commons.lang.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.internal.os.OperatingSystem;
@@ -31,11 +33,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess;
 import static org.gradle.performance.fixture.DurationMeasurementImpl.printProcess;
 
@@ -114,17 +118,36 @@ public class BuildExperimentRunner {
 
     private void doMeasure(BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir, InvocationExecutorProvider session) {
         Map<String, String> previousAllProcessIds = allProcesses();
+        Set<String> previousProcessIds = gradleProcessesIds();
 
         int invocationCount = invocationsForExperiment(experiment);
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
 
+            killLeftoverGradleProcesses(previousProcessIds);
+
             displayInfo(previousAllProcessIds);
 
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
         }
+    }
+
+    private static void killLeftoverGradleProcesses(Set<String> previousGradleProcessIds) {
+        Set<String> leftoverGradleProcessIds = Sets.difference(gradleProcessesIds(), previousGradleProcessIds);
+        if (!leftoverGradleProcessIds.isEmpty()) {
+            for (String leftoverGradleProcessId : leftoverGradleProcessIds) {
+                printProcess("Killing leftover Gradle processes: " + leftoverGradleProcessId, "ps -eu --pid " + leftoverGradleProcessId);
+            }
+
+            executeProcess("kill -9 " + StringUtils.join(leftoverGradleProcessIds, " "));
+        }
+    }
+
+    private static Set<String> gradleProcessesIds() {
+        return splitLines(executeProcess("ps aux | egrep '[Gg]radle' | awk '{print $2}'"))
+            .collect(toSet());
     }
 
     @SuppressWarnings("unchecked")
