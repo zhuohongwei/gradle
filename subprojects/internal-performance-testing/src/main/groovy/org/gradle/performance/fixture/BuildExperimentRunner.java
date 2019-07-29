@@ -16,6 +16,8 @@
 
 package org.gradle.performance.fixture;
 
+import com.google.common.collect.Sets;
+import org.apache.commons.lang.StringUtils;
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.performance.measure.MeasuredOperation;
@@ -25,8 +27,13 @@ import org.gradle.util.GFileUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
+import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess;
 import static org.gradle.performance.fixture.DurationMeasurementImpl.printProcess;
 
 public class BuildExperimentRunner {
@@ -86,24 +93,51 @@ public class BuildExperimentRunner {
         GFileUtils.copyDirectory(templateDir, workingDir);
     }
 
-    protected void performMeasurements(final InvocationExecutorProvider session, BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir) {
+    protected void performMeasurements(InvocationExecutorProvider session, BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir) {
         doWarmup(experiment, projectDir, session);
         profiler.start(experiment);
         doMeasure(experiment, results, projectDir, session);
         profiler.stop(experiment);
     }
 
+    // TODO move to string utils
+    private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
+
+    private static Stream<String> splitLines(String values) {
+        return NEW_LINE_PATTERN.splitAsStream(values);
+    }
+
     private void doMeasure(BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir, InvocationExecutorProvider session) {
+        printProcess("pstree", "pstree");
+        Set<String> previousProcessIds = gradleProcessesIds();
+        printProcess("previousProcesses", "ps -eu --pid " + StringUtils.join(previousProcessIds, " "));
+
         int invocationCount = invocationsForExperiment(experiment);
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
+
+            killLeftoverGradleProcesses(previousProcessIds);
 
             displayInfo();
 
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
         }
+    }
+
+    private void killLeftoverGradleProcesses(Set<String> previousProcessIds) {
+        Set<String> leftoverProcessIds = Sets.difference(gradleProcessesIds(), previousProcessIds);
+        if (!leftoverProcessIds.isEmpty()) {
+            String leftoverPidList = StringUtils.join(leftoverProcessIds, " ");
+            printProcess("Killing leftover Gradle processes: " + leftoverPidList, "ps -eu --pid " + leftoverPidList);
+            executeProcess("kill -9 " + leftoverPidList);
+        }
+    }
+
+    private Set<String> gradleProcessesIds() {
+        return splitLines(executeProcess("ps aux | egrep '[Gg]radle' | awk '{print $2}'"))
+            .collect(toSet());
     }
 
     @SuppressWarnings("unchecked")
