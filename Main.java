@@ -139,6 +139,10 @@ public class Main {
         run(projectDir, "cp", "-r",
             projectDirPath + "/subprojects/performance/build/" + template,
             getExpProject(version).getAbsolutePath());
+
+        String buildGradle = readFile(new File(getExpProject(version), "build.gradle"));
+        writeFile(new File(getExpProject(version), "build.gradle"), buildGradle + "\ntask gc {\ndoLast{\nSystem.gc()\n}\n}");
+
     }
 
     private static void stopDaemon(String version) {
@@ -207,6 +211,8 @@ public class Main {
 
     private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
         File workingDir = getExpProject(version);
+
+        run(getExpProject(version), getExpArgs(version, "gc", -1));
 
         nonABIChange(version);
 
