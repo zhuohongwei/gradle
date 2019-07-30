@@ -28,7 +28,6 @@ import org.gradle.cache.internal.HeapProportionalCacheSizer;
 import org.gradle.internal.UncheckedException;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 public class CachingPatternSpecFactory extends PatternSpecFactory {
@@ -46,12 +45,9 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
     protected Spec<FileTreeElement> createSpec(final Collection<String> patterns, final boolean include, final boolean caseSensitive) {
         final SpecKey key = new SpecKey(ImmutableList.copyOf(patterns), include, caseSensitive);
         try {
-            return specInstanceCache.get(key, new Callable<Spec<FileTreeElement>>() {
-                @Override
-                public Spec<FileTreeElement> call() throws Exception {
-                    Spec<FileTreeElement> spec = CachingPatternSpecFactory.super.createSpec(patterns, include, caseSensitive);
-                    return new CachingSpec(spec);
-                }
+            return specInstanceCache.get(key, () -> {
+                Spec<FileTreeElement> spec = CachingPatternSpecFactory.super.createSpec(patterns, include, caseSensitive);
+                return new CachingSpec(spec);
             });
         } catch (ExecutionException e) {
             throw UncheckedException.throwAsUncheckedException(e.getCause());
@@ -69,12 +65,7 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
         @Override
         public boolean isSatisfiedBy(final FileTreeElement element) {
             try {
-                return resultCache.get(element.getRelativePath(), new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return spec.isSatisfiedBy(element);
-                    }
-                });
+                return resultCache.get(element.getRelativePath(), () -> spec.isSatisfiedBy(element));
             } catch (ExecutionException e) {
                 throw UncheckedException.throwAsUncheckedException(e.getCause());
             }

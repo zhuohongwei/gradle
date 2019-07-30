@@ -16,11 +16,13 @@
 
 package org.gradle.api.internal.file.collections;
 
+import com.google.common.collect.Interner;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.UnauthorizedFileVisitDetails;
 import org.gradle.api.specs.Spec;
@@ -42,9 +44,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultDirectoryWalker implements DirectoryWalker {
     private final FileSystem fileSystem;
+    private final Interner<String> stringInterner;
 
     public DefaultDirectoryWalker(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
+        this.stringInterner = new StringInterner();
     }
 
     static boolean shouldVisit(FileTreeElement element, Spec<? super FileTreeElement> spec) {
@@ -56,7 +60,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         Deque<FileVisitDetails> directoryDetailsHolder = new ArrayDeque<>();
 
         try {
-            PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem);
+            PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem, stringInterner);
             Files.walkFileTree(rootDir.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, pathVisitor);
         } catch (IOException e) {
             throw new GradleException(String.format("Could not list contents of directory '%s'.", rootDir), e);
@@ -71,8 +75,9 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         private final AtomicBoolean stopFlag;
         private final RelativePath rootPath;
         private final FileSystem fileSystem;
+        private final Interner<String> stringInterner;
 
-        public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super FileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem) {
+        public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super FileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem, Interner<String> stringInterner) {
             this.directoryDetailsHolder = directoryDetailsHolder;
             this.spec = spec;
             this.postfix = postfix;
@@ -80,6 +85,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
             this.stopFlag = stopFlag;
             this.rootPath = rootPath;
             this.fileSystem = fileSystem;
+            this.stringInterner = stringInterner;
         }
 
         @Override
@@ -118,7 +124,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory) {
             File child = file.toFile();
             FileVisitDetails dirDetails = directoryDetailsHolder.peek();
-            RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory, child.getName()) : rootPath;
+            RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory, stringInterner.intern(child.getName())) : rootPath;
             if (attrs == null) {
                 return new UnauthorizedFileVisitDetails(child, childPath);
             } else {

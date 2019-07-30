@@ -22,10 +22,9 @@ import com.google.common.collect.Interners;
 import javax.annotation.Nullable;
 
 public class StringInterner implements Interner<String> {
-    private final Interner<String> interner;
+    private static final Interner<String> INTERNER = Interners.newWeakInterner();
 
     public StringInterner() {
-        this.interner = Interners.newWeakInterner();
     }
 
     @Override
@@ -33,6 +32,6 @@ public class StringInterner implements Interner<String> {
         if (sample == null) {
             return null;
         }
-        return interner.intern(sample);
+        return INTERNER.intern(sample);
     }
 }
