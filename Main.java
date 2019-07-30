@@ -205,10 +205,38 @@ public class Main {
         run(new File("/home/tcagent1/agent/work/async-profiler"), asyncProfiler, "" + daemonPid, "stop", "-f", new File(projectDir, fileName).getAbsolutePath());
     }
 
+    private static void beforeEachIteration() {
+        stabilizeSystem();
+        dropFileCaches();
+        displayInfo();
+    }
+
+    private static void displayInfo() {
+        run(projectDir, "sh", "-c", "sensors | grep 'Core '");
+        run(projectDir, "sh", "-c", "lscpu | grep 'CPU MHz:'");
+        run(projectDir, "free", "-m");
+        run(projectDir, "df", "-h");
+        run(projectDir, "sh", "-c", "systemctl | grep 'running'");
+        run(projectDir, "sh", "-c", "ps ax | egrep '[Gg]radle'");
+    }
+
+    private static void stabilizeSystem() {
+        run(projectDir, "swapoff", "--all", "--verbose");
+        run(projectDir, "sysctl", "vm.overcommit_memory=2");
+        run(projectDir, "sysctl", "--write", "kernel.randomize_va_space=0");
+    }
+
+    private static void dropFileCaches() {
+        run(projectDir, "sync");
+        run(projectDir, "sysctl", "vm.drop_caches=3");
+    }
+
     private static ExecutionResult measureOnce(int index, String version, List<String> args, Map<String, String> envs) {
         File workingDir = getExpProject(version);
 
         nonABIChange(version);
+
+        beforeEachIteration();
 
         envs.put("ITERATION", "" + index);
 
