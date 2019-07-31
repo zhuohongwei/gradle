@@ -86,11 +86,15 @@ public class BuildExperimentRunner {
             GradleInvocationSpec buildSpec = invocation.withAdditionalJvmOpts(additionalJvmOpts).withAdditionalArgs(additionalArgs);
             GradleSession session = executerProvider.session(buildSpec);
             session.prepare();
+
+            String previousMinFreeKbytes = executeProcess("cat /proc/sys/vm/min_free_kbytes");
+            System.out.println("previousMinFreeKbytes = " + previousMinFreeKbytes);
+
             try {
                 beforeIterations();
                 performMeasurements(session, experiment, results, workingDirectory);
             } finally {
-                afterIterations();
+                afterIterations(previousMinFreeKbytes);
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
             }
@@ -187,6 +191,8 @@ public class BuildExperimentRunner {
         runGcOnAllJvms();
         setOSSchedulerStates(false);
         dropFileCaches();
+
+        System.out.println(executeProcess("sudo sysctl vm.min_free_kbytes=1000000"));
     }
 
     /**
@@ -220,12 +226,13 @@ public class BuildExperimentRunner {
         executeProcess("sudo sysctl vm.drop_caches=3");
     }
 
-    private static void afterIterations() {
+    private static void afterIterations(String previousMinFreeKbytes) {
         if (!OperatingSystem.current().isLinux()) {
             return;
         }
 
         setOSSchedulerStates(true);
+        System.out.println(executeProcess(String.format("sudo sysctl vm.min_free_kbytes=%s", previousMinFreeKbytes)));
     }
 
     /**
