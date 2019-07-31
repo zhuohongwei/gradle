@@ -224,4 +224,39 @@ testCompile('junit:junit:4.7')""")
         then:
         runner('dependencies').build()
     }
+
+    @Issue('https://github.com/nebula-plugins/nebula-clojure-plugin')
+    def 'nebula clojure plugin'() {
+        setup:
+        buildFile << """
+            plugins {
+               id "nebula.clojure" version '${TestedVersions.nebulaClojure}'
+            }
+
+            ${jcenterRepository()}
+
+            dependencies {
+                implementation 'org.clojure:clojure:1.8.0'
+            }
+
+            task clojureExec(type: nebula.plugin.clojuresque.tasks.ClojureExec) {
+                main = 'test.nebula.app'
+                classpath = sourceSets.main.runtimeClasspath
+            }
+        """.stripIndent()
+
+        file('src/main/clojure/test/nebula/app.clj') << """
+            (ns test.nebula.app)
+
+            (defn -main
+              []
+              (println "Hello, World!"))
+        """.stripIndent()
+
+        when:
+        result = runner('clojureExec').build()
+
+        then:
+        result.output.contains("Hello, World!")
+    }
 }

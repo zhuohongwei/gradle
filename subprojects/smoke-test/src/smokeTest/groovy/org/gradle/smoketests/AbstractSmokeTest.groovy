@@ -52,6 +52,9 @@ abstract class AbstractSmokeTest extends Specification {
         // https://plugins.gradle.org/plugin/nebula.resolution-rules
         static nebulaResolutionRules = "7.1.0"
 
+        // https://plugins.gradle.org/plugin/nebula.clojure
+        static nebulaClojure = "8.1.4"
+
         // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
         static shadow = Versions.of("4.0.4", "5.0.0")
 
