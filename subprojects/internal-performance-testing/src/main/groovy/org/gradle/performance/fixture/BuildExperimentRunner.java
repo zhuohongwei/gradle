@@ -109,7 +109,7 @@ public class BuildExperimentRunner {
 
     private void doMeasure(BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir, InvocationExecutorProvider session) {
         printProcess("pstree", "pstree");
-        Set<String> previousProcessIds = gradleProcessesIds();
+        Set<String> previousProcessIds = getAllProcessesIds();
         printProcess("previousProcesses", "ps -eu --pid " + StringUtils.join(previousProcessIds, " "));
 
         int invocationCount = invocationsForExperiment(experiment);
@@ -127,7 +127,7 @@ public class BuildExperimentRunner {
     }
 
     private void killLeftoverGradleProcesses(Set<String> previousProcessIds) {
-        Set<String> leftoverProcessIds = Sets.difference(gradleProcessesIds(), previousProcessIds);
+        Set<String> leftoverProcessIds = Sets.difference(getAllProcessesIds(), previousProcessIds);
         if (!leftoverProcessIds.isEmpty()) {
             String leftoverPidList = StringUtils.join(leftoverProcessIds, " ");
             printProcess("Killing leftover Gradle processes: " + leftoverPidList, "ps -eu --pid " + leftoverPidList);
@@ -135,8 +135,8 @@ public class BuildExperimentRunner {
         }
     }
 
-    private Set<String> gradleProcessesIds() {
-        return splitLines(executeProcess("ps aux | egrep '[Gg]radle' | awk '{print $2}'"))
+    private Set<String> getAllProcessesIds() {
+        return splitLines(executeProcess("ps aux | awk '{print $2}'"))
             .collect(toSet());
     }
 
