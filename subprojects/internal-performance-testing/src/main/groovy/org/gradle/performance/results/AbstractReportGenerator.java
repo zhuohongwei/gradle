@@ -48,7 +48,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
         try {
             db.withConnection(connection -> {
                 PreparedStatement statement1 = connection.prepareStatement("delete from TESTOPERATION where TESTEXECUTION in (select id from TESTEXECUTION where STARTTIME> ? and STARTTIME< ?)");
-                PreparedStatement statement2 = connection.prepareStatement("delete from TESTEXECUTION where where STARTTIME> ? and STARTTIME< ?)");
+                PreparedStatement statement2 = connection.prepareStatement("delete from TESTEXECUTION where STARTTIME> ? and STARTTIME< ?)");
 
                 // 2016-07-29 10:33:01.94200000
                 LocalDate startDate = LocalDate.of(2016, 7, 27);
