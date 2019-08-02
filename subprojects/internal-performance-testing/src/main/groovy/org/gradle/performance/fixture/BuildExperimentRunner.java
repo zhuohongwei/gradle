@@ -160,6 +160,14 @@ public class BuildExperimentRunner {
         if (!OperatingSystem.current().isLinux()) {
             return;
         }
+        runGcOnAllJvms();
+    }
+
+    /**
+     * Trigger a garbage collection and a finalization event for every running java virtual machine
+     */
+    private static void runGcOnAllJvms() {
+        printProcess("Run GC on all JVMs", "pgrep java | xargs -I{} sh -c 'jcmd {} GC.run; jcmd {} GC.run_finalization'");
     }
 
     /**
