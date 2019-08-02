@@ -52,6 +52,21 @@ public class DurationMeasurementImpl implements DurationMeasurement {
     }
 
     /**
+     * Reset the OS state, for consistency.
+     */
+    public static void cleanup() {
+        runJvmGc();
+    }
+
+    /**
+     * Run a garbage collection on the benchmarking JVM.
+     */
+    private static void runJvmGc() {
+        System.gc();
+        System.runFinalization();
+    }
+
+    /**
      * Execute command with root privileges.
      *
      * @return the output of the process.
@@ -75,6 +90,8 @@ public class DurationMeasurementImpl implements DurationMeasurement {
 
     @Override
     public void start() {
+        cleanup();
+
         this.safepontTimes = getAllProcessSafepointTimes();
         this.start = DateTime.now();
         this.startNanos = System.nanoTime();
