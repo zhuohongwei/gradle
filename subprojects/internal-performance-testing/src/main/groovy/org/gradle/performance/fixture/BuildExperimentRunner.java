@@ -16,6 +16,8 @@
 
 package org.gradle.performance.fixture;
 
+import com.google.common.collect.MapDifference.ValueDifference;
+import com.google.common.collect.Maps;
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.CompositeStoppable;
 import org.gradle.performance.measure.MeasuredOperation;
@@ -23,9 +25,18 @@ import org.gradle.performance.results.MeasuredOperationList;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toMap;
+import static org.gradle.performance.fixture.DurationMeasurementImpl.executeProcess;
+import static org.gradle.performance.fixture.DurationMeasurementImpl.printProcess;
 
 public class BuildExperimentRunner {
 
@@ -84,18 +95,30 @@ public class BuildExperimentRunner {
         GFileUtils.copyDirectory(templateDir, workingDir);
     }
 
-    protected void performMeasurements(final InvocationExecutorProvider session, BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir) {
+    protected void performMeasurements(InvocationExecutorProvider session, BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir) {
         doWarmup(experiment, projectDir, session);
         profiler.start(experiment);
         doMeasure(experiment, results, projectDir, session);
         profiler.stop(experiment);
     }
 
+    // TODO move to string utils
+    private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
+
+    private static Stream<String> splitLines(String values) {
+        return NEW_LINE_PATTERN.splitAsStream(values);
+    }
+
     private void doMeasure(BuildExperimentSpec experiment, MeasuredOperationList results, File projectDir, InvocationExecutorProvider session) {
+        Map<String, String> previousAllProcessIds = allProcesses();
+
         int invocationCount = invocationsForExperiment(experiment);
         for (int i = 0; i < invocationCount; i++) {
             System.out.println();
             System.out.println(String.format("Test run #%s", i + 1));
+
+            displayInfo(previousAllProcessIds);
+
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
         }
@@ -128,6 +151,46 @@ public class BuildExperimentRunner {
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.WARMUP, i + 1, warmUpCount);
             runOnce(session, new MeasuredOperationList(), info);
         }
+    }
+
+    /**
+     * Show the currently running services, CPU speeds, temperatures, free space, etc.
+     */
+    private static void displayInfo(Map<String, String> previousAllProcessIds) {
+        printAllChangedProcesses(previousAllProcessIds);
+
+        printProcess("CPU temperatures", "sensors | grep 'Core ' | awk '{print $3}' | xargs");
+        printProcess("CPU speed", " lscpu | grep 'CPU MHz:' | awk '{print $3 \" Mhz\"}'");
+        printProcess("Used memory", "awk '/MemFree/ { printf \"%.3f Gb\\n\", $2/1024/1024 }' /proc/meminfo");
+        printProcess("Disk space", "df --human | awk '{print $1 \" \" $4}' | xargs");
+        printProcess("Running service count", "systemctl | grep 'running' | awk '{print $1}' | wc --lines");
+        printProcess("Gradle process count", "ps aux | egrep '[Gg]radle' | wc --lines");
+        printProcess("Temp directory gradle file count", "find /tmp -type f -name '*gradle*' 2>/dev/null | wc --lines");
+    }
+
+    private static void printAllChangedProcesses(Map<String, String> previousAllProcesses) {
+        Collection<ValueDifference<String>> difference = Maps.difference(allProcesses(), previousAllProcesses).entriesDiffering().values();
+        if (!difference.isEmpty()) {
+            System.out.println("The following processes were just changed: ");
+            for (ValueDifference<String> diff : difference) {
+                if (diff.leftValue() != null) {
+                    System.out.println(String.format("+ '%s'", diff.leftValue()));
+                }
+                if (diff.rightValue() != null) {
+                    System.out.println(String.format("- '%s'", diff.rightValue()));
+                }
+            }
+        }
+    }
+
+    private static Map<String, String> allProcesses() {
+        return splitLines(executeProcess("ps -eo pid,command"))
+            .map(String::trim)
+            .map(line -> {
+                int splitIndex = line.indexOf(' ');
+                return new AbstractMap.SimpleImmutableEntry<>(line.substring(0, splitIndex), line.substring(splitIndex).trim());
+            })
+            .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static String getExperimentOverride(String key) {
