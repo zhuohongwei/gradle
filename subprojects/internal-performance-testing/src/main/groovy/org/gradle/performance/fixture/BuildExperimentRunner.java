@@ -20,6 +20,7 @@ import com.google.common.collect.MapDifference.ValueDifference;
 import com.google.common.collect.Maps;
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.CompositeStoppable;
+import org.gradle.internal.os.OperatingSystem;
 import org.gradle.performance.measure.MeasuredOperation;
 import org.gradle.performance.results.MeasuredOperationList;
 import org.gradle.util.GFileUtils;
@@ -81,8 +82,10 @@ public class BuildExperimentRunner {
             GradleSession session = executerProvider.session(buildSpec);
             session.prepare();
             try {
+                beforeIterations();
                 performMeasurements(session, experiment, results, workingDirectory);
             } finally {
+                afterIterations();
                 CompositeStoppable.stoppable(profiler).stop();
                 session.cleanup();
             }
@@ -153,6 +156,12 @@ public class BuildExperimentRunner {
         }
     }
 
+    private static void beforeIterations() {
+        if (!OperatingSystem.current().isLinux()) {
+            return;
+        }
+    }
+
     /**
      * Show the currently running services, CPU speeds, temperatures, free space, etc.
      */
@@ -166,6 +175,12 @@ public class BuildExperimentRunner {
         printProcess("Running service count", "systemctl | grep 'running' | awk '{print $1}' | wc --lines");
         printProcess("Gradle process count", "ps aux | egrep '[Gg]radle' | wc --lines");
         printProcess("Temp directory gradle file count", "find /tmp -type f -name '*gradle*' 2>/dev/null | wc --lines");
+    }
+
+    private static void afterIterations() {
+        if (!OperatingSystem.current().isLinux()) {
+            return;
+        }
     }
 
     private static void printAllChangedProcesses(Map<String, String> previousAllProcesses) {
