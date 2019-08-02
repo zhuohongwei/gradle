@@ -26,6 +26,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,9 +39,44 @@ import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionDa
 
 public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
-        File projectDir = new File(args[0]);
+        PerformanceDatabase db = new PerformanceDatabase("results", new ConnectionAction<Void>() {
+            @Override
+            public Void execute(Connection connection) throws SQLException {
+                return null;
+            }
+        });
+        try {
+            db.withConnection(connection -> {
+                PreparedStatement statement1 = connection.prepareStatement("delete from TESTOPERATION where TESTEXECUTION in (select id from TESTEXECUTION where STARTTIME> ? and STARTTIME< ?)");
+                PreparedStatement statement2 = connection.prepareStatement("delete from TESTEXECUTION where where STARTTIME> ? and STARTTIME< ?)");
+
+                // 2016-07-29 10:33:01.94200000
+                LocalDate startDate = LocalDate.of(2016, 7, 27);
+                LocalDate endDate = startDate.plusDays(1);
+                LocalDate deadline = LocalDate.now().minusDays(365);
+                while (endDate.compareTo(deadline) < 0) {
+                    System.out.println("Deleting data between " + startDate + " and " + endDate);
+                    statement1.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+                    statement1.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+                    statement2.setTimestamp(1, Timestamp.valueOf(startDate.atStartOfDay()));
+                    statement2.setTimestamp(2, Timestamp.valueOf(endDate.atStartOfDay()));
+
+                    statement1.execute();
+                    statement2.execute();
+
+                    startDate = startDate.plusDays(1);
+                    endDate = endDate.plusDays(1);
+                }
+                return null;
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void calculateFlakyData(File gradleRootProject) {
         try (ResultsStore store = getResultsStore()) {
-            File csvFile = new File(projectDir, String.format("data-%s.csv", FormatSupport.executionTimestamp().replace(' ', '-')));
+            File csvFile = new File(gradleRootProject, String.format("data-%s.csv", FormatSupport.executionTimestamp().replace(' ', '-')));
             FileUtils.write(csvFile, CsvLine.getTitleLine(), Charset.defaultCharset(), true);
             for (String testName : store.getTestNames()) {
                 System.out.println("Start fetching " + testName + " ...");
