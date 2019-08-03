@@ -48,16 +48,19 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
         });
         try {
             db.withConnection(connection -> {
-                PreparedStatement select = connection.prepareStatement("select TESTEXECUTION from testoperation order by TESTEXECUTION asc limit 1");
+                PreparedStatement select = connection.prepareStatement("select TESTEXECUTION from testoperation where TESTEXECUTION> ? order by TESTEXECUTION asc limit 1");
                 PreparedStatement select2 = connection.prepareStatement("select id from TESTEXECUTION where id = ?");
                 PreparedStatement delete = connection.prepareStatement("delete from TESTEXECUTION where id = ?");
 
+                long previous = 0;
                 while (true) {
+                    select.setLong(1, previous);
                     ResultSet result = select.executeQuery();
                     if (!result.next()) {
                         break;
                     } else {
                         long id = result.getLong(1);
+                        previous = id;
                         select2.setLong(1, id);
                         ResultSet result2 = select2.executeQuery();
                         if (result2.next()) {
