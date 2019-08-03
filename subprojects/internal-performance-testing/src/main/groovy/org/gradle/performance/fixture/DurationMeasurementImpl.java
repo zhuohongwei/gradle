@@ -23,11 +23,20 @@ import org.gradle.performance.measure.MeasuredOperation;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.Map;
+
+import static java.util.AbstractMap.Entry;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.stream.Collectors.toMap;
+import static org.gradle.performance.fixture.BuildExperimentRunner.splitLines;
 
 public class DurationMeasurementImpl implements DurationMeasurement {
+    private final MeasuredOperation measuredOperation;
+
+    private Map<String, Integer> safepontTimes;
     private DateTime start;
     private long startNanos;
-    private final MeasuredOperation measuredOperation;
 
     public DurationMeasurementImpl(MeasuredOperation measuredOperation) {
         this.measuredOperation = measuredOperation;
@@ -66,17 +75,38 @@ public class DurationMeasurementImpl implements DurationMeasurement {
 
     @Override
     public void start() {
+        this.safepontTimes = getAllProcessSafepointTimes();
         this.start = DateTime.now();
         this.startNanos = System.nanoTime();
     }
 
+    /**
+     * Get the current safepoint (Stop-the-World pause) time of every running JVM (pid -> millis)
+     */
+    public static Map<String, Integer> getAllProcessSafepointTimes() {
+        return splitLines(executeProcess("pgrep java | xargs -I{} sh -c 'printf \"{} \"; jcmd {} PerfCounter.print | grep safepointTime | cut --delimiter='=' --fields=2'"))
+            .map(line -> line.split(" "))
+            .map(parts -> new AbstractMap.SimpleImmutableEntry<>(parts[0], Long.parseLong(parts[1])))
+            .collect(toMap(Entry::getKey, entry -> (int) NANOSECONDS.toMillis((entry.getValue())))); // int can contain ~3 weeks in millis, should suffice for pause times
+    }
     @Override
     public void stop() {
         long endNanos = System.nanoTime();
         DateTime end = DateTime.now();
+        int pauseMillis = getCumulativePauses(safepontTimes, getAllProcessSafepointTimes());
+
 
         measuredOperation.setStart(start);
         measuredOperation.setEnd(end);
-        measuredOperation.setTotalTime(Duration.millis((endNanos - startNanos) / 1000000L));
+        measuredOperation.setTotalTime(Duration.millis(NANOSECONDS.toMillis(endNanos - startNanos)));
+        measuredOperation.setPauseTime(Duration.millis(pauseMillis));
+    }
+
+    private int getCumulativePauses(Map<String, Integer> startSafepontTimes, Map<String, Integer> currentSafepointTimes) {
+        int resultMillis = 0;
+        for (Entry<String, Integer> entry : currentSafepointTimes.entrySet()) {
+            resultMillis += entry.getValue() - startSafepontTimes.getOrDefault(entry.getKey(), 0);
+        }
+        return resultMillis;
     }
 }

@@ -105,7 +105,7 @@ public class BuildExperimentRunner {
     // TODO move to string utils
     private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
 
-    private static Stream<String> splitLines(String values) {
+    public static Stream<String> splitLines(String values) {
         return NEW_LINE_PATTERN.splitAsStream(values);
     }
 

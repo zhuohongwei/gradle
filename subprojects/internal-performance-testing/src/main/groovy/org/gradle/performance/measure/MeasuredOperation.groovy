@@ -22,16 +22,18 @@ import org.joda.time.DateTime
 
 @ToString(includeNames = true)
 @CompileStatic
-public class MeasuredOperation {
+class MeasuredOperation {
     DateTime start
     DateTime end
     Amount<Duration> totalTime
+    Amount<Duration> pauseTime
     Exception exception
 
     boolean isValid() {
         exception == null &&
-            start!=null &&
+            start != null &&
             end != null &&
-            totalTime != null
+            totalTime != null &&
+            pauseTime != null
     }
 }
