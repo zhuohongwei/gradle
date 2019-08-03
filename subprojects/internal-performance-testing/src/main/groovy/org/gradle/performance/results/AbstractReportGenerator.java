@@ -39,7 +39,7 @@ import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionDa
 
 public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
-        PerformanceDatabase db = new PerformanceDatabase("results", new ConnectionAction<Void>() {
+        PerformanceDatabase db = new PerformanceDatabase("cross-build-results", new ConnectionAction<Void>() {
             @Override
             public Void execute(Connection connection) throws SQLException {
                 return null;
