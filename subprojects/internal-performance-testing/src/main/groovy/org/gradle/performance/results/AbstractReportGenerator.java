@@ -50,7 +50,7 @@ public abstract class AbstractReportGenerator<R extends ResultsStore> {
                     if (executionData.getExecution().getConf() != null) {
                         System.out.println("" + executionData.getExecution().getId() + " already has conf");
                     } else {
-                        store.update(executionData.getId(), executionData.getCurrentVersion().getTotalTime().getMedian(), executionData.getBaseVersion().getTotalTime().getMedian(), executionData.getConfidencePercentage() / 100);
+                        store.update(executionData.getExecution().getId(), executionData.getCurrentVersion().getTotalTime().getMedian(), executionData.getBaseVersion().getTotalTime().getMedian(), executionData.getConfidencePercentage() / 100);
                     }
                 }
             }
