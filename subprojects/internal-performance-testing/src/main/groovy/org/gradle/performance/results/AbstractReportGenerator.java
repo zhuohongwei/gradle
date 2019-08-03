@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -39,6 +40,43 @@ import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionDa
 
 public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
+        PerformanceDatabase db = new PerformanceDatabase("results", new ConnectionAction<Void>() {
+            @Override
+            public Void execute(Connection connection) throws SQLException {
+                return null;
+            }
+        });
+        try {
+            db.withConnection(connection -> {
+                PreparedStatement select = connection.prepareStatement("select TESTEXECUTION from testoperation order by TESTEXECUTION asc limit 1");
+                PreparedStatement select2 = connection.prepareStatement("select id from TESTEXECUTION where id = ?");
+                PreparedStatement delete = connection.prepareStatement("delete from TESTEXECUTION where id = ?");
+
+                while (true) {
+                    ResultSet result = select.executeQuery();
+                    if (!result.next()) {
+                        break;
+                    } else {
+                        long id = result.getLong(1);
+                        select2.setLong(1, id);
+                        ResultSet result2 = select2.executeQuery();
+                        if (result2.next()) {
+                            System.out.println("Found " + id + ", continue");
+                        } else {
+                            System.out.println("Not found " + id + ", delete it");
+                            delete.setLong(1, id);
+                            delete.execute();
+                        }
+                    }
+                }
+                return null;
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void cleanupStaleData() {
         PerformanceDatabase db = new PerformanceDatabase("cross-build-results", new ConnectionAction<Void>() {
             @Override
             public Void execute(Connection connection) throws SQLException {
