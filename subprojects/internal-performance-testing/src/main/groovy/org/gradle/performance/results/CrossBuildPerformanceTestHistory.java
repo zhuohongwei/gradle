@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class CrossBuildPerformanceTestHistory implements PerformanceTestHistory {
@@ -124,6 +125,16 @@ public class CrossBuildPerformanceTestHistory implements PerformanceTestHistory 
 
         public KnownBuildSpecificationsPerformanceTestExecution(CrossBuildPerformanceResults results) {
             this.results = results;
+        }
+
+        @Override
+        public long getId() {
+            return 0;
+        }
+
+        @Override
+        public BigDecimal getConf() {
+            return null;
         }
 
         @Override

@@ -106,6 +106,7 @@ class ScenarioBuildResultData {
     }
 
     static class ExecutionData {
+        long id
         Date time
         String commitId
         String shortCommitId

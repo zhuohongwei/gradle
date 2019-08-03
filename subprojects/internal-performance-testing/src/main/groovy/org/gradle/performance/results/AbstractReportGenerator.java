@@ -28,7 +28,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -40,41 +39,22 @@ import static org.gradle.performance.results.ScenarioBuildResultData.ExecutionDa
 
 public abstract class AbstractReportGenerator<R extends ResultsStore> {
     protected void generateReport(String... args) {
-        PerformanceDatabase db = new PerformanceDatabase("results", new ConnectionAction<Void>() {
-            @Override
-            public Void execute(Connection connection) throws SQLException {
-                return null;
-            }
-        });
-        try {
-            db.withConnection(connection -> {
-                PreparedStatement select = connection.prepareStatement("select TESTEXECUTION from testoperation where TESTEXECUTION> ? order by TESTEXECUTION asc limit 1");
-                PreparedStatement select2 = connection.prepareStatement("select id from TESTEXECUTION where id = ?");
-                PreparedStatement delete = connection.prepareStatement("delete from TESTEXECUTION where id = ?");
+        try (CrossVersionResultsStore store = new CrossVersionResultsStore()) {
+            for (String testName : store.getTestNames()) {
+                System.out.println("Start fetching " + testName + " ...");
+                PerformanceTestHistory history = store.getTestResults(testName, 10000, 365, null);
+                List<ExecutionData> executions = history.getExecutions().stream().map(this::extractExecutionData).filter(Objects::nonNull).collect(toList());
+                System.out.println("Fetched " + executions.size() + " executions for " + testName + "");
 
-                long previous = 0;
-                while (true) {
-                    select.setLong(1, previous);
-                    ResultSet result = select.executeQuery();
-                    if (!result.next()) {
-                        break;
+                for (ExecutionData executionData : executions) {
+                    if (executionData.getExecution().getConf() != null) {
+                        System.out.println("" + executionData.getExecution().getId() + " already has conf");
                     } else {
-                        long id = result.getLong(1);
-                        previous = id;
-                        select2.setLong(1, id);
-                        ResultSet result2 = select2.executeQuery();
-                        if (result2.next()) {
-                            System.out.println("Found " + id + ", continue");
-                        } else {
-                            System.out.println("Not found " + id + ", delete it");
-                            delete.setLong(1, id);
-                            delete.execute();
-                        }
+                        store.update(executionData.getId(), executionData.getCurrentVersion().getTotalTime().getMedian(), executionData.getBaseVersion().getTotalTime().getMedian(), executionData.getConfidencePercentage() / 100);
                     }
                 }
-                return null;
-            });
-        } catch (SQLException e) {
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

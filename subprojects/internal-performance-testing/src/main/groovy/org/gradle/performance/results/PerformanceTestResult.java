@@ -16,10 +16,12 @@
 
 package org.gradle.performance.results;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
 public abstract class PerformanceTestResult {
+    private long id;
     private String testId;
     private String teamCityBuildId;
     private String jvm;
@@ -33,6 +35,7 @@ public abstract class PerformanceTestResult {
     private String versionUnderTest;
     private String channel;
     private Throwable whereAmI;
+    private BigDecimal conf;
 
     public PerformanceTestResult() {
         whereAmI = new Throwable();
@@ -49,6 +52,14 @@ public abstract class PerformanceTestResult {
     public static boolean hasRegressionChecks() {
         String check = System.getProperty("org.gradle.performance.regression.checks", "true");
         return Arrays.asList("true", "all").contains(check);
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getTestId() {
@@ -145,5 +156,13 @@ public abstract class PerformanceTestResult {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    public BigDecimal getConf() {
+        return conf;
+    }
+
+    public void setConf(BigDecimal conf) {
+        this.conf = conf;
     }
 }

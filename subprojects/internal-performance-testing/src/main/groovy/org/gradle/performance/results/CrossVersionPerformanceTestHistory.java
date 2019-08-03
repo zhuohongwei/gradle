@@ -20,6 +20,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -156,6 +157,16 @@ public class CrossVersionPerformanceTestHistory implements PerformanceTestHistor
 
         public KnownVersionsPerformanceTestExecution(CrossVersionPerformanceResults result) {
             this.result = result;
+        }
+
+        @Override
+        public long getId() {
+            return result.getId();
+        }
+
+        @Override
+        public BigDecimal getConf() {
+            return result.getConf();
         }
 
         @Override

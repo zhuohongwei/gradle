@@ -17,12 +17,15 @@
 package org.gradle.performance.results;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * The result of a single execution of a performance test.
  */
 public interface PerformanceTestExecution {
+    long getId();
+    BigDecimal getConf();
     String getChannel();
     /**
      * Returns a unique identifier for this execution, suitable to be used as HTML id

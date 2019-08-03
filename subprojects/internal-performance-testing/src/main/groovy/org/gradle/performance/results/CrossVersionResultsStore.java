@@ -20,11 +20,13 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.gradle.internal.UncheckedException;
+import org.gradle.performance.measure.Amount;
 import org.gradle.performance.measure.Duration;
 import org.gradle.performance.measure.MeasuredOperation;
 import org.gradle.util.GradleVersion;
 import org.joda.time.LocalDate;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -94,7 +96,7 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                         statement.setString(10, results.getOperatingSystem());
                         statement.setString(11, results.getJvm());
                         statement.setString(12, results.getVcsBranch());
-                        String vcs = results.getVcsCommits() == null ? null :  Joiner.on(",").join(results.getVcsCommits());
+                        String vcs = results.getVcsCommits() == null ? null : Joiner.on(",").join(results.getVcsCommits());
                         statement.setString(13, vcs);
                         statement.setString(14, results.getChannel());
                         statement.setString(15, results.getHost());
@@ -201,7 +203,7 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                     ResultSet operations = null;
 
                     try {
-                        executionsForName = connection.prepareStatement("select top ? id, startTime, endTime, targetVersion, testProject, tasks, args, gradleOpts, daemon, operatingSystem, jvm, vcsBranch, vcsCommit, channel, host, cleanTasks, teamCityBuildId from testExecution where testId = ? and startTime >= ? order by startTime desc");
+                        executionsForName = connection.prepareStatement("select top ? id, startTime, endTime, targetVersion, testProject, tasks, args, gradleOpts, daemon, operatingSystem, jvm, vcsBranch, vcsCommit, channel, host, cleanTasks, teamCityBuildId, diffConfidence from testExecution where testId = ? and startTime >= ? order by startTime desc");
                         executionsForName.setFetchSize(mostRecentN);
                         executionsForName.setInt(1, mostRecentN);
                         executionsForName.setString(2, testName);
@@ -212,6 +214,7 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                         while (testExecutions.next()) {
                             long id = testExecutions.getLong(1);
                             CrossVersionPerformanceResults performanceResults = new CrossVersionPerformanceResults();
+                            performanceResults.setId(id);
                             performanceResults.setTestId(testName);
                             performanceResults.setStartTime(testExecutions.getTimestamp(2).getTime());
                             performanceResults.setEndTime(testExecutions.getTimestamp(3).getTime());
@@ -229,13 +232,14 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
                             performanceResults.setHost(testExecutions.getString(15));
                             performanceResults.setCleanTasks(ResultsStoreHelper.toList(testExecutions.getObject(16)));
                             performanceResults.setTeamCityBuildId(testExecutions.getString(17));
+                            performanceResults.setConf(testExecutions.getBigDecimal(18));
 
                             results.put(id, performanceResults);
                             allBranches.add(performanceResults.getVcsBranch());
                         }
 
                         operationsForExecution = connection.prepareStatement("select version, testExecution, totalTime from testOperation "
-                                + "where testExecution in (select top ? id from testExecution where testId = ? and startTime >= ? order by startTime desc)");
+                            + "where testExecution in (select top ? id from testExecution where testId = ? and startTime >= ? order by startTime desc)");
                         operationsForExecution.setFetchSize(10 * results.size());
                         operationsForExecution.setInt(1, mostRecentN);
                         operationsForExecution.setString(2, testName);
@@ -291,6 +295,22 @@ public class CrossVersionResultsStore implements DataReporter<CrossVersionPerfor
     @Override
     public void close() {
         db.close();
+    }
+
+    public void update(long id, Amount<Duration> currentMedian, Amount<Duration> baselineMedian, double conf) throws SQLException {
+        System.out.println("Update id: " + id + " current: " + currentMedian.format() + " baseline: " + baselineMedian.format() + " conf: " + conf);
+        db.withConnection(new ConnectionAction<Void>() {
+            @Override
+            public Void execute(Connection connection) throws SQLException {
+                PreparedStatement statement = connection.prepareStatement("update TESTEXECUTION set CURRENTMEDIAN = ?, BASELINEMEDIAN = ?, DIFFCONFIDENCE = ? where id = ?");
+                statement.setBigDecimal(1, currentMedian.toUnits(Duration.MILLI_SECONDS).getValue());
+                statement.setBigDecimal(2, baselineMedian.toUnits(Duration.MILLI_SECONDS).getValue());
+                statement.setBigDecimal(3, new BigDecimal(conf));
+                statement.setLong(4, id);
+                statement.execute();
+                return null;
+            }
+        });
     }
 
     private class CrossVersionResultsSchemaInitializer implements ConnectionAction<Void> {
