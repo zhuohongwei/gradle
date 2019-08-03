@@ -142,9 +142,9 @@ public class BuildExperimentRunner {
     private static void killLeftoverGradleProcesses(Set<String> previousGradleProcessIds) {
         Set<String> leftoverGradleProcessIds = Sets.difference(gradleProcessesIds(), previousGradleProcessIds);
         if (!leftoverGradleProcessIds.isEmpty()) {
-            for (String leftoverGradleProcessId : leftoverGradleProcessIds) {
-                printProcess("Killing leftover Gradle processes: " + leftoverGradleProcessId, "ps -eu --pid " + leftoverGradleProcessId);
-            }
+//            for (String leftoverGradleProcessId : leftoverGradleProcessIds) {
+//                printProcess("Killing leftover Gradle processes: " + leftoverGradleProcessId, "ps -eu --pid " + leftoverGradleProcessId);
+//            }
 
             executeProcess("kill -9 " + StringUtils.join(leftoverGradleProcessIds, " "));
         }

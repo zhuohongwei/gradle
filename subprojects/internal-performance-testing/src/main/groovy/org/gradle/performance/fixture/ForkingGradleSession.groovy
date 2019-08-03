@@ -122,7 +122,7 @@ class ForkingGradleSession implements GradleSession {
         }
 
         printProcess('jHiccup total pause time (seconds)', "grep 'HIST' ${jHiccup.absolutePath} | cut --delimiter=',' --fields=3 | awk '{s+=\$1} END {print s/1000}'")
-        println "Gc total pause time (seconds): ${getTotalGcTime(logGc)}"
+        //println "Gc total pause time (seconds): ${getTotalGcTime(logGc)}"
     }
 
     static getjHiccupAgent() {
