@@ -28,6 +28,11 @@ import org.gradle.performance.measure.MeasuredOperation
 
 import java.lang.ProcessBuilder.Redirect
 import java.math.RoundingMode
+import java.util.stream.Stream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+
+import static org.gradle.performance.fixture.DurationMeasurementImpl.printProcess
 
 /**
  * A performance test session that runs Gradle from the command line.
@@ -80,9 +85,11 @@ class ForkingGradleSession implements GradleSession {
     }
 
     private void run(BuildExperimentInvocationInfo invocationInfo, GradleInvocationSpec invocation, List<String> tasks) {
+        File jHiccup = File.createTempFile("jHiccup", ".hlog")
         File logGc = File.createTempFile("log", ".gc")
 
         def extraJvmArgs = ["-Xloggc:\"${logGc.absolutePath}\"".toString(), '-XX:+PrintGCDateStamps']
+        extraJvmArgs += ["-javaagent:${jHiccupAgent}=\"-o -i 100 -l ${jHiccup}\"".toString()] // log to csv, start immediately and measure every 100ms
         String jvmArgs = (extraJvmArgs + invocation.jvmOpts).join(' ')
 
         Map<String, String> env = [:]
@@ -113,7 +120,22 @@ class ForkingGradleSession implements GradleSession {
         if (exitCode != 0 && !invocation.expectFailure) {
             throw new IllegalStateException("Build with args: ${args} envs: ${env} failed, see ${invocationInfo.buildLog} for details")
         }
-        println "Gc pause time: ${getTotalGcTime(logGc)} seconds"
+
+        printProcess('jHiccup total pause time (seconds)', "grep 'HIST' ${jHiccup.absolutePath} | cut --delimiter=',' --fields=3 | awk '{s+=\$1} END {print s/1000}'")
+        println "Gc total pause time (seconds): ${getTotalGcTime(logGc)}"
+    }
+
+    static getjHiccupAgent() {
+        def jarFile = new File('/tmp/jHiccup/jHiccup.jar')
+        if (!jarFile.exists()) {
+            new ZipInputStream(new URL("https://www.azul.com/files/${'jHiccup-2.0.10-dist'}.zip").openStream()).withCloseable { zip ->
+                Stream.generate { zip.getNextEntry() }.find { ZipEntry e -> e.name.endsWith(jarFile.name) }
+
+                jarFile.parentFile.mkdirs()
+                jarFile.bytes = zip.bytes
+            }
+        }
+        jarFile
     }
 
     @TypeChecked(TypeCheckingMode.SKIP)
