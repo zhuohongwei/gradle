@@ -188,6 +188,8 @@ public class BuildExperimentRunner {
         if (!OperatingSystem.current().isLinux()) {
             return;
         }
+        printProcess("Turning swap off", "sudo swapoff --all --verbose"); // Disable devices and files for paging and swapping.
+
         runGcOnAllJvms();
         setOSSchedulerStates(false);
         dropFileCaches();
@@ -233,6 +235,7 @@ public class BuildExperimentRunner {
 
         setOSSchedulerStates(true);
         System.out.println(executeProcess(String.format("sudo sysctl vm.min_free_kbytes=%s", previousMinFreeKbytes)));
+        printProcess("Turning swap on", "sudo swapon --all --verbose"); // Disable devices and files for paging and swapping.
     }
 
     /**
