@@ -189,6 +189,7 @@ public class BuildExperimentRunner {
             return;
         }
         printProcess("Turning swap off", "sudo swapoff --all --verbose"); // Disable devices and files for paging and swapping.
+        printProcess("Turning dockerd off", "sudo systemctl stop docker");
 
         runGcOnAllJvms();
         setOSSchedulerStates(false);
@@ -236,6 +237,7 @@ public class BuildExperimentRunner {
         setOSSchedulerStates(true);
         System.out.println(executeProcess(String.format("sudo sysctl vm.min_free_kbytes=%s", previousMinFreeKbytes)));
         printProcess("Turning swap on", "sudo swapon --all --verbose"); // Disable devices and files for paging and swapping.
+        printProcess("Turning dockerd on", "sudo systemctl start docker");
     }
 
     /**
