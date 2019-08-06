@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
 /**
  * A tool for synchronising the state amongst different threads.
@@ -222,7 +224,7 @@ public class DaemonStateCoordinator implements Stoppable, DaemonStateControl {
 
         lock.lock();
         try {
-            while(true) {
+            while (true) {
                 try {
                     switch (state) {
                         case Idle:
@@ -293,11 +295,22 @@ public class DaemonStateCoordinator implements Stoppable, DaemonStateControl {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
+                    long t0 = System.currentTimeMillis();
                     try {
                         command.run();
                         onCommandSuccessful();
                     } catch (Throwable t) {
                         onCommandFailed(t);
+                    }
+
+                    try {
+                        if (System.getenv("DAEMON_STATE_LOG") != null) {
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("DAEMON_STATE_LOG"), true));
+                            writer.write("DaemonStateCoordinator$1.run iteration " + System.getenv("ITERATION") + " costs " + (System.currentTimeMillis() - t0) + " ms\n");
+                            writer.close();
+                        }
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
                     }
                 }
             });

@@ -20,8 +20,11 @@ import org.gradle.internal.UncheckedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -61,7 +64,15 @@ public interface ExecutorPolicy {
         @Override
         public void onExecute(Runnable command) {
             try {
+                long t0 = System.currentTimeMillis();
                 command.run();
+                long time = System.currentTimeMillis() - t0;
+
+                if (System.getenv("EXECUTE_LOG_FILE") != null) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(System.getenv("EXECUTE_LOG_FILE"), true));
+                    writer.write("CatchAndRecordFailures.onExecute iteration " + System.getenv("ITERATION") + " costs " + time + " ms\n");
+                    writer.close();
+                }
             } catch (Throwable throwable) {
                 onFailure(String.format("Failed to execute %s.", command), throwable);
             }
@@ -74,7 +85,7 @@ public interface ExecutorPolicy {
             } catch (Exception exception) {
                 onFailure(String.format("Failed to execute %s.", command), exception);
                 throw exception;
-            } catch(Throwable throwable) {
+            } catch (Throwable throwable) {
                 onFailure(String.format("Failed to execute %s.", command), throwable);
                 throw new UndeclaredThrowableException(throwable);
             }
