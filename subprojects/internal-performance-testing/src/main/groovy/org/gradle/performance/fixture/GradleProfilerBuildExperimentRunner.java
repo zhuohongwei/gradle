@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
  */
 public class GradleProfilerBuildExperimentRunner extends AbstractBuildExperimentRunner {
 
-    private static final String GRADLE_USER_HOME_NAME = "gradleUserHome";
+    private static final String GRADLE_USER_HOME_NAME = "gradle-user-home";
     private final ProfilerFlameGraphGenerator flameGraphGenerator;
     private final BenchmarkResultCollector resultCollector;
     private final Profiler profiler;
@@ -140,12 +140,17 @@ public class GradleProfilerBuildExperimentRunner extends AbstractBuildExperiment
 
     private InvocationSettings createInvocationSettings(GradleInvocationSpec invocationSpec, GradleBuildExperimentSpec experiment) {
         File outputDir = flameGraphGenerator.getJfrOutputDirectory(experiment);
+        GradleBuildInvoker invoker = invocationSpec.getUseToolingApi() ? GradleBuildInvoker.ToolingApi : GradleBuildInvoker.Cli;
+        if (!invocationSpec.isUseDaemon()) {
+            invoker = invoker.withColdDaemon();
+        }
+
         return new InvocationSettings(
             invocationSpec.getWorkingDirectory(),
             profiler,
             true,
             outputDir,
-            invocationSpec.getUseToolingApi() ? GradleBuildInvoker.ToolingApi : GradleBuildInvoker.Cli,
+            invoker,
             false,
             null,
             ImmutableList.of(invocationSpec.getGradleDistribution().getVersion().getVersion()),
