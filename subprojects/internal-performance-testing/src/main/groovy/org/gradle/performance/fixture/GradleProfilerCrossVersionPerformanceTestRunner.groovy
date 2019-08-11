@@ -43,6 +43,9 @@ class GradleProfilerCrossVersionPerformanceTestRunner extends AbstractCrossVersi
         builder
             .buildMutators(buildMutators)
             .measuredBuildOperations(measuredBuildOperations)
+            .invocation {
+                useToolingApi(useDaemon)
+            }
     }
 
     void addBuildMutator(Function<InvocationSettings, BuildMutator> buildMutator) {
