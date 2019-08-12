@@ -29,8 +29,8 @@ class WorkerApiPerformanceTest extends AbstractCrossVersionGradleProfilerPerform
     @Unroll
     def "executing tasks with no isolation with work=#workItems / workers=#workers"() {
         given:
-        runner.tasksToRun = ['clean', 'noIsolation', "-PoutputSize=$workItems"]
-        runner.args = [ "--max-workers=$workers" ]
+        runner.tasksToRun = ['clean', 'noIsolation']
+        runner.args = ["--max-workers=$workers", "-PoutputSize=$workItems"]
 
         when:
         def result = runner.run()
@@ -53,8 +53,8 @@ class WorkerApiPerformanceTest extends AbstractCrossVersionGradleProfilerPerform
     @Unroll
     def "executing tasks with classloader isolation work=#workItems / workers=#workers"() {
         given:
-        runner.tasksToRun = ['clean', 'classloaderIsolation', "-PoutputSize=$workItems"]
-        runner.args = [ "--max-workers=$workers" ]
+        runner.tasksToRun = ['clean', 'classloaderIsolation']
+        runner.args = ["--max-workers=$workers", "-PoutputSize=$workItems"]
 
         when:
         def result = runner.run()
@@ -77,8 +77,8 @@ class WorkerApiPerformanceTest extends AbstractCrossVersionGradleProfilerPerform
     @Unroll
     def "executing tasks with process isolation work=#workItems / workers=#workers"() {
         given:
-        runner.tasksToRun = ['clean', 'classloaderIsolation', "-PoutputSize=$workItems"]
-        runner.args = [ "--max-workers=$workers" ]
+        runner.tasksToRun = ['clean', 'classloaderIsolation']
+        runner.args = ["--max-workers=$workers", "-PoutputSize=$workItems"]
 
         when:
         def result = runner.run()
