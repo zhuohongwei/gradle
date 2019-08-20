@@ -24,7 +24,7 @@ import java.util.*;
 import java.text.*;
 
 public class Main {
-    private static String projectDirPath = "/home/tcagent1/agent/work/668602365d1521fc";
+    private static String projectDirPath = "/home/tcagent1/gradle";
     private static String asyncProfiler = "/home/tcagent1/agent/work/async-profiler/profiler.sh";
     private static File projectDir = new File(projectDirPath);
     private static Map<String, String> gradleBinary = new HashMap<>();
