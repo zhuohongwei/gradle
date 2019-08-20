@@ -76,6 +76,12 @@ public class Main {
         }
     }
 
+    private static File touchNewFile(String suffix) {
+        String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-" + suffix + ".txt";
+        run(projectDir, "touch", fileName);
+        return new File(projectDir, fileName);
+    }
+
     private static class ExperimentSet {
         Experiment[] versions;
 
@@ -86,9 +92,7 @@ public class Main {
         public void printResultsAndConfidence() {
             System.out.println(toString());
 
-            String fileName = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + "-result.txt";
-            run(projectDir, "touch", fileName);
-            writeFile(new File(fileName), toString());
+            writeFile(touchNewFile("result"), toString());
         }
 
         public String toString() {
@@ -146,6 +150,10 @@ public class Main {
     }
 
     private static Experiment runExperiment(String version) {
+        File gcLog = touchNewFile("gclog");
+
+        writeFile(new File(getExpProject(version), "gradle.properties"), "org.gradle.jvmargs=-Xloggc:" + gcLog.getAbsolutePath() + " -XX:+PrintGCDateStamps -Xmx4g -Xms4g\n");
+
         int daemonPid = doWarmUp(version);
 
         List<ExecutionResult> results = doRun(version, getExpArgs(version, "assemble", daemonPid), new HashMap<>(), daemonPid);
@@ -241,7 +249,6 @@ public class Main {
             "--gradle-user-home",
             getGradleUserHome(version).getAbsolutePath(),
             "--stacktrace",
-            "-Dorg.gradle.jvmargs=-Xms4g -Xmx4g",
             task
         );
     }
