@@ -152,7 +152,7 @@ public class Main {
     private static Experiment runExperiment(String version) {
         File gcLog = touchNewFile("gclog");
 
-        writeFile(new File(getExpProject(version), "gradle.properties"), "org.gradle.jvmargs=-Xloggc:" + gcLog.getAbsolutePath() + " -XX:+PrintGCDateStamps -Xmx1536m -Xms1536m\n" +
+        writeFile(new File(getExpProject(version), "gradle.properties"), "org.gradle.jvmargs=-verbose:gc -Xloggc:" + gcLog.getAbsolutePath() + " -XX:+PrintGCDateStamps -XX:+PrintGCDetails -Xmx1536m -Xms1536m\n" +
             "org.gradle.parallel=false\n" +
             "org.gradle.workers.max=4\n" +
             "compilerMemory=4g\n" +
