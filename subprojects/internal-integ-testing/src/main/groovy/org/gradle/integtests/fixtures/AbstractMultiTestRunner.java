@@ -196,7 +196,7 @@ public abstract class AbstractMultiTestRunner extends Runner implements Filterab
                         SpecInfo spec = (SpecInfo) SPEC_METHOD.invoke(child);
                         List<FeatureInfo> allFeatures = spec.getAllFeatures();
                         for (FeatureInfo feature : allFeatures) {
-                            feature.setSkipped(feature.isSkipped() || !execution.isTestEnabled(new TestDescriptionBackedTestDetails(childDescription, feature.getDescription())));
+                            feature.setSkipped(feature.isSkipped() || !execution.isTestEnabled(new FeatureInfoBackedTestDetails(childDescription, feature)));
                             final NameProvider<IterationInfo> provider = feature.getIterationNameProvider();
                             if (provider!=null) {
                                 feature.setIterationNameProvider(new NameProvider<IterationInfo>() {
@@ -456,6 +456,30 @@ public abstract class AbstractMultiTestRunner extends Runner implements Filterab
         @Override
         public String toString() {
             return test.toString();
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> type) {
+            A annotation = test.getAnnotation(type);
+            if (annotation != null) {
+                return annotation;
+            }
+            return parent.getAnnotation(type);
+        }
+    }
+
+    private static class FeatureInfoBackedTestDetails implements TestDetails {
+        private final Description parent;
+        private final FeatureInfo test;
+
+        private FeatureInfoBackedTestDetails(Description parent, FeatureInfo test) {
+            this.parent = parent;
+            this.test = test;
+        }
+
+        @Override
+        public String toString() {
+            return test.getName();
         }
 
         @Override
