@@ -144,12 +144,10 @@ public class DefaultClassLoaderCache implements ClassLoaderCache, Stoppable, Ses
     @Override
     public void beforeComplete() {
         synchronized (lock) {
-            Set<ClassLoaderSpec> unused = Sets.newHashSet(bySpec.keySet());
-            unused.removeAll(usedInThisBuild);
-            for (ClassLoaderSpec spec : unused) {
-                ClassLoader classLoader = bySpec.remove(spec);
-                previousBySpec.put(spec, new SoftReference<>(classLoader));
+            for (Map.Entry<ClassLoaderSpec, ClassLoader> entry : bySpec.entrySet()) {
+                previousBySpec.put(entry.getKey(), new SoftReference<>(entry.getValue()));
             }
+            bySpec.clear();
             usedInThisBuild.clear();
             previousBySpec.values().removeIf(entry -> entry.get() == null);
         }
