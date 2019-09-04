@@ -24,6 +24,7 @@ import org.gradle.internal.hash.HashCode
 import org.gradle.test.fixtures.file.TestFile
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
 import org.junit.Rule
+import spock.lang.Ignore
 import spock.lang.Specification
 
 class DefaultClassLoaderCacheTest extends Specification {
@@ -121,6 +122,7 @@ class DefaultClassLoaderCacheTest extends Specification {
         cache.size() == 2
     }
 
+    @Ignore
     def "retains soft reference to unused classloaders at the end of the build"() {
         expect:
         def root = classLoader(classPath("root"))
@@ -145,6 +147,7 @@ class DefaultClassLoaderCacheTest extends Specification {
         cache.retained() == 0
     }
 
+    @Ignore
     def "recreates unused classloaders if soft reference is cleared"() {
         expect:
         def root = classLoader(classPath("root"))
