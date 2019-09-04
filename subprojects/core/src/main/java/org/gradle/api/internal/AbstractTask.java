@@ -152,6 +152,9 @@ public abstract class AbstractTask implements TaskInternal, DynamicObjectAware {
     public void doNothing() {
 
     }
+    public void doNothing2() {
+
+    }
 
     private AbstractTask(TaskInfo taskInfo) {
         if (taskInfo == null) {
