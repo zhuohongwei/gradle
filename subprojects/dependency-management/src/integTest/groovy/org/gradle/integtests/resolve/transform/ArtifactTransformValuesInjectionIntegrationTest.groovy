@@ -648,6 +648,7 @@ abstract class MakeGreen extends ArtifactTransform {
 """
 
         when:
+        executer.expectDeprecationWarning()
         fails(":a:resolve")
 
         then:
