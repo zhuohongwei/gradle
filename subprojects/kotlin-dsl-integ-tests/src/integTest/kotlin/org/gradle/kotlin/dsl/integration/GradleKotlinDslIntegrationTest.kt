@@ -20,7 +20,7 @@ import okhttp3.HttpUrl
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.gradle.integtests.fixtures.RepoScriptBlockUtil.jcenterRepository
-import org.gradle.kotlin.dsl.embeddedKotlinVersion
+import org.gradle.kotlin.dsl.*
 import org.gradle.kotlin.dsl.fixtures.DeepThought
 import org.gradle.kotlin.dsl.fixtures.LightThought
 import org.gradle.kotlin.dsl.fixtures.ZeroThought
@@ -186,6 +186,7 @@ class GradleKotlinDslIntegrationTest : AbstractPluginIntegrationTest() {
 
         assertNotEquals(embeddedKotlinVersion, differentKotlinVersion)
 
+        alwaysExpectKotlinPluginDeprecationWarning()
         withBuildScript("""
             import org.jetbrains.kotlin.config.KotlinCompilerVersion
             import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -763,6 +764,7 @@ class GradleKotlinDslIntegrationTest : AbstractPluginIntegrationTest() {
 
         withDefaultSettingsIn("buildSrc")
 
+        alwaysExpectKotlinPluginDeprecationWarning()
         withFile("buildSrc/build.gradle.kts", """
 
             plugins {

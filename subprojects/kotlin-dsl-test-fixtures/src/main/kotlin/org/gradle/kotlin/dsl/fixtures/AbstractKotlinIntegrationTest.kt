@@ -22,6 +22,7 @@ import org.gradle.integtests.fixtures.AbstractIntegrationTest
 import org.gradle.integtests.fixtures.executer.ExecutionFailure
 import org.gradle.integtests.fixtures.executer.ExecutionResult
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
+import org.gradle.integtests.fixtures.executer.GradleExecuter
 
 import org.gradle.kotlin.dsl.resolver.GradleInstallation
 
@@ -122,6 +123,7 @@ abstract class AbstractKotlinIntegrationTest : AbstractIntegrationTest() {
 
     protected
     fun withKotlinBuildSrc() {
+        alwaysExpectKotlinPluginDeprecationWarning()
         withDefaultSettingsIn("buildSrc")
         withBuildScriptIn("buildSrc", """
             plugins {
@@ -130,6 +132,22 @@ abstract class AbstractKotlinIntegrationTest : AbstractIntegrationTest() {
 
             $repositoriesBlock
         """)
+    }
+
+    protected
+    fun alwaysExpectKotlinPluginDeprecationWarning() {
+        executer.beforeExecute {
+            if (!executer.allArgs.contains("-q")) {
+                it.expectKotlinPluginDeprecationWarning()
+            }
+        }
+    }
+
+    protected
+    fun GradleExecuter.expectKotlinPluginDeprecationWarning(): GradleExecuter {
+        // The Kotlin plugin uses the old Artifact transform API
+        expectDeprecationWarning()
+        return this
     }
 
     protected
@@ -166,8 +184,10 @@ abstract class AbstractKotlinIntegrationTest : AbstractIntegrationTest() {
         GradleInstallation.Local(distribution.gradleHomeDir)
 
     protected
-    fun compileKotlin(taskName: String = "classes"): ExecutionResult =
-        build(taskName).assertTaskExecuted(":compileKotlin")
+    fun compileKotlin(taskName: String = "classes"): ExecutionResult {
+        executer.expectKotlinPluginDeprecationWarning()
+        return build(taskName).assertTaskExecuted(":compileKotlin")
+    }
 
     protected
     fun withClassJar(fileName: String, vararg classes: Class<*>) =

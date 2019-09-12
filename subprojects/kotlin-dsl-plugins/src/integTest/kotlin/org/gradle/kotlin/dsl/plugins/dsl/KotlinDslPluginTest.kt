@@ -21,8 +21,10 @@ import org.junit.Test
 class KotlinDslPluginTest : AbstractPluginTest() {
 
     @Before
-    fun setupPluginTest() =
+    fun setupPluginTest() {
         requireGradleDistributionOnEmbeddedExecuter()
+        alwaysExpectKotlinPluginDeprecationWarning()
+    }
 
     @Test
     fun `warns on unexpected kotlin-dsl plugin version`() {

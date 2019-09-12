@@ -203,7 +203,11 @@ class PrecompiledScriptPluginTemplatesTest : AbstractPrecompiledScriptPluginTest
             }
         }
 
-        executer.inDirectory(file("plugin")).withTasks("jar").run()
+        executer
+            .expectKotlinPluginDeprecationWarning()
+            .inDirectory(file("plugin"))
+            .withTasks("jar")
+            .run()
 
         val pluginJar = file("plugin/build/libs/plugin.jar")
         assertThat("pluginJar was built", pluginJar.exists())
@@ -297,6 +301,7 @@ class PrecompiledScriptPluginTemplatesTest : AbstractPrecompiledScriptPluginTest
             }
         }
 
+        executer.expectKotlinPluginDeprecationWarning()
         build(existing("plugins"), "publish")
 
         val repositoriesBlock = """
