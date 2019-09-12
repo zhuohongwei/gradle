@@ -474,5 +474,7 @@ public interface GradleExecuter extends Stoppable {
      */
     GradleExecuter withPluginRepositoryMirror();
 
+    List<String> getAllArgs();
+
     GradleExecuter ignoreMissingSettingsFile();
 }

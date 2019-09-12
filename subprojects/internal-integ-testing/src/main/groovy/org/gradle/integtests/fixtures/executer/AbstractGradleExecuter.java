@@ -874,7 +874,8 @@ public abstract class AbstractGradleExecuter implements GradleExecuter {
         return resolveCliDaemonArgument() == NOT_DEFINED;
     }
 
-    protected List<String> getAllArgs() {
+    @Override
+    public List<String> getAllArgs() {
         List<String> allArgs = new ArrayList<String>();
         if (buildScript != null) {
             allArgs.add("--build-file");
