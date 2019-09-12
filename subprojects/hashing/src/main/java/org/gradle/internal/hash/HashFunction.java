@@ -40,4 +40,9 @@ public interface HashFunction {
      * Hash the given string using the hash function.
      */
     HashCode hashString(CharSequence string);
+
+    /**
+     * Returns the size of the hash length in bits.
+     */
+    int getHashBits();
 }

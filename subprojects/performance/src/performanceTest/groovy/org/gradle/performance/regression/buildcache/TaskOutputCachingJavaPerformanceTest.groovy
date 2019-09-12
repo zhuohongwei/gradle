@@ -223,7 +223,7 @@ class TaskOutputCachingJavaPerformanceTest extends AbstractTaskOutputCachingPerf
         def startTime = System.currentTimeMillis()
         int count = 0
         dir.eachFile { File cacheArchiveFile ->
-            if (cacheArchiveFile.name ==~ /[a-z0-9]{32}/) {
+            if (cacheArchiveFile.name ==~ /[a-z0-9]{64}/) {
                 def tempFile = temporaryFolder.file("re-tar-temp")
                 tempFile.withOutputStream { outputStream ->
                     def tarOutput = new TarArchiveOutputStream(new GZIPOutputStream(outputStream))

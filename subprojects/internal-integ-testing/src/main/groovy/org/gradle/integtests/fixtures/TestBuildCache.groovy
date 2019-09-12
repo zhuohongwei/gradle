@@ -66,7 +66,7 @@ class TestBuildCache {
     }
 
     List<TestFile> listCacheFiles() {
-        cacheDir.listFiles().findAll { it.name ==~ /\p{XDigit}{32}/ }.sort()
+        cacheDir.listFiles().findAll { it.name ==~ /\p{XDigit}{64}/ }.sort()
     }
 
     boolean isEmpty() {
