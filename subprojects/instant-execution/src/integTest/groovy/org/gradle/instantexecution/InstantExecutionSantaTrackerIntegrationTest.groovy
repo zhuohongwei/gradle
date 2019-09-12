@@ -70,6 +70,8 @@ class InstantExecutionSantaTrackerIntegrationTest extends AbstractInstantExecuti
         instantRun("assembleDebug", "--no-build-cache")
 
         and:
+        // Old artifact transform API - Aapt2MavenUtils.kt:127
+        executer.expectDeprecationWarning()
         run 'clean'
 
         then:

@@ -77,6 +77,8 @@ class InstantExecutionAndroidIntegrationTest extends AbstractInstantExecutionAnd
         instantExecution.assertStateStored()
 
         when:
+        // Old artifact transform API - Aapt2MavenUtils.kt:127
+        executer.expectDeprecationWarning()
         run 'clean'
         instantRun("assembleDebug")
 
