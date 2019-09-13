@@ -36,6 +36,8 @@ import org.gradle.api.internal.tasks.compile.DefaultGroovyJavaJointCompileSpec;
 import org.gradle.api.internal.tasks.compile.DefaultGroovyJavaJointCompileSpecFactory;
 import org.gradle.api.internal.tasks.compile.GroovyCompilerFactory;
 import org.gradle.api.internal.tasks.compile.GroovyJavaJointCompileSpec;
+import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
+import org.gradle.api.internal.tasks.compile.ProjectLockReleasingCompiler;
 import org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.CompilationSourceDirs;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.GroovyRecompilationSpecProvider;
@@ -57,6 +59,7 @@ import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.file.Deleter;
+import org.gradle.internal.work.WorkerLeaseService;
 import org.gradle.jvm.toolchain.JavaToolChain;
 import org.gradle.language.base.internal.compile.Compiler;
 import org.gradle.util.DeprecationLogger;
@@ -162,9 +165,14 @@ public class GroovyCompile extends AbstractCompile {
     }
 
     private WorkResult doCompile(GroovyJavaJointCompileSpec spec, InputChanges inputChanges, Multimap<String, String> sourceClassesMapping) {
-        WorkResult result = getCompiler(spec, inputChanges, sourceClassesMapping).execute(spec);
+        WorkResult result = new ProjectLockReleasingCompiler<GroovyJavaJointCompileSpec>(getWorkerLeaseService(), getCompiler(spec, inputChanges, sourceClassesMapping)).execute(spec);
         setDidWork(result.getDidWork());
         return result;
+    }
+
+    @Inject
+    protected WorkerLeaseService getWorkerLeaseService() {
+        throw new UnsupportedOperationException("Decorator takes care of injection");
     }
 
     /**

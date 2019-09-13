@@ -31,6 +31,7 @@ import org.gradle.api.internal.tasks.compile.CompilerForkUtils;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpecFactory;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
+import org.gradle.api.internal.tasks.compile.ProjectLockReleasingCompiler;
 import org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.CompilationSourceDirs;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.JavaRecompilationSpecProvider;
@@ -47,6 +48,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.WorkResult;
 import org.gradle.internal.file.Deleter;
 import org.gradle.internal.operations.BuildOperationExecutor;
+import org.gradle.internal.work.WorkerLeaseService;
 import org.gradle.jvm.internal.toolchain.JavaToolChainInternal;
 import org.gradle.jvm.platform.JavaPlatform;
 import org.gradle.jvm.platform.internal.DefaultJavaPlatform;
@@ -193,6 +195,11 @@ public class JavaCompile extends AbstractCompile {
         throw new UnsupportedOperationException("Decorator takes care of injection");
     }
 
+    @Inject
+    protected WorkerLeaseService getWorkerLeaseService() {
+        throw new UnsupportedOperationException("Decorator takes care of injection");
+    }
+
     private CleaningJavaCompiler<JavaCompileSpec> createCompiler(JavaCompileSpec spec) {
         Compiler<JavaCompileSpec> javaCompiler = CompilerUtil.castCompiler(((JavaToolChainInternal) getToolChain()).select(getPlatform()).newCompiler(spec.getClass()));
         return new CleaningJavaCompiler<>(javaCompiler, getOutputs(), getDeleter());
@@ -204,7 +211,7 @@ public class JavaCompile extends AbstractCompile {
     }
 
     private void performCompilation(JavaCompileSpec spec, Compiler<JavaCompileSpec> compiler) {
-        WorkResult result = new CompileJavaBuildOperationReportingCompiler(this, compiler, getServices().get(BuildOperationExecutor.class)).execute(spec);
+        WorkResult result = new ProjectLockReleasingCompiler<JavaCompileSpec>(getWorkerLeaseService(), new CompileJavaBuildOperationReportingCompiler(this, compiler, getServices().get(BuildOperationExecutor.class))).execute(spec);
         setDidWork(result.getDidWork());
     }
 
