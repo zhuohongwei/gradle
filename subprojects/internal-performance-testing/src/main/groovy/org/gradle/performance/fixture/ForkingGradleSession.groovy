@@ -105,8 +105,12 @@ class ForkingGradleSession implements GradleSession {
 
         def exitCode = run.start().waitFor()
         if (exitCode != 0 && !invocation.expectFailure) {
-            throw new IllegalStateException("Build with args: ${args} envs: ${env} failed, see ${invocationInfo.buildLog} for details")
+            throw new IllegalStateException("Build failed with exit code $exitCode.\n\nBuild log: ${invocationInfo.buildLog}\n\nArguments:${printEntries(args)}\n\nEnvironment:${env.entrySet()}")
         }
+    }
+
+    private static String printEntries(Iterable<String> entries) {
+        return "\n\t- ${entries.join("\n\t- ")}"
     }
 
     private static ProcessBuilder newProcessBuilder(BuildExperimentInvocationInfo invocationInfo, List<String> args, Map<String, String> env) {
