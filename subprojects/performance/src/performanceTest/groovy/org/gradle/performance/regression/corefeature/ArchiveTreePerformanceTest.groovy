@@ -30,6 +30,7 @@ class ArchiveTreePerformanceTest extends AbstractCrossVersionGradleProfilerPerfo
 
         when:
         def result = runner.run()
+        System.exit(123)
 
         then:
         result.assertCurrentVersionHasNotRegressed()
