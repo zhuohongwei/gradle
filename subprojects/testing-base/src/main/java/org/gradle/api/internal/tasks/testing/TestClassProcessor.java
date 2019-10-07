@@ -38,6 +38,11 @@ public interface TestClassProcessor extends Stoppable {
     void processTestClass(TestClassRunInfo testClass);
 
     /**
+     * Waits till all pending or asynchronous processing is complete.
+     */
+    void waitForComplete();
+
+    /**
      * Completes any pending or asynchronous processing. Blocks until all processing is complete. The processor should
      * not use the result processor provided to {@link #startProcessing(TestResultProcessor)} after this method has
      * returned.

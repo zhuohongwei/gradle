@@ -57,6 +57,11 @@ public class RestartEveryNTestClassProcessor implements TestClassProcessor {
     }
 
     @Override
+    public void waitForComplete() {
+        stop();
+    }
+
+    @Override
     public void stop() {
         if (processor != null) {
             endBatch();

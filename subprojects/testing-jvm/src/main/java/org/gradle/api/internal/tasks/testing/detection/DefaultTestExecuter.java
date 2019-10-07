@@ -29,6 +29,7 @@ import org.gradle.api.internal.tasks.testing.WorkerTestClassProcessorFactory;
 import org.gradle.api.internal.tasks.testing.filter.DefaultTestFilter;
 import org.gradle.api.internal.tasks.testing.processors.MaxNParallelTestClassProcessor;
 import org.gradle.api.internal.tasks.testing.processors.PatternMatchTestClassProcessor;
+import org.gradle.api.internal.tasks.testing.processors.RerunFailedTestExecuter;
 import org.gradle.api.internal.tasks.testing.processors.RestartEveryNTestClassProcessor;
 import org.gradle.api.internal.tasks.testing.processors.RunPreviousFailedFirstTestClassProcessor;
 import org.gradle.api.internal.tasks.testing.processors.TestMainAction;
@@ -61,11 +62,21 @@ public class DefaultTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
     private final Clock clock;
     private final DocumentationRegistry documentationRegistry;
     private final DefaultTestFilter testFilter;
+    private final int numberOfRetries;
     private TestClassProcessor processor;
 
-    public DefaultTestExecuter(WorkerProcessFactory workerFactory, ActorFactory actorFactory, ModuleRegistry moduleRegistry,
-                               WorkerLeaseRegistry workerLeaseRegistry, BuildOperationExecutor buildOperationExecutor, int maxWorkerCount,
-                               Clock clock, DocumentationRegistry documentationRegistry, DefaultTestFilter testFilter) {
+    public DefaultTestExecuter(
+        WorkerProcessFactory workerFactory,
+        ActorFactory actorFactory,
+        ModuleRegistry moduleRegistry,
+        WorkerLeaseRegistry workerLeaseRegistry,
+        BuildOperationExecutor buildOperationExecutor,
+        int maxWorkerCount,
+        Clock clock,
+        DocumentationRegistry documentationRegistry,
+        DefaultTestFilter testFilter,
+        int numberOfRetries
+    ) {
         this.workerFactory = workerFactory;
         this.actorFactory = actorFactory;
         this.moduleRegistry = moduleRegistry;
@@ -75,10 +86,12 @@ public class DefaultTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
         this.clock = clock;
         this.documentationRegistry = documentationRegistry;
         this.testFilter = testFilter;
+        this.numberOfRetries = numberOfRetries;
     }
 
     @Override
-    public void execute(final JvmTestExecutionSpec testExecutionSpec, TestResultProcessor testResultProcessor) {
+    public void execute(final JvmTestExecutionSpec testExecutionSpec,
+                        TestResultProcessor testResultProcessor) {
         final TestFramework testFramework = testExecutionSpec.getTestFramework();
         final WorkerTestClassProcessorFactory testInstanceFactory = testFramework.getProcessorFactory();
         final WorkerLeaseRegistry.WorkerLease currentWorkerLease = workerLeaseRegistry.getCurrentWorkerLease();
@@ -96,10 +109,13 @@ public class DefaultTestExecuter implements TestExecuter<JvmTestExecutionSpec> {
                 return new RestartEveryNTestClassProcessor(forkingProcessorFactory, testExecutionSpec.getForkEvery());
             }
         };
+        TestClassProcessor delegate = new RerunFailedTestExecuter(
+            numberOfRetries,
+            new MaxNParallelTestClassProcessor(getMaxParallelForks(testExecutionSpec), reforkingProcessorFactory, actorFactory)
+        );
         processor =
             new PatternMatchTestClassProcessor(testFilter,
-                new RunPreviousFailedFirstTestClassProcessor(testExecutionSpec.getPreviousFailedTestClasses(),
-                    new MaxNParallelTestClassProcessor(getMaxParallelForks(testExecutionSpec), reforkingProcessorFactory, actorFactory)));
+                new RunPreviousFailedFirstTestClassProcessor(testExecutionSpec.getPreviousFailedTestClasses(), delegate));
 
         final FileTree testClassFiles = testExecutionSpec.getCandidateClassFiles();
 

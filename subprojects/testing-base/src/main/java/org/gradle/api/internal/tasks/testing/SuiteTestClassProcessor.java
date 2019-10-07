@@ -56,6 +56,11 @@ public class SuiteTestClassProcessor implements TestClassProcessor {
     }
 
     @Override
+    public void waitForComplete() {
+        stop();
+    }
+
+    @Override
     public void stop() {
         try {
             processor.stop();

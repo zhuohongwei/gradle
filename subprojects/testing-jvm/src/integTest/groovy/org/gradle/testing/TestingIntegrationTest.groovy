@@ -476,4 +476,37 @@ class TestingIntegrationTest extends JUnitMultiVersionIntegrationSpec {
         then:
         outputContains "Unable to reset SecurityManager"
     }
+
+    def "can rerun failed test"() {
+        given:
+        buildFile << """
+            apply plugin:'java'
+            ${mavenCentralRepository()}
+            dependencies {
+                testImplementation 'junit:junit:4.12'
+            }
+            test {
+                numberOfRetries = 3
+            }
+        """
+
+        file("src/test/java/FlakyTest.java") << """
+            import org.junit.*;
+            import java.io.File;
+            public class FlakyTest {
+                @Test public void test() throws Exception {
+                    File flakyness = new File("my-input.txt");
+                    if (!flakyness.exists()) {
+                        flakyness.createNewFile();
+                        Assert.assertTrue(false);
+                    }
+                }
+            }
+        """
+
+        expect:
+        succeeds("test")
+
+
+    }
 }

@@ -53,6 +53,7 @@ public class TestMainAction implements Runnable {
             processor.startProcessing(resultProcessor);
             try {
                 detector.run();
+                processor.waitForComplete();
             } finally {
                 processor.stop();
             }

@@ -46,6 +46,11 @@ public class PatternMatchTestClassProcessor implements TestClassProcessor {
     }
 
     @Override
+    public void waitForComplete() {
+        delegate.waitForComplete();
+    }
+
+    @Override
     public void stop() {
         delegate.stop();
     }

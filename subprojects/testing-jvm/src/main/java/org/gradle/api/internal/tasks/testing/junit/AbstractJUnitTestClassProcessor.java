@@ -63,6 +63,11 @@ public abstract class AbstractJUnitTestClassProcessor<T extends AbstractJUnitSpe
     }
 
     @Override
+    public void waitForComplete() {
+        resultProcessorActor.stop();
+    }
+
+    @Override
     public void stop() {
         resultProcessorActor.stop();
     }

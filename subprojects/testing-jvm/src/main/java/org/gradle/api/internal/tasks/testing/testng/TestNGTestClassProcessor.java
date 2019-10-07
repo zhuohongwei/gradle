@@ -85,6 +85,11 @@ public class TestNGTestClassProcessor implements TestClassProcessor {
     }
 
     @Override
+    public void waitForComplete() {
+        stop();
+    }
+
+    @Override
     public void stop() {
         try {
             runTests();

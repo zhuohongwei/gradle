@@ -168,6 +168,11 @@ public class XCTestExecuter implements TestExecuter<XCTestTestExecutionSpec> {
             }
         }
 
+        @Override
+        public void waitForComplete() {
+            stop();
+        }
+
         private ExecHandle executeTest(String testName, OutputStream outputStream, OutputStream errorStream) {
             execHandleBuilder.setArgs(toTestArgs(testName));
             execHandleBuilder.setStandardOutput(outputStream);

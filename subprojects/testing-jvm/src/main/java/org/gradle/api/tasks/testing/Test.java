@@ -39,6 +39,7 @@ import org.gradle.api.internal.tasks.testing.junit.result.TestClassResult;
 import org.gradle.api.internal.tasks.testing.junit.result.TestResultSerializer;
 import org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestFramework;
 import org.gradle.api.internal.tasks.testing.testng.TestNGTestFramework;
+import org.gradle.api.provider.Property;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
@@ -148,11 +149,13 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
     private long forkEvery;
     private int maxParallelForks = 1;
     private TestExecuter<JvmTestExecutionSpec> testExecuter;
+    private Property<Integer> numberOfRetries;
 
     public Test() {
         patternSet = getFileResolver().getPatternSetFactory().create();
         forkOptions = getForkOptionsFactory().newDecoratedJavaForkOptions();
         forkOptions.setEnableAssertions(true);
+        numberOfRetries = getProject().getObjects().property(Integer.class).convention(0);
     }
 
     @Inject
@@ -624,7 +627,8 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
                 getServices().get(StartParameter.class).getMaxWorkerCount(),
                 getServices().get(Clock.class),
                 getServices().get(DocumentationRegistry.class),
-                (DefaultTestFilter) getFilter());
+                (DefaultTestFilter) getFilter(),
+                getNumberOfRetries().get());
         } else {
             return testExecuter;
         }
@@ -1077,5 +1081,10 @@ public class Test extends AbstractTestTask implements JavaForkOptions, PatternFi
      */
     void setTestExecuter(TestExecuter<JvmTestExecutionSpec> testExecuter) {
         this.testExecuter = testExecuter;
+    }
+
+    @Internal
+    public Property<Integer> getNumberOfRetries() {
+        return numberOfRetries;
     }
 }

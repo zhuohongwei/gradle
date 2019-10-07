@@ -95,6 +95,11 @@ public class ForkingTestClassProcessor implements TestClassProcessor {
         }
     }
 
+    @Override
+    public void waitForComplete() {
+        stop();
+    }
+
     RemoteTestClassProcessor forkProcess() {
         WorkerProcessBuilder builder = workerFactory.create(new TestWorker(processorFactory));
         builder.setBaseName("Gradle Test Executor");

@@ -53,6 +53,11 @@ public class RunPreviousFailedFirstTestClassProcessor implements TestClassProces
     }
 
     @Override
+    public void waitForComplete() {
+        stop();
+    }
+
+    @Override
     public void stop() {
         for (TestClassRunInfo test : prioritizedTestClasses) {
             delegate.processTestClass(test);
