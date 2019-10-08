@@ -16,10 +16,6 @@
 
 package org.gradle.api.internal.tasks.testing.junit;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher;
@@ -32,8 +28,13 @@ import org.junit.runner.Runner;
 import org.junit.runner.manipulation.Filter;
 import org.junit.runner.manipulation.Filterable;
 import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class JUnitTestClassExecutor implements Action<String> {
     private final ClassLoader applicationClassLoader;
@@ -107,7 +108,20 @@ public class JUnitTestClassExecutor implements Action<String> {
 
         RunNotifier notifier = new RunNotifier();
         notifier.addListener(listener);
+        FailedTestsRunListener failedTests = new FailedTestsRunListener();
+        notifier.addListener(failedTests);
         runner.run(notifier);
+
+        if (options.getFailedTestRetryCount() > 0) {
+            for (int i = 0; i < options.getFailedTestRetryCount() && !failedTests.getAllFailures().isEmpty(); i++) {
+                runner = Request.aClass(testClass).filterWith(new MatchDescriptions(failedTests.getAllFailures())).getRunner();
+                failedTests.reset();
+                notifier = new RunNotifier();
+                notifier.addListener(listener);
+                notifier.addListener(failedTests);
+                runner.run(notifier);
+            }
+        }
     }
 
     // https://github.com/gradle/gradle/issues/2319
@@ -179,6 +193,28 @@ public class JUnitTestClassExecutor implements Action<String> {
         @Override
         public String describe() {
             return "Includes matching test methods";
+        }
+    }
+
+    private static class FailedTestsRunListener extends RunListener {
+        private final List<Description> allFailures = new ArrayList<Description>();
+
+        @Override
+        public void testFailure(Failure failure) {
+            if (failure != null) {
+                Description description = failure.getDescription();
+                if (description.isTest() && !Description.TEST_MECHANISM.equals(description)) {
+                    allFailures.add(description);
+                }
+            }
+        }
+
+        public List<Description> getAllFailures() {
+            return allFailures;
+        }
+
+        public void reset() {
+            allFailures.clear();
         }
     }
 }

@@ -20,17 +20,20 @@ import java.util.Set;
 public class JUnitSpec extends AbstractJUnitSpec {
     private final Set<String> includeCategories;
     private final Set<String> excludeCategories;
+    private final int failedTestRetryCount;
 
     public JUnitSpec(
         Set<String> includeCategories,
         Set<String> excludeCategories,
         Set<String> includedTests,
         Set<String> excludedTests,
-        Set<String> includedTestsCommandLine
+        Set<String> includedTestsCommandLine,
+        int failedTestRetryCount
     ) {
         super(includedTests, excludedTests, includedTestsCommandLine);
         this.includeCategories = includeCategories;
         this.excludeCategories = excludeCategories;
+        this.failedTestRetryCount = failedTestRetryCount;
     }
 
     public Set<String> getIncludeCategories() {
@@ -43,5 +46,9 @@ public class JUnitSpec extends AbstractJUnitSpec {
 
     public boolean hasCategoryConfiguration() {
         return !(excludeCategories.isEmpty() && includeCategories.isEmpty());
+    }
+
+    public int getFailedTestRetryCount() {
+        return failedTestRetryCount;
     }
 }

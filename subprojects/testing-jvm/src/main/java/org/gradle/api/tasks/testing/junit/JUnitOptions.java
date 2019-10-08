@@ -17,6 +17,7 @@
 package org.gradle.api.tasks.testing.junit;
 
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.testing.TestFrameworkOptions;
 
 import java.util.Arrays;
@@ -30,6 +31,8 @@ public class JUnitOptions extends TestFrameworkOptions {
     private Set<String> includeCategories = new LinkedHashSet<String>();
 
     private Set<String> excludeCategories = new LinkedHashSet<String>();
+
+    private int rerunFailedTestCount;
 
     public JUnitOptions includeCategories(String... includeCategories) {
         this.includeCategories.addAll(Arrays.asList(includeCategories));
@@ -71,5 +74,12 @@ public class JUnitOptions extends TestFrameworkOptions {
         this.excludeCategories = excludeCategories;
     }
 
+    @Internal
+    public int getRerunFailedTestCount() {
+        return rerunFailedTestCount;
+    }
 
+    public void setRerunFailedTestCount(int rerunFailedTestCount) {
+        this.rerunFailedTestCount = rerunFailedTestCount;
+    }
 }
