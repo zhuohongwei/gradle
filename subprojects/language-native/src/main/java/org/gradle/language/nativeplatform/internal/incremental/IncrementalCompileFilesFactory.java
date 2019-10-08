@@ -88,7 +88,7 @@ public class IncrementalCompileFilesFactory {
          * @return true if this source file requires recompilation, false otherwise.
          */
         private boolean visitSourceFile(File sourceFile) {
-            return virtualFileSystem.readRegularFileContentHash(sourceFile.getAbsolutePath(),
+            return virtualFileSystem.readRegularFileContentHash(sourceFile,
                 fileContent -> {
                     SourceFileState previousState = previous.getState(sourceFile);
 

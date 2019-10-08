@@ -94,6 +94,11 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
     }
 
     @Override
+    public <T> Optional<T> readRegularFileContentHash(File location, Function<HashCode, T> visitor) {
+        return readRegularFileContentHash(location.getAbsolutePath(), visitor);
+    }
+
+    @Override
     public void read(String location, SnapshottingFilter filter, FileSystemSnapshotVisitor visitor) {
         if (filter.isEmpty()) {
             read(location, visitor);

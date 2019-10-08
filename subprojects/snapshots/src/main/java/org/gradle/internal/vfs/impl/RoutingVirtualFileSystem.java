@@ -26,6 +26,7 @@ import org.gradle.internal.snapshot.SnapshottingFilter;
 import org.gradle.internal.snapshot.WellKnownFileLocations;
 import org.gradle.internal.vfs.VirtualFileSystem;
 
+import java.io.File;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,6 +54,11 @@ public class RoutingVirtualFileSystem implements VirtualFileSystem {
     @Override
     public <T> Optional<T> readRegularFileContentHash(String location, Function<HashCode, T> visitor) {
         return getVirtualFileSystemFor(location).readRegularFileContentHash(location, visitor);
+    }
+
+    @Override
+    public <T> Optional<T> readRegularFileContentHash(File location, Function<HashCode, T> visitor) {
+        return getVirtualFileSystemFor(location.getAbsolutePath()).readRegularFileContentHash(location, visitor);
     }
 
     @Override

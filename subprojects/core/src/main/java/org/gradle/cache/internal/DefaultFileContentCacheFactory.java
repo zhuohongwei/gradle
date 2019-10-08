@@ -117,7 +117,7 @@ public class DefaultFileContentCacheFactory implements FileContentCacheFactory, 
         public V get(File file) {
             return locationCache.computeIfAbsent(file,
                 location -> virtualFileSystem.readRegularFileContentHash(
-                    location.getAbsolutePath(),
+                    location,
                     contentHash -> contentCache.get(contentHash, key -> calculator.calculate(location, true))
                 ).orElseGet(
                     () -> calculator.calculate(location, false)

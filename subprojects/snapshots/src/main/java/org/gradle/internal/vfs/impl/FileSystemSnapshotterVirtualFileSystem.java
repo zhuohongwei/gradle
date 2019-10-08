@@ -56,7 +56,12 @@ public class FileSystemSnapshotterVirtualFileSystem implements VirtualFileSystem
 
     @Override
     public <T> Optional<T> readRegularFileContentHash(String location, Function<HashCode, T> visitor) {
-        HashCode hashCode = snapshotter.getRegularFileContentHash(new File(location));
+        return readRegularFileContentHash(new File(location), visitor);
+    }
+
+    @Override
+    public <T> Optional<T> readRegularFileContentHash(File location, Function<HashCode, T> visitor) {
+        HashCode hashCode = snapshotter.getRegularFileContentHash(location);
         return Optional.ofNullable(hashCode).map(visitor);
     }
 

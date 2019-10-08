@@ -23,6 +23,7 @@ import org.gradle.internal.snapshot.FileSystemSnapshotBuilder;
 import org.gradle.internal.snapshot.FileSystemSnapshotVisitor;
 import org.gradle.internal.snapshot.SnapshottingFilter;
 
+import java.io.File;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,6 +36,11 @@ public interface VirtualFileSystem {
      * Visits the hash of the content of the file only if the file is a regular file.
      */
     <T> Optional<T> readRegularFileContentHash(String location, Function<HashCode, T> visitor);
+
+    /**
+     * Visits the hash of the content of the file only if the file is a regular file.
+     */
+    <T> Optional<T> readRegularFileContentHash(File location, Function<HashCode, T> visitor);
 
     void read(String location, SnapshottingFilter filter, FileSystemSnapshotVisitor visitor);
 

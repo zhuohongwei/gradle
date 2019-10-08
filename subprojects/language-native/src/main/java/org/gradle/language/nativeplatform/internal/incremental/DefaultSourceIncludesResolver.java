@@ -347,7 +347,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
             return contents.computeIfAbsent(includePath,
                 key -> {
                     File candidate = new File(searchDir, key);
-                    return virtualFileSystem.readRegularFileContentHash(candidate.getAbsolutePath(),
+                    return virtualFileSystem.readRegularFileContentHash(candidate,
                         contentHash -> (CachedIncludeFile) new SystemIncludeFile(candidate, key, contentHash))
                         .orElse(MISSING_INCLUDE_FILE);
                 });
