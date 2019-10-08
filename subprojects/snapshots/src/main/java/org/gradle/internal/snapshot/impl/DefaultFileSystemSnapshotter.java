@@ -70,9 +70,9 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
     @Override
     public HashCode getRegularFileContentHash(final File file) {
         final String absolutePath = file.getAbsolutePath();
-        FileMetadataSnapshot metadata = fileSystemMirror.getMetadata(absolutePath);
-        if (metadata != null) {
-            if (metadata.getType() != FileType.RegularFile) {
+        FileMetadataSnapshot cachedMetadata = fileSystemMirror.getMetadata(absolutePath);
+        if (cachedMetadata != null) {
+            if (cachedMetadata.getType() != FileType.RegularFile) {
                 return null;
             }
             FileSystemLocationSnapshot snapshot = fileSystemMirror.getSnapshot(absolutePath);
@@ -80,10 +80,8 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
                 return snapshot.getHash();
             }
         }
-        return producingSnapshots.guardByKey(absolutePath, new Supplier<HashCode>() {
-            @Nullable
-            @Override
-            public HashCode get() {
+        return producingSnapshots.guardByKey(absolutePath,
+            () -> {
                 InternableString internableAbsolutePath = new InternableString(absolutePath);
                 FileMetadataSnapshot metadata = statAndCache(internableAbsolutePath, file);
                 if (metadata.getType() != FileType.RegularFile) {
@@ -91,8 +89,7 @@ public class DefaultFileSystemSnapshotter implements FileSystemSnapshotter {
                 }
                 FileSystemLocationSnapshot snapshot = snapshotAndCache(internableAbsolutePath, file, metadata, null);
                 return snapshot.getHash();
-            }
-        });
+            });
     }
 
     @Override
