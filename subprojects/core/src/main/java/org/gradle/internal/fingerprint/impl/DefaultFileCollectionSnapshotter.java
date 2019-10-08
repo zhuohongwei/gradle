@@ -47,13 +47,13 @@ public class DefaultFileCollectionSnapshotter implements FileCollectionSnapshott
 
     @Override
     public List<FileSystemSnapshot> snapshot(FileCollection fileCollection) {
-        SnapshottingVisitor visitor = new SnapshottingVisitor();
+        SnapshotingVisitor visitor = new SnapshotingVisitor();
         ((FileCollectionInternal) fileCollection).visitStructure(visitor);
         return visitor.getRoots();
     }
 
 
-    private class SnapshottingVisitor implements FileCollectionStructureVisitor {
+    private class SnapshotingVisitor implements FileCollectionStructureVisitor {
         private final List<FileSystemSnapshot> roots = new ArrayList<>();
 
         @Override
