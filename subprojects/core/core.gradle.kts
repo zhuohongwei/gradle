@@ -22,6 +22,10 @@ plugins {
     `java-library`
 }
 
+apply {
+    from("${project.rootDir}/gradle/useTestDistribution.gradle")
+}
+
 configurations {
     register("reports")
 }
