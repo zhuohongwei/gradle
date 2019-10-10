@@ -21,6 +21,10 @@ plugins {
     `java-library`
 }
 
+apply {
+    from("${project.rootDir}/gradle/useTestDistribution.gradle")
+}
+
 dependencies {
     api(library("jsr305"))
 
