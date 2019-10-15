@@ -16,11 +16,12 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.RegularFileSnapshot;
 
 import javax.annotation.Nonnull;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class RegularFileNode extends AbstractSnapshotNode {
     private final RegularFileSnapshot snapshot;
@@ -33,23 +34,23 @@ public class RegularFileNode extends AbstractSnapshotNode {
 
     @Nonnull
     @Override
-    public Node getDescendant(ImmutableList<String> path) {
+    public Node getDescendant(Path path) {
         return getMissingDescendant(path);
     }
 
     @Override
-    public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
+    public Node replaceDescendant(Path path, ChildNodeSupplier nodeSupplier) {
         return getMissingDescendant(path);
     }
 
     @Override
-    public void removeDescendant(ImmutableList<String> path) {
-        parent.removeDescendant(ImmutableList.of(snapshot.getName()));
+    public void removeDescendant(Path path) {
+        parent.removeDescendant(Paths.get(snapshot.getName()));
     }
 
     @Override
-    public String getAbsolutePath() {
-        return snapshot.getAbsolutePath();
+    public Path getAbsolutePath() {
+        return Paths.get(snapshot.getAbsolutePath());
     }
 
     @Override

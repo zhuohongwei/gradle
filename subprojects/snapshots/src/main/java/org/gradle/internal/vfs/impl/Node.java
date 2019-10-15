@@ -16,26 +16,25 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 
 import javax.annotation.Nullable;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Predicate;
 
 public interface Node {
     @Nullable
-    Node getDescendant(ImmutableList<String> path);
-    Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier);
-    void removeDescendant(ImmutableList<String> path);
+    Node getDescendant(Path path);
+    Node replaceDescendant(Path path, ChildNodeSupplier nodeSupplier);
+    void removeDescendant(Path path);
 
-    String getAbsolutePath();
+    Path getAbsolutePath();
     Type getType();
 
     FileSystemLocationSnapshot getSnapshot();
 
-    default String getChildAbsolutePath(String name) {
-        return getAbsolutePath() + File.separatorChar + name;
+    default Path getChildAbsolutePath(Path name) {
+        return getAbsolutePath().resolve(name);
     }
 
     enum Type {

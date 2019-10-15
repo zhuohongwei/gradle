@@ -16,51 +16,20 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 
-import javax.annotation.Nullable;
-import java.io.File;
+import java.nio.file.Path;
 
 public class RootNode extends AbstractMutableNode {
 
     @Override
-    public String getAbsolutePath() {
-        return "";
+    public Path getAbsolutePath() {
+        throw new UnsupportedOperationException("Root does not have a path");
     }
 
     @Override
     public Type getType() {
         return Type.DIRECTORY;
-    }
-
-    @Nullable
-    @Override
-    public Node getDescendant(ImmutableList<String> path) {
-        String childName = path.get(0);
-        if (childName.isEmpty()) {
-            return new EmptyPathRootNode(this).getDescendant(path.subList(1, path.size()));
-        }
-        return super.getDescendant(path);
-    }
-
-    @Override
-    public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
-        String childName = path.get(0);
-        if (childName.isEmpty()) {
-            return new EmptyPathRootNode(this).replaceDescendant(path.subList(1, path.size()), nodeSupplier);
-        }
-        return super.replaceDescendant(path, nodeSupplier);
-    }
-
-    @Override
-    public void removeDescendant(ImmutableList<String> path) {
-        String childName = path.get(0);
-        if (childName.isEmpty()) {
-            new EmptyPathRootNode(this).removeDescendant(path.subList(1, path.size()));
-        } else {
-            super.removeDescendant(path);
-        }
     }
 
     @Override
@@ -69,56 +38,11 @@ public class RootNode extends AbstractMutableNode {
     }
 
     @Override
-    public String getChildAbsolutePath(String name) {
-        return name;
+    public Path getChildAbsolutePath(Path name) {
+        throw new UnsupportedOperationException("Cannot calculate path for root");
     }
 
     public void clear() {
         getChildren().clear();
-    }
-
-    private static class EmptyPathRootNode implements Node {
-        private final RootNode delegate;
-
-        public EmptyPathRootNode(RootNode delegate) {
-            this.delegate = delegate;
-        }
-
-        @Nullable
-        @Override
-        public Node getDescendant(ImmutableList<String> path) {
-            return delegate.getDescendant(path);
-        }
-
-        @Override
-        public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
-            return delegate.replace(path, nodeSupplier, this);
-        }
-
-        @Override
-        public void removeDescendant(ImmutableList<String> path) {
-            delegate.removeDescendant(path);
-        }
-
-        @Override
-        public String getAbsolutePath() {
-            return "/";
-        }
-
-        @Override
-        public String getChildAbsolutePath(String name) {
-            return File.separatorChar + name;
-        }
-
-        @Override
-        public Type getType() {
-            return delegate.getType();
-        }
-
-        @Override
-        public FileSystemLocationSnapshot getSnapshot() {
-            return delegate.getSnapshot();
-        }
-
     }
 }

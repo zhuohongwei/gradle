@@ -16,64 +16,66 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
-
 import javax.annotation.Nullable;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractMutableNode implements Node {
-    private final ConcurrentHashMap<String, Node> children = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Path, Node> children = new ConcurrentHashMap<>();
 
     @Nullable
     @Override
-    public Node getDescendant(ImmutableList<String> path) {
-        if (path.isEmpty()) {
+    public Node getDescendant(Path path) {
+        if (path.getNameCount() == 0) {
             return this;
         }
-        String childName = path.get(0);
+        Path childName = path.getName(0);
         Node child = children.get(childName);
-        return child != null
-            ? child.getDescendant(path.subList(1, path.size()))
-            : null;
+        if (child == null) {
+            return null;
+        }
+        return path.getNameCount() == 1
+            ? child
+            : child.getDescendant(path.subpath(1, path.getNameCount()));
     }
 
     @Override
-    public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
+    public Node replaceDescendant(Path path, ChildNodeSupplier nodeSupplier) {
         return replace(path, nodeSupplier, this);
     }
 
-    protected Node replace(ImmutableList<String> path, ChildNodeSupplier nodeSupplier, Node parent) {
-        if (path.isEmpty()) {
-            throw new UnsupportedOperationException("Can't replace current node");
+    protected Node replace(Path path, ChildNodeSupplier nodeSupplier, Node parent) {
+        if (path.getNameCount() == 0) {
+            return this;
         }
-        boolean directChild = path.size() == 1;
-        String childName = path.get(0);
+        boolean directChild = path.getNameCount() == 1;
+        Path childName = path.getName(0);
         if (directChild) {
             return children.compute(childName, (key, current) -> nodeSupplier.create(parent));
         }
-        return children.computeIfAbsent(childName, key -> new DefaultNode(childName, parent))
-            .replaceDescendant(path.subList(1, path.size()), nodeSupplier);
+        return children.computeIfAbsent(childName, key -> new DefaultNode(path.isAbsolute() ? path.getRoot().resolve(childName) : parent.getAbsolutePath().resolve(childName)))
+            .replaceDescendant(path.subpath(1, path.getNameCount()), nodeSupplier);
     }
 
     @Override
-    public void removeDescendant(ImmutableList<String> path) {
-        if (path.isEmpty()) {
+    public void removeDescendant(Path path) {
+        if (path.getNameCount() == 0) {
             throw new UnsupportedOperationException("Can't remove current node");
         }
-        boolean directChild = path.size() == 1;
-        String childName = path.get(0);
+        boolean directChild = path.getNameCount() == 1;
+        Path childName = path.getName(0);
         if (directChild) {
             children.remove(childName);
         } else {
             Node child = children.get(childName);
             if (child != null) {
-                child.removeDescendant(path.subList(1, path.size()));
+                child.removeDescendant(path.subpath(1, path.getNameCount()));
             }
         }
     }
 
-    public Map<String, Node> getChildren() {
+    public Map<Path, Node> getChildren() {
         return children;
     }
 }

@@ -39,6 +39,8 @@ import org.gradle.internal.vfs.VirtualFileSystem;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -72,7 +74,7 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem, Closeable {
 
     @Override
     public <T> Optional<T> readRegularFileContentHash(String location, Function<HashCode, T> visitor) {
-        ImmutableList<String> pathSegments = getPathSegments(location);
+        Path pathSegments = Paths.get(location);
         Node existingChild = root.getDescendant(pathSegments);
         if (existingChild != null && existingChild.getType() != Node.Type.UNKNOWN) {
             return mapRegularFileContentHash(visitor, existingChild);
@@ -133,7 +135,7 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem, Closeable {
             case RegularFile:
                 return new RegularFileNode(parent, (RegularFileSnapshot) snapshot);
             case Missing:
-                return new MissingFileNode(parent, snapshot.getAbsolutePath(), snapshot.getName());
+                return new MissingFileNode(parent, Paths.get(snapshot.getAbsolutePath()), Paths.get(snapshot.getName()));
             case Directory:
                 return new CompleteDirectoryNode(parent, (DirectorySnapshot) snapshot);
             default:
@@ -142,7 +144,7 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem, Closeable {
     }
 
     private Node readLocation(String location) {
-        ImmutableList<String> pathSegments = getPathSegments(location);
+        Path pathSegments = Paths.get(location);
         Node existingChild = root.getDescendant(pathSegments);
         if (existingChild != null && existingChild.getType() != Node.Type.UNKNOWN) {
             return existingChild;
@@ -176,7 +178,7 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem, Closeable {
     @Override
     public void update(Iterable<String> locations, Runnable action) {
         locations.forEach(location -> {
-            ImmutableList<String> pathSegments = getPathSegments(location);
+            Path pathSegments = Paths.get(location);
             if (root.getDescendant(pathSegments) != null) {
                 mutateVirtualFileSystem(() -> root.removeDescendant(pathSegments));
             }
@@ -194,7 +196,7 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem, Closeable {
 
     @Override
     public void updateWithKnownSnapshot(String location, FileSystemLocationSnapshot snapshot) {
-        ImmutableList<String> pathSegments = getPathSegments(location);
+        Path pathSegments = Paths.get(location);
         mutateVirtualFileSystem(() -> {
             root.replaceDescendant(
                 pathSegments,

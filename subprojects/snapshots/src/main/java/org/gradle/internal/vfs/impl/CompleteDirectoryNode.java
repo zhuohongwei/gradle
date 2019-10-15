@@ -16,12 +16,13 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.DirectorySnapshot;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,33 +44,35 @@ public class CompleteDirectoryNode extends AbstractSnapshotNode {
 
     @Nonnull
     @Override
-    public Node getDescendant(ImmutableList<String> path) {
+    public Node getDescendant(Path path) {
         return getChildOrMissing(path);
     }
 
-    private Node getChildOrMissing(ImmutableList<String> path) {
-        if (path.isEmpty()) {
+    private Node getChildOrMissing(Path path) {
+        if (path.getNameCount() == 0) {
             return this;
         }
-        String childName = path.get(0);
-        ImmutableList<String> remainingPath = path.subList(1, path.size());
-        FileSystemLocationSnapshot fileSystemLocationSnapshot = childrenMap.get(childName);
-        return fileSystemLocationSnapshot != null
-            ? convertToNode(fileSystemLocationSnapshot, this).getDescendant(remainingPath)
-            : new MissingFileNode(this, getChildAbsolutePath(childName), childName).getDescendant(remainingPath);
+        Path childName = path.getName(0);
+        FileSystemLocationSnapshot fileSystemLocationSnapshot = childrenMap.get(childName.toString());
+        Node childNode = fileSystemLocationSnapshot != null
+            ? convertToNode(fileSystemLocationSnapshot, this)
+            : new MissingFileNode(this, getChildAbsolutePath(childName), childName);
+        return path.getNameCount() == 1
+            ? childNode
+            : childNode.getDescendant(path.subpath(1, path.getNameCount()));
     }
 
 
     @Override
-    public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
-        if (path.isEmpty()) {
+    public Node replaceDescendant(Path path, ChildNodeSupplier nodeSupplier) {
+        if (path.getNameCount() == 0) {
             throw new IllegalArgumentException("Cannot replace child with empty path");
         }
-        boolean directChild = path.size() == 1;
-        String childName = path.get(0);
-        FileSystemLocationSnapshot snapshot = childrenMap.get(childName);
+        boolean directChild = path.getNameCount() == 1;
+        Path childName = path.getName(0);
+        FileSystemLocationSnapshot snapshot = childrenMap.get(childName.toString());
         if (snapshot == null) {
-            return new MissingFileNode(this, getChildAbsolutePath(childName), childName).getDescendant(path.subList(1, path.size()));
+            return new MissingFileNode(this, getChildAbsolutePath(childName), childName).getDescendant(path.subpath(1, path.getNameCount()));
         }
         Node currentChild = convertToNode(snapshot, this);
         if (directChild) {
@@ -81,48 +84,48 @@ public class CompleteDirectoryNode extends AbstractSnapshotNode {
             return replacedChild;
         }
 
-        return currentChild.replaceDescendant(path.subList(1, path.size()), nodeSupplier);
+        return currentChild.replaceDescendant(path.subpath(1, path.getNameCount()), nodeSupplier);
     }
 
     @Override
-    public void removeDescendant(ImmutableList<String> path) {
-        if (path.isEmpty()) {
+    public void removeDescendant(Path path) {
+        if (path.getNameCount() == 0) {
             throw new IllegalArgumentException("Cannot remove current node");
         }
 
-        FileSystemLocationSnapshot childSnapshot = childrenMap.get(path.get(0));
-        boolean directChild = path.size() == 1;
+        FileSystemLocationSnapshot childSnapshot = childrenMap.get(path.getName(0).toString());
+        boolean directChild = path.getNameCount() == 1;
         if (directChild || childSnapshot == null) {
             replaceByMutableNodeWithReplacedSnapshot(childSnapshot, null);
         } else {
-            convertToNode(childSnapshot, this).removeDescendant(path.subList(1, path.size()));
+            convertToNode(childSnapshot, this).removeDescendant(path.subpath(1, path.getNameCount()));
         }
     }
 
     protected void replaceByMutableNodeWithReplacedSnapshot(@Nullable FileSystemLocationSnapshot snapshot, @Nullable Node replacement) {
-        DefaultNode replacementForCurrentNode = new DefaultNode(directorySnapshot.getName(), parent);
+        DefaultNode replacementForCurrentNode = new DefaultNode(Paths.get(directorySnapshot.getAbsolutePath()));
         directorySnapshot.getChildren().forEach(childSnapshot -> {
             if (childSnapshot != snapshot) {
                 replacementForCurrentNode.addChild(
-                    childSnapshot.getName(),
+                    Paths.get(childSnapshot.getName()),
                     convertToNode(childSnapshot, replacementForCurrentNode)
                 );
             } else if (snapshot != null && replacement != null) {
                 replacementForCurrentNode.addChild(
-                    snapshot.getName(),
+                    Paths.get(snapshot.getName()),
                     replacement
                 );
             }
         });
         parent.replaceDescendant(
-            ImmutableList.of(directorySnapshot.getName()),
+            Paths.get(directorySnapshot.getName()),
             parent -> replacementForCurrentNode
         );
     }
 
     @Override
-    public String getAbsolutePath() {
-        return directorySnapshot.getAbsolutePath();
+    public Path getAbsolutePath() {
+        return Paths.get(directorySnapshot.getAbsolutePath());
     }
 
     @Override

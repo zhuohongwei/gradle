@@ -16,40 +16,46 @@
 
 package org.gradle.internal.vfs.impl
 
-import com.google.common.collect.ImmutableList
+
+import org.gradle.util.Requires
+import org.gradle.util.TestPrecondition
 import spock.lang.Specification
+
+import java.nio.file.Paths
 
 class RootNodeTest extends Specification {
 
+    @Requires(TestPrecondition.UNIX)
     def "can add unix style children"() {
         def node = new RootNode()
 
         def directChild = node
-            .replaceDescendant(ImmutableList.of("", "var"), { parent -> new DefaultNode("var", parent) })
-        def existingDirectChild = node.getDescendant(ImmutableList.of("", "var"))
+            .replaceDescendant(Paths.get("/var"), { parent -> new DefaultNode(Paths.get("/var")) })
+        def existingDirectChild = node.getDescendant(Paths.get("/var"))
         def childPath = "${File.separator}var"
         expect:
-        directChild.absolutePath == childPath
-        existingDirectChild.absolutePath == childPath
+        directChild.absolutePath.toString() == childPath
+        existingDirectChild.absolutePath.toString() == childPath
         directChild
-            .replaceDescendant(ImmutableList.of("log")) { parent -> new DefaultNode("log", parent) }
-            .absolutePath == ["", "var", "log"].join(File.separator)
-        existingDirectChild.getDescendant(ImmutableList.of("log")).absolutePath == ["", "var", "log"].join(File.separator)
-        node.getDescendant(ImmutableList.of("", "var", "log")).absolutePath == ["", "var", "log"].join(File.separator)
+            .replaceDescendant(Paths.get("log")) { parent -> new DefaultNode(Paths.get("/var/log")) }
+            .absolutePath.toString() == ["", "var", "log"].join(File.separator)
+        existingDirectChild.getDescendant(Paths.get("log")).absolutePath.toString() == ["", "var", "log"].join(File.separator)
+        node.getDescendant(Paths.get("/var/log")).absolutePath.toString() == ["", "var", "log"].join(File.separator)
     }
 
+    @Requires(TestPrecondition.WINDOWS)
     def "can add Windows style children"() {
         def node = new RootNode()
 
         def directChild = node
-            .replaceDescendant(ImmutableList.of("C:")) { parent -> new DefaultNode("C:", parent) }
-        def existingDirectChild = node.getDescendant(ImmutableList.of("C:"))
+            .replaceDescendant(Paths.get("C:")) { parent -> new DefaultNode(Paths.get("C:")) }
+        def existingDirectChild = node.getDescendant(Paths.get("C:"))
         expect:
-        directChild.absolutePath == "C:"
-        existingDirectChild.absolutePath == "C:"
+        directChild.absolutePath.toString() == "C:"
+        existingDirectChild.absolutePath.toString() == "C:"
         directChild
-            .replaceDescendant(ImmutableList.of("Users")) { parent -> new DefaultNode("Users", parent) }
-            .absolutePath == ["C:", "Users"].join(File.separator)
-        existingDirectChild.getDescendant(ImmutableList.of("Users")).absolutePath == ["C:", "Users"].join(File.separator)
+            .replaceDescendant(Paths.get("Users")) { parent -> new DefaultNode(Paths.get("C:\\Users")) }
+            .absolutePath.toString() == ["C:", "Users"].join(File.separator)
+        existingDirectChild.getDescendant(Paths.get("Users")).absolutePath.toString() == ["C:", "Users"].join(File.separator)
     }
 }

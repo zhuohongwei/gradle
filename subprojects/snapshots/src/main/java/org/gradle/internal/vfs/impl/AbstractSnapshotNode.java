@@ -16,25 +16,27 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.DirectorySnapshot;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.RegularFileSnapshot;
 
 import javax.annotation.Nonnull;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public abstract class AbstractSnapshotNode implements Node {
 
     @Nonnull
     @Override
-    public abstract Node getDescendant(ImmutableList<String> path);
+    public abstract Node getDescendant(Path path);
 
-    protected Node getMissingDescendant(ImmutableList<String> path) {
-        if (path.isEmpty()) {
+    protected Node getMissingDescendant(Path path) {
+        if (path.getNameCount() == 0) {
             return this;
         }
-        String childName = path.get(0);
-        return new MissingFileNode(this, getChildAbsolutePath(childName), childName).getMissingDescendant(path.subList(1, path.size()));
+        Path childName = path.getName(0);
+        MissingFileNode missingFileNode = new MissingFileNode(this, getChildAbsolutePath(childName), childName);
+        return path.getNameCount() == 1 ? missingFileNode : missingFileNode.getMissingDescendant(path.subpath(1, path.getNameCount()));
     }
 
     public static AbstractSnapshotNode convertToNode(FileSystemLocationSnapshot snapshot, Node parent) {
@@ -44,7 +46,7 @@ public abstract class AbstractSnapshotNode implements Node {
             case Directory:
                 return new CompleteDirectoryNode(parent, (DirectorySnapshot) snapshot);
             case Missing:
-                return new MissingFileNode(parent, snapshot.getAbsolutePath(), snapshot.getName());
+                return new MissingFileNode(parent, Paths.get(snapshot.getAbsolutePath()), Paths.get(snapshot.getName()));
             default:
                 throw new AssertionError("Unknown type: " + snapshot.getType());
         }

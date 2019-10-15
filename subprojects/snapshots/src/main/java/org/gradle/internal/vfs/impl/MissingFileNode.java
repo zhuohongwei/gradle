@@ -16,19 +16,19 @@
 
 package org.gradle.internal.vfs.impl;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.MissingFileSnapshot;
 
 import javax.annotation.Nonnull;
+import java.nio.file.Path;
 
 public class MissingFileNode extends AbstractSnapshotNode {
 
     private final Node parent;
-    private final String absolutePath;
-    private final String name;
+    private final Path absolutePath;
+    private final Path name;
 
-    public MissingFileNode(Node parent, String absolutePath, String name) {
+    public MissingFileNode(Node parent, Path absolutePath, Path name) {
         this.parent = parent;
         this.absolutePath = absolutePath;
         this.name = name;
@@ -36,22 +36,22 @@ public class MissingFileNode extends AbstractSnapshotNode {
 
     @Nonnull
     @Override
-    public Node getDescendant(ImmutableList<String> path) {
+    public Node getDescendant(Path path) {
         return getMissingDescendant(path);
     }
 
     @Override
-    public Node replaceDescendant(ImmutableList<String> path, ChildNodeSupplier nodeSupplier) {
+    public Node replaceDescendant(Path path, ChildNodeSupplier nodeSupplier) {
         return getMissingDescendant(path);
     }
 
     @Override
-    public void removeDescendant(ImmutableList<String> path) {
-        parent.removeDescendant(ImmutableList.of(name));
+    public void removeDescendant(Path path) {
+        parent.removeDescendant(name);
     }
 
     @Override
-    public String getAbsolutePath() {
+    public Path getAbsolutePath() {
         return absolutePath;
     }
 
@@ -62,7 +62,7 @@ public class MissingFileNode extends AbstractSnapshotNode {
 
     @Override
     public FileSystemLocationSnapshot getSnapshot() {
-        return new MissingFileSnapshot(absolutePath, name);
+        return new MissingFileSnapshot(absolutePath.toString(), name.toString());
     }
 
 }
