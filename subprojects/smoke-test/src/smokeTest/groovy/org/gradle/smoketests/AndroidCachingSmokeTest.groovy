@@ -18,14 +18,12 @@ package org.gradle.smoketests
 
 import org.eclipse.jgit.api.Git
 import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
-import spock.lang.Ignore
 
-@Ignore("Unexpectedly failing - 17-10-19 - LD")
 class AndroidCachingSmokeTest extends AbstractSmokeTest {
 
     def "can cache Santa Tracker Android application"() {
         def testRepoUri = "https://github.com/gradle/android-relocation-test"
-        def testRepoTarget = "63c4e4c25db4a21e6694fe3e31f20f77da403b6a"
+        def testRepoTarget = "9bf38c590e4b08dc65cddc47ca9989b5531f7b55"
 
         def projectDir = testProjectDir.root
 
