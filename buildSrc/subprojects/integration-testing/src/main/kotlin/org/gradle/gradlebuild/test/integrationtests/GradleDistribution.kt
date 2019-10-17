@@ -35,7 +35,7 @@ open class GradleDistribution(project: Project, gradleHomeDir: DirectoryProperty
     }
 
     private
-    val plugins: ConfigurableFileTree = project.fileTree(gradleHomeDir.dir("lib")).apply {
+    val plugins: ConfigurableFileTree = project.fileTree(gradleHomeDir.dir("lib/plugins")).apply {
         include("*.jar")
     }
 

@@ -19,7 +19,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath("com.gradle:testdistribution-gradle-plugin:0.0.2-prerelease-oehme_distributed_testing_dogfood")
+        classpath("com.gradle:testdistribution-gradle-plugin:0.0.2-prerelease-master")
     }
 }
 apply plugin: 'java'
