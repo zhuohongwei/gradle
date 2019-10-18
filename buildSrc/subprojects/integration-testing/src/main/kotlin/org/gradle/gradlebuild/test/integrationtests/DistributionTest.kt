@@ -24,6 +24,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
@@ -59,6 +60,10 @@ open class DistributionTest : Test() {
     @get:Internal
     @get:Option(option = "rerun", description = "Always rerun the task")
     val rerun: Property<Boolean> = project.objects.property(Boolean::class.javaObjectType).convention(false)
+
+    @get:InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    val sourceCodeForSampleTests = project.files("src/main")
 
     init {
         dependsOn(Callable { if (binaryDistributions.distributionsRequired) listOf("all", "bin", "src").map { ":distributions:${it}Zip" } else null })
