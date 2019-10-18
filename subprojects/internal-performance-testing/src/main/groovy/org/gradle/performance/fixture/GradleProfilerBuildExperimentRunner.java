@@ -120,7 +120,7 @@ public class GradleProfilerBuildExperimentRunner extends AbstractBuildExperiment
                 scenarioReporter.accept(invocationResult);
 
                 try {
-                    new ProcessBuilder("jmap", "-dump:format=b,file=/home/tcagent1/agent/work/a16b87e0a70f8c6e/" + currentIteration + ".hprof", invocationResult.getDaemonPid())
+                    new ProcessBuilder("jmap", "-dump:format=b,file=/home/tcagent1/agent/work/a16b87e0a70f8c6e/" + invocationResult.getDaemonPid() + "-" + currentIteration + ".hprof", invocationResult.getDaemonPid())
                         .inheritIO()
                         .start().waitFor();
                 } catch (Exception e) {
