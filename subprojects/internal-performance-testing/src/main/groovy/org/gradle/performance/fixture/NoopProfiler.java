@@ -18,8 +18,13 @@ package org.gradle.performance.fixture;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class NoopProfiler extends Profiler {
+    private final AtomicInteger counter = new AtomicInteger(0);
+    private final PidInstrumentation pid = new PidInstrumentation();
+
+
     @Override
     public List<String> getAdditionalJvmOpts(BuildExperimentSpec spec) {
         return Collections.emptyList();
@@ -32,7 +37,7 @@ class NoopProfiler extends Profiler {
 
     @Override
     public List<String> getAdditionalGradleArgs(BuildExperimentSpec spec) {
-        return Collections.emptyList();
+        return pid.getGradleArgs();
     }
 
     @Override
@@ -42,6 +47,12 @@ class NoopProfiler extends Profiler {
 
     @Override
     public void stop(BuildExperimentSpec spec) {
-
+        try {
+            new ProcessBuilder("jmap", "-dump:format=b,file=/home/tcagent1/agent/work/a16b87e0a70f8c6e/" + pid.getPid() + "-" + counter.getAndIncrement() + ".hprof", pid.getPid())
+                .inheritIO()
+                .start().waitFor();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
     }
 }
