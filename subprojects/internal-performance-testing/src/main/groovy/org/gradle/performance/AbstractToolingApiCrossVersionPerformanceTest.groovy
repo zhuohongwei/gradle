@@ -37,6 +37,7 @@ import org.gradle.performance.categories.PerformanceRegressionTest
 import org.gradle.performance.fixture.BuildExperimentSpec
 import org.gradle.performance.fixture.CrossVersionPerformanceTestRunner
 import org.gradle.performance.fixture.InvocationSpec
+import org.gradle.performance.fixture.NoopProfiler
 import org.gradle.performance.fixture.OperationTimer
 import org.gradle.performance.fixture.PerformanceTestConditions
 import org.gradle.performance.fixture.PerformanceTestDirectoryProvider
@@ -275,6 +276,7 @@ abstract class AbstractToolingApiCrossVersionPerformanceTest extends Specificati
                     versionResults.add(timer.measure {
                         toolingApi.withConnection(wrapAction(action, experimentSpec))
                     })
+                    ((NoopProfiler) profiler).dump(n)
                 }
             }
         }

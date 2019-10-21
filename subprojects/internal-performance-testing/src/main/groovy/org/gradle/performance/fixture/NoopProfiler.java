@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class NoopProfiler extends Profiler {
+public class NoopProfiler extends Profiler {
     private final AtomicInteger counter = new AtomicInteger(0);
     private final PidInstrumentation pid = new PidInstrumentation();
 
@@ -42,17 +42,19 @@ class NoopProfiler extends Profiler {
 
     @Override
     public void start(BuildExperimentSpec spec) {
-
     }
 
     @Override
     public void stop(BuildExperimentSpec spec) {
+    }
+
+    public void dump(int i) {
         try {
-            new ProcessBuilder("jmap", "-dump:format=b,file=/home/tcagent1/agent/work/a16b87e0a70f8c6e/" + pid.getPid() + "-" + counter.getAndIncrement() + ".hprof", pid.getPid())
+            new ProcessBuilder("jmap", "-dump:format=b,file=/home/tcagent1/agent/work/a16b87e0a70f8c6e/" + pid.getPid() + "-" + i + ".hprof", pid.getPid())
                 .inheritIO()
                 .start().waitFor();
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 }

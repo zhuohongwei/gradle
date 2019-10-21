@@ -98,6 +98,7 @@ public class BuildExperimentRunner {
             System.out.println(String.format("Test run #%s", i + 1));
             BuildExperimentInvocationInfo info = new DefaultBuildExperimentInvocationInfo(experiment, projectDir, Phase.MEASUREMENT, i + 1, invocationCount);
             runOnce(session, results, info);
+            ((NoopProfiler) profiler).dump(i);
         }
     }
 
