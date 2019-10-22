@@ -37,8 +37,25 @@ public class DefaultWellKnownFileLocations implements WellKnownFileLocations {
         this.immutableLocations = immutableLocations;
     }
 
+    private DefaultWellKnownFileLocations(FileHierarchySet immutableLocations) {
+        this.immutableLocations = immutableLocations;
+    }
+
     @Override
     public boolean isImmutable(String path) {
         return immutableLocations.contains(path);
+    }
+
+    @Override
+    public WellKnownFileLocations add(Iterable<File> newLocations) {
+        FileHierarchySet immutableLocations = this.immutableLocations;
+        for (File file : newLocations) {
+            immutableLocations = immutableLocations.plus(file);
+        }
+        return new DefaultWellKnownFileLocations(immutableLocations);
+    }
+
+    public FileHierarchySet getImmutableLocations() {
+        return immutableLocations;
     }
 }

@@ -23,6 +23,7 @@ plugins {
 
 dependencies {
     implementation(project(":baseServices"))
+    implementation(project(":snapshots"))
     implementation(project(":logging"))
     implementation(project(":native"))
     implementation(project(":processServices"))

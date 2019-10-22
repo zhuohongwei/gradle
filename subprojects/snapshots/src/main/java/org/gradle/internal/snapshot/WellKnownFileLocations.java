@@ -16,10 +16,13 @@
 
 package org.gradle.internal.snapshot;
 
+import java.io.File;
+
 /**
  * This service can tell whether a file is in a location controlled by Gradle,
  * which usually allows for more optimization than user-provided files.
  */
 public interface WellKnownFileLocations {
     boolean isImmutable(String path);
+    WellKnownFileLocations add(Iterable<File> newLocations);
 }

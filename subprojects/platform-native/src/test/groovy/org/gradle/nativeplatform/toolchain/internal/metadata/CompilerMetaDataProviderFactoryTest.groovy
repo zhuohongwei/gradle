@@ -16,6 +16,7 @@
 
 package org.gradle.nativeplatform.toolchain.internal.metadata
 
+import org.gradle.internal.vfs.impl.RoutingVirtualFileSystem
 import org.gradle.process.ExecResult
 import org.gradle.process.internal.ExecAction
 import org.gradle.process.internal.ExecActionFactory
@@ -27,7 +28,8 @@ class CompilerMetaDataProviderFactoryTest extends Specification {
     def execActionFactory = Mock(ExecActionFactory)
     def execAction = Mock(ExecAction)
     def execResult = Mock(ExecResult)
-    def factory = new CompilerMetaDataProviderFactory(execActionFactory)
+    def virtualFileSystem = Mock(RoutingVirtualFileSystem)
+    def factory = new CompilerMetaDataProviderFactory(execActionFactory, virtualFileSystem)
 
     @Unroll
     def "caches result of actual #compiler metadata provider"() {

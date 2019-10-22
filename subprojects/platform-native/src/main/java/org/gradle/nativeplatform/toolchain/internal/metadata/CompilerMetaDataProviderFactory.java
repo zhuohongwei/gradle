@@ -17,6 +17,8 @@
 package org.gradle.nativeplatform.toolchain.internal.metadata;
 
 import org.gradle.api.Action;
+import org.gradle.internal.vfs.VirtualFileSystem;
+import org.gradle.internal.vfs.impl.RoutingVirtualFileSystem;
 import org.gradle.nativeplatform.toolchain.internal.gcc.metadata.GccMetadata;
 import org.gradle.nativeplatform.toolchain.internal.gcc.metadata.GccMetadataProvider;
 import org.gradle.nativeplatform.toolchain.internal.swift.metadata.SwiftcMetadata;
@@ -34,10 +36,11 @@ public class CompilerMetaDataProviderFactory {
     private final CachingCompilerMetaDataProvider<GccMetadata> clang;
     private final CachingCompilerMetaDataProvider<SwiftcMetadata> swiftc;
 
-    public CompilerMetaDataProviderFactory(ExecActionFactory execActionFactory) {
-        gcc = new CachingCompilerMetaDataProvider<GccMetadata>(GccMetadataProvider.forGcc(execActionFactory));
-        clang = new CachingCompilerMetaDataProvider<GccMetadata>(GccMetadataProvider.forClang(execActionFactory));
-        swiftc = new CachingCompilerMetaDataProvider<SwiftcMetadata>(new SwiftcMetadataProvider(execActionFactory));
+    public CompilerMetaDataProviderFactory(ExecActionFactory execActionFactory, VirtualFileSystem virtualFileSystem) {
+        RoutingVirtualFileSystem routingVirtualFileSystem = (RoutingVirtualFileSystem) virtualFileSystem;
+        gcc = new CachingCompilerMetaDataProvider<>(GccMetadataProvider.forGcc(execActionFactory), routingVirtualFileSystem);
+        clang = new CachingCompilerMetaDataProvider<>(GccMetadataProvider.forClang(execActionFactory), routingVirtualFileSystem);
+        swiftc = new CachingCompilerMetaDataProvider<>(new SwiftcMetadataProvider(execActionFactory), routingVirtualFileSystem);
     }
 
     public CompilerMetaDataProvider<GccMetadata> gcc() {
@@ -54,10 +57,12 @@ public class CompilerMetaDataProviderFactory {
 
     private static class CachingCompilerMetaDataProvider<T extends CompilerMetadata> implements CompilerMetaDataProvider<T> {
         private final CompilerMetaDataProvider<T> delegate;
-        private final Map<Key, SearchResult<T>> resultMap = new HashMap<Key, SearchResult<T>>();
+        private final RoutingVirtualFileSystem routingVirtualFileSystem;
+        private final Map<Key, SearchResult<T>> resultMap = new HashMap<>();
 
-        private CachingCompilerMetaDataProvider(CompilerMetaDataProvider<T> delegate) {
+        private CachingCompilerMetaDataProvider(CompilerMetaDataProvider<T> delegate, RoutingVirtualFileSystem routingVirtualFileSystem) {
             this.delegate = delegate;
+            this.routingVirtualFileSystem = routingVirtualFileSystem;
         }
 
         @Override
@@ -70,6 +75,12 @@ public class CompilerMetaDataProviderFactory {
             if (result == null) {
                 result = delegate.getCompilerMetaData(path, configureAction);
                 resultMap.put(key, result);
+                if (result.isAvailable()) {
+                    T component = result.getComponent();
+                    if (component instanceof GccMetadata) {
+                        routingVirtualFileSystem.addImmutableLocations(((GccMetadata) component).getSystemLibraries().getIncludeDirs());
+                    }
+                }
             }
             return result;
         }
