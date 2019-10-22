@@ -16,8 +16,11 @@
 
 package org.gradle.internal.vfs.impl;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Interner;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.TreeMultiset;
 import com.google.common.util.concurrent.Striped;
 import org.gradle.internal.file.FileMetadataSnapshot;
 import org.gradle.internal.file.FileType;
@@ -63,6 +66,70 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
     private final FileHasher hasher;
     private final StripedProducerGuard<String> producingSnapshots = new StripedProducerGuard<>();
 
+    private final CacheStatistics readStatistics = new CacheStatistics();
+    private final CacheStatistics readWithFilterStatistics = new CacheStatistics();
+    private final CacheStatistics readRegularFileContentHashStatistics = new CacheStatistics();
+    private final CacheStatistics readMissingFileContentHashStatistics = new CacheStatistics();
+    private final CacheStatistics readDirectoryContentHashStatistics = new CacheStatistics();
+
+    private static class CacheStatistics {
+        private final Multiset<String> reads = TreeMultiset.create();
+        private final Multiset<String> hits = HashMultiset.create();
+        private final Multiset<String> hitsUnderLock = HashMultiset.create();
+        private final Multiset<String> misses = HashMultiset.create();
+
+        public void hit(String location) {
+            reads.add(location);
+            hits.add(location);
+        }
+
+        public FileSystemLocationSnapshot hit(FileSystemLocationSnapshot snapshot) {
+            hit(snapshot.getAbsolutePath());
+            return snapshot;
+        }
+
+        public void hitUnderLock(String location) {
+            reads.add(location);
+            hitsUnderLock.add(location);
+        }
+
+        public FileSystemLocationSnapshot hitUnderLock(FileSystemLocationSnapshot snapshot) {
+            hitUnderLock(snapshot.getAbsolutePath());
+            return snapshot;
+        }
+
+        public void miss(String location) {
+            reads.add(location);
+            misses.add(location);
+        }
+
+        public void printStatistics() {
+            System.out.println(String.format("  hit percentage/read/hit/hitUnderLock/miss %3d, %d, %d, %d, %d", getPercentage(hits.size() + hitsUnderLock.size(), reads.size()), reads.size(), hits.size(), hitsUnderLock.size(), misses.size()));
+            reads.elementSet().forEach(location ->
+                    System.out.println(String.format("    %s:  %3d, %d, %d, %d, %d", location, getPercentage(hits.count(location) + hitsUnderLock.count(location), reads.count(location)), reads.count(location), hits.count(location), hitsUnderLock.count(location), misses.count(location)))
+                );
+        }
+
+        private int getPercentage(int part, int total) {
+            if (total == 0) {
+                return 0;
+            }
+            return (part * 100) / total;
+        }
+    }
+
+    public void printStatistics() {
+        System.out.println("Reads: ");
+        readStatistics.printStatistics();
+        System.out.println("\nFiltered reads: ");
+        readWithFilterStatistics.printStatistics();
+        System.out.println("\nRegular file hash reads: ");
+        readRegularFileContentHashStatistics.printStatistics();
+        System.out.println("\nMissing file hash reads: ");
+        readMissingFileContentHashStatistics.printStatistics();
+        System.out.println("\nDirectory hash reads: ");
+        readDirectoryContentHashStatistics.printStatistics();
+    }
 
     public DefaultVirtualFileSystem(FileHasher hasher, Interner<String> stringInterner, Stat stat, String... defaultExcludes) {
         this.stat = stat;
@@ -75,14 +142,29 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
         return visitor.apply(readLocation(location));
     }
 
+    private CacheStatistics getRegularFileContentHashStatistics(FileType fileType) {
+        switch (fileType) {
+            case Directory:
+                return readDirectoryContentHashStatistics;
+            case Missing:
+                return readMissingFileContentHashStatistics;
+            case RegularFile:
+                return readRegularFileContentHashStatistics;
+            default:
+                throw new AssertionError("Unknown file type " + fileType);
+        }
+    }
+
     @Override
     public <T> Optional<T> readRegularFileContentHash(String location, Function<HashCode, T> visitor) {
         return root.get().getMetadata(location)
             .<Optional<HashCode>>flatMap(snapshot -> {
                 if (snapshot.getType() != FileType.RegularFile) {
+                    getRegularFileContentHashStatistics(snapshot.getType()).hit(location);
                     return Optional.of(Optional.empty());
                 }
                 if (snapshot instanceof FileSystemLocationSnapshot) {
+                    getRegularFileContentHashStatistics(snapshot.getType()).hit(location);
                     return Optional.of(Optional.of(((FileSystemLocationSnapshot) snapshot).getHash()));
                 }
                 return Optional.empty();
@@ -94,11 +176,17 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
                     storeStatForMissingFile(file);
                 }
                 if (stat.getType() != FileType.RegularFile) {
+                    getRegularFileContentHashStatistics(stat.getType()).miss(location);
                     return Optional.empty();
                 }
                 HashCode hash = producingSnapshots.guardByKey(location,
                     () -> root.get().getSnapshot(location)
+                        .map(snapshot -> {
+                            getRegularFileContentHashStatistics(snapshot.getType()).hitUnderLock(location);
+                            return snapshot;
+                        })
                         .orElseGet(() -> {
+                            getRegularFileContentHashStatistics(stat.getType()).miss(location);
                             HashCode hashCode = hasher.hash(file, stat.getLength(), stat.getLastModified());
                             RegularFileSnapshot snapshot = new RegularFileSnapshot(location, file.getName(), hashCode, FileMetadata.from(stat));
                             root.updateAndGet(root -> root.update(snapshot.getAbsolutePath(), snapshot));
@@ -142,24 +230,20 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
         return children;
     }
 
-    private static <T> Optional<T> mapRegularFileContentHash(Function<HashCode, T> visitor, FileSystemLocationSnapshot snapshot) {
-        return snapshot.getType() == FileType.RegularFile
-            ? Optional.ofNullable(visitor.apply(snapshot.getHash()))
-            : Optional.empty();
-    }
-
     @Override
     public void read(String location, SnapshottingFilter filter, Consumer<FileSystemLocationSnapshot> visitor) {
         if (filter.isEmpty()) {
             visitor.accept(readLocation(location));
         } else {
             FileSystemSnapshot filteredSnapshot = root.get().getSnapshot(location)
-                .filter(FileSystemLocationSnapshot.class::isInstance)
+                .map(readWithFilterStatistics::hit)
                 .map(snapshot -> FileSystemSnapshotFilter.filterSnapshot(filter.getAsSnapshotPredicate(), snapshot))
                 .orElseGet(() -> producingSnapshots.guardByKey(location,
                     () -> root.get().getSnapshot(location)
+                        .map(readWithFilterStatistics::hitUnderLock)
                         .map(snapshot -> FileSystemSnapshotFilter.filterSnapshot(filter.getAsSnapshotPredicate(), snapshot))
                         .orElseGet(() -> {
+                            readWithFilterStatistics.miss(location);
                             AtomicBoolean hasBeenFiltered = new AtomicBoolean(false);
                             FileSystemLocationSnapshot snapshot = directorySnapshotter.snapshot(location, filter.getAsDirectoryWalkerPredicate(), hasBeenFiltered);
                             if (!hasBeenFiltered.get()) {
@@ -199,8 +283,14 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
 
     private FileSystemLocationSnapshot readLocation(String location) {
         return root.get().getSnapshot(location)
+            .map(readStatistics::hit)
             .orElseGet(() -> producingSnapshots.guardByKey(location,
-                () -> root.get().getSnapshot(location).orElseGet(() -> snapshot(location)))
+                () -> root.get().getSnapshot(location)
+                    .map(readStatistics::hitUnderLock)
+                    .orElseGet(() -> {
+                        readStatistics.miss(location);
+                        return snapshot(location);
+                    }))
             );
     }
 

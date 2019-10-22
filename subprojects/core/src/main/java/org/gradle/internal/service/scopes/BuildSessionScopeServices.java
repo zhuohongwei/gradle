@@ -189,7 +189,7 @@ public class BuildSessionScopeServices extends DefaultServiceRegistry {
         WellKnownFileLocations wellKnownFileLocations,
         ListenerManager listenerManager
     ) {
-        VirtualFileSystem buildSessionsScopedVirtualFileSystem = new DefaultVirtualFileSystem(hasher, stringInterner, stat, DirectoryScanner.getDefaultExcludes());
+        DefaultVirtualFileSystem buildSessionsScopedVirtualFileSystem = new DefaultVirtualFileSystem(hasher, stringInterner, stat, DirectoryScanner.getDefaultExcludes());
 
         listenerManager.addListener(new OutputChangeListener() {
             @Override
@@ -209,6 +209,7 @@ public class BuildSessionScopeServices extends DefaultServiceRegistry {
 
             @Override
             public void beforeComplete() {
+                buildSessionsScopedVirtualFileSystem.printStatistics();
                 buildSessionsScopedVirtualFileSystem.invalidateAll();
             }
         });
