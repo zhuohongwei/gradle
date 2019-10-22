@@ -195,6 +195,10 @@ allprojects {
 }
 
 subprojects {
+
+    apply {
+        from("${project.rootDir}/gradle/useTestDistribution.gradle")
+    }
     version = rootProject.version
 
     if (project in javaProjects) {

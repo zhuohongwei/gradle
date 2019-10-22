@@ -19,9 +19,7 @@ import org.gradle.gradlebuild.unittestandcompile.ModuleType
 plugins {
     `java-library`
 }
-apply {
-    from("${project.rootDir}/gradle/useTestDistribution.gradle")
-}
+
 dependencies {
     implementation(project(":baseServices"))
     implementation(project(":logging"))

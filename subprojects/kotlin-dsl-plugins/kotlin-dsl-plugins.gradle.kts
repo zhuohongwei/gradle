@@ -126,6 +126,7 @@ bundledGradlePlugin(
 val integTestTasks: DomainObjectCollection<IntegrationTest> by extra
 integTestTasks.configureEach {
     dependsOn("publishPluginsToTestRepository")
+    inputs.files("build/repository")
 }
 
 // TODO:kotlin-dsl investigate

@@ -36,6 +36,8 @@ gradlebuildJava {
 val integTestTasks: DomainObjectCollection<IntegrationTest> by extra
 integTestTasks.configureEach {
     libsRepository.required = true
+    inputs.files("../core/src/main")
+    inputs.files("../core-api/src/main")
 }
 
 testFilesCleanup {

@@ -158,6 +158,7 @@ class UnitTestAndCompilePlugin : Plugin<Project> {
             testImplementation(testLibrary("spock"))
             testRuntimeOnly(testLibrary("bytebuddy"))
             testRuntimeOnly(library("objenesis"))
+            testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.5.2")
         }
     }
 
@@ -205,6 +206,7 @@ class UnitTestAndCompilePlugin : Plugin<Project> {
     private
     fun Project.configureTests() {
         tasks.withType<Test>().configureEach {
+            useJUnitPlatform()
             maxParallelForks = project.maxParallelForks
 
             configureJvmForTest()

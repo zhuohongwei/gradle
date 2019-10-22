@@ -66,6 +66,9 @@ tasks {
     val integTestTasks: DomainObjectCollection<IntegrationTest> by project.extra
     integTestTasks.configureEach {
         dependsOn(testEnvironment)
+        pluginBundles.forEach {
+            inputs.files(project(it).files("build/repository"))
+        }
     }
 
     val writeFuturePluginVersions by registering {

@@ -20,7 +20,6 @@ plugins {
     gradlebuild.`strict-compile`
     gradlebuild.classycle
 }
-
 dependencies {
     implementation(project(":baseServices"))
     implementation(project(":logging"))

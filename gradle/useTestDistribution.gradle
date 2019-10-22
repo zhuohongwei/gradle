@@ -22,24 +22,22 @@ buildscript {
         classpath("com.gradle:testdistribution-gradle-plugin:0.0.2-prerelease-master")
     }
 }
-apply plugin: 'java'
-apply plugin: com.gradle.testdistribution.gradle.plugin.TestDistributionPlugin
 
-dependencies {
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.3.1")
-}
+plugins.withId("java") {
+    apply plugin: com.gradle.testdistribution.gradle.plugin.TestDistributionPlugin
 
-tasks.withType(Test).configureEach {
-    useJUnitPlatform()
-    testLogging {
-        events("PASSED", "FAILED", "SKIPPED")
-        displayGranularity = 0
-    }
-    distribution {
-        enabled = true
-        useLocalExecutor = false
-        server {
-            url = uri("https://localhost:5080")
+    tasks.withType(Test).configureEach {
+        testLogging {
+            events("PASSED", "FAILED", "SKIPPED")
+            displayGranularity = 0
+        }
+        distribution {
+            enabled = true
+            useLocalExecutor = false
+            server {
+                url = uri("https://localhost:5080")
+            }
         }
     }
 }
+

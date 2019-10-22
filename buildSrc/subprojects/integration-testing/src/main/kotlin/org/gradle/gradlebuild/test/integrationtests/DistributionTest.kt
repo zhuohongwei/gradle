@@ -157,12 +157,8 @@ class BinaryDistributionsEnvironmentProvider(private val internalDistributions: 
     @get:Optional
     val distributions
         get() =
-            if (internalDistributions.distributionsRequired) internalDistributions
+            if (internalDistributions.binZipRequired || internalDistributions.distributionsRequired) internalDistributions
             else null
-
-    @get:Input
-    val binZipRequired
-        get() = internalDistributions.binZipRequired
 
     override fun asArguments() =
         if (internalDistributions.binZipRequired || internalDistributions.distributionsRequired) {
