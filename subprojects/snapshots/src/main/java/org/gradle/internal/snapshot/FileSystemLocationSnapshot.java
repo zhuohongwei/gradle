@@ -20,6 +20,7 @@ import org.gradle.internal.file.FileType;
 import org.gradle.internal.hash.HashCode;
 
 import java.util.Comparator;
+import java.util.Optional;
 
 /**
  * A snapshot of a single location on the file system.
@@ -65,4 +66,6 @@ public interface FileSystemLocationSnapshot extends FileSystemSnapshot {
      * Whether the content and the metadata (modification date) of the current snapshot is the same as for the given one.
      */
     boolean isContentAndMetadataUpToDate(FileSystemLocationSnapshot other);
+
+    Optional<FileSystemLocationSnapshot> getChild(String filePath, int offset);
 }

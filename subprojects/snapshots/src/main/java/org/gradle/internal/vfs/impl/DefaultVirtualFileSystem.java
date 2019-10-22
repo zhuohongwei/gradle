@@ -34,6 +34,15 @@ import org.gradle.internal.snapshot.impl.FileSystemSnapshotFilter;
 import org.gradle.internal.vfs.VirtualFileSystem;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,9 +78,11 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
                 File file = new File(location);
                 FileMetadataSnapshot stat = this.stat.stat(file);
                 if (stat.getType() == FileType.Missing) {
-                    root.updateAndGet(root -> root.update(new MissingFileSnapshot(location, file.getName())));
+                    File parentFile = file.getParentFile();
+                    FileMetadataSnapshot parentStat = this.stat.stat(parentFile);
+                    FileSystemLocationSnapshot snapshot = determinePartialSnapshotFromStat(parentFile, parentStat);
+                    root.updateAndGet(root -> root.update(snapshot));
                 }
-                // TODO: We used to cache the stat here
                 if (stat.getType() != FileType.RegularFile) {
                     return Optional.empty();
                 }
@@ -85,6 +96,36 @@ public class DefaultVirtualFileSystem implements VirtualFileSystem {
                         }).getHash());
                 return Optional.ofNullable(visitor.apply(hash));
             });
+    }
+
+    private FileSystemLocationSnapshot determinePartialSnapshotFromStat(File file, FileMetadataSnapshot stat) {
+        switch (stat.getType()) {
+            case Missing:
+                return new MissingFileSnapshot(file.getAbsolutePath(), file.getName());
+            case RegularFile:
+                return new MetadataOnlySnapshot(file.getAbsolutePath(), file.getName(), FileType.RegularFile);
+            case Directory:
+                return createShallowDirectorySnapshot(file, stat);
+            default:
+                throw new AssertionError("Unknown file type: " + stat.getType());
+        }
+    }
+
+    private FileSystemLocationSnapshot createShallowDirectorySnapshot(File file, FileMetadataSnapshot stat) {
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(file.toPath())) {
+            List<FileSystemLocationSnapshot> children = new ArrayList<>();
+            for (Path path : directoryStream) {
+                BasicFileAttributes attributes = Files.readAttributes(path, BasicFileAttributes.class);
+                children.add(new MetadataOnlySnapshot(
+                    path.toString(),
+                    path.getFileName().toString(),
+                    attributes.isDirectory() ? FileType.Directory : FileType.RegularFile));
+            }
+            children.sort(Comparator.comparing(FileSystemLocationSnapshot::getName));
+            return new ShallowDirectorySnapshot(file.getAbsolutePath(), file.getName(), children);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static <T> Optional<T> mapRegularFileContentHash(Function<HashCode, T> visitor, FileSystemLocationSnapshot snapshot) {

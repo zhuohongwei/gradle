@@ -196,4 +196,29 @@ class DefaultVirtualFileSystemTest extends AbstractVirtualFileSystemTest {
         then:
         assertIsFileSnapshot(snapshot, excludedFile)
     }
+
+    def "stores the contents of the parent directory for a missing file"() {
+        def d = temporaryFolder.createDir("d")
+        d.createFile("existingFile")
+        d.createDir("existingDir")
+
+        when:
+        allowFileSystemAccess(true)
+        def hash = vfs.readRegularFileContentHash(d.file("missing").absolutePath) { it }
+        then:
+        !hash.present
+
+        when:
+        allowFileSystemAccess(false)
+        then:
+        !vfs.readRegularFileContentHash(d.file("missing").absolutePath) { it }.present
+        !vfs.readRegularFileContentHash(d.file("anotherMissing").absolutePath) { it }.present
+
+        when:
+        allowFileSystemAccess(true)
+        then:
+        vfs.read(d.absolutePath) { it }.hash
+        vfs.read(d.file("existingDir").absolutePath) { it }.hash
+        vfs.readRegularFileContentHash(d.file("existingFile").absolutePath) { it }.present
+    }
 }

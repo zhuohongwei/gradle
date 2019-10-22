@@ -18,13 +18,15 @@ package org.gradle.internal.snapshot;
 
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.hash.HashCode;
+import org.gradle.internal.vfs.impl.AbstractNode;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A file snapshot which can have children (i.e. a directory).
  */
-public class DirectorySnapshot extends AbstractFileSystemLocationSnapshot implements FileSystemLocationSnapshot {
+public class DirectorySnapshot extends AbstractFileSystemLocationSnapshot {
     private final List<FileSystemLocationSnapshot> children;
     private final HashCode contentHash;
 
@@ -47,6 +49,20 @@ public class DirectorySnapshot extends AbstractFileSystemLocationSnapshot implem
     @Override
     public boolean isContentAndMetadataUpToDate(FileSystemLocationSnapshot other) {
         return other instanceof DirectorySnapshot;
+    }
+
+    @Override
+    public Optional<FileSystemLocationSnapshot> getChild(String filePath, int offset) {
+        for (FileSystemLocationSnapshot child : children) {
+            if (AbstractNode.isChildOfOrThis(filePath, offset, child.getName())) {
+                int endOfThisSegment = child.getName().length() + offset;
+                if (endOfThisSegment == filePath.length()) {
+                    return Optional.of(child);
+                }
+                return child.getChild(filePath, endOfThisSegment + 1);
+            }
+        }
+        return Optional.of(new MissingFileSnapshot(filePath, getFileNameForAbsolutePath(filePath)));
     }
 
     @Override

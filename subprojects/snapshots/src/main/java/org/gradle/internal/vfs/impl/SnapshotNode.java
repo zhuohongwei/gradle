@@ -20,10 +20,8 @@ import com.google.common.collect.ImmutableList;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.snapshot.DirectorySnapshot;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
-import org.gradle.internal.snapshot.MissingFileSnapshot;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -42,7 +40,7 @@ class SnapshotNode extends AbstractNode {
         return handlePrefix(getPrefix(), path, new InvalidateHandler() {
             @Override
             public Optional<Node> handleDescendant() {
-                if (snapshot.getType() != FileType.Directory) {
+                if (snapshot.getType() != FileType.Directory || snapshot instanceof ShallowDirectorySnapshot) {
                     return Optional.empty();
                 }
                 DirectorySnapshot directorySnapshot = (DirectorySnapshot) snapshot;
@@ -71,7 +69,7 @@ class SnapshotNode extends AbstractNode {
             @Override
             public Node handleDescendant() {
                 int startNextSegment = getPrefix().length() + 1;
-                if (snapshot.getType() != FileType.Directory) {
+                if (snapshot.getType() != FileType.Directory || snapshot instanceof ShallowDirectorySnapshot) {
                     return new SnapshotNode(path, newSnapshot);
                 }
                 DirectorySnapshot directorySnapshot = (DirectorySnapshot) snapshot;
@@ -101,6 +99,12 @@ class SnapshotNode extends AbstractNode {
 
             @Override
             public Node handleSame() {
+                if (newSnapshot instanceof IncompleteFileSystemLocationSnapshot) {
+                    return SnapshotNode.this;
+                }
+                if (snapshot instanceof IncompleteFileSystemLocationSnapshot) {
+                    return new SnapshotNode(path, newSnapshot);
+                }
                 return snapshot.getHash().equals(newSnapshot.getHash())
                     ? SnapshotNode.this
                     : new SnapshotNode(path, newSnapshot);
@@ -123,38 +127,9 @@ class SnapshotNode extends AbstractNode {
     public Optional<FileSystemLocationSnapshot> getSnapshot(String filePath, int offset) {
         int endOfThisSegment = offset + getPrefix().length();
         if (filePath.length() == endOfThisSegment) {
-            return Optional.of(snapshot);
+            return Optional.of(snapshot).filter(it -> !(it instanceof IncompleteFileSystemLocationSnapshot));
         }
-        return findSnapshot(snapshot, filePath, endOfThisSegment + 1);
-    }
-
-    private Optional<FileSystemLocationSnapshot> findSnapshot(FileSystemLocationSnapshot snapshot, String filePath, int offset) {
-        switch (snapshot.getType()) {
-            case RegularFile:
-            case Missing:
-                return Optional.of(new MissingFileSnapshot(filePath, getFileNameForAbsolutePath(filePath)));
-            case Directory:
-                return findPathInDirectorySnapshot((DirectorySnapshot) snapshot, filePath, offset);
-            default:
-                throw new AssertionError("Unknown file type: " + snapshot.getType());
-        }
-    }
-
-    private Optional<FileSystemLocationSnapshot> findPathInDirectorySnapshot(DirectorySnapshot snapshot, String filePath, int offset) {
-        for (FileSystemLocationSnapshot child : snapshot.getChildren()) {
-            if (isChildOfOrThis(filePath, offset, child.getName())) {
-                int endOfThisSegment = child.getName().length() + offset;
-                if (endOfThisSegment == filePath.length()) {
-                    return Optional.of(child);
-                }
-                return findSnapshot(child, filePath, endOfThisSegment + 1);
-            }
-        }
-        return Optional.of(new MissingFileSnapshot(filePath, getFileNameForAbsolutePath(filePath)));
-    }
-
-    private static String getFileNameForAbsolutePath(String filePath) {
-        return Paths.get(filePath).getFileName().toString();
+        return snapshot.getChild(filePath, endOfThisSegment + 1);
     }
 
     @Override
