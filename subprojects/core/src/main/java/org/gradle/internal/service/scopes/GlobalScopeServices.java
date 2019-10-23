@@ -270,9 +270,8 @@ public class GlobalScopeServices extends WorkerSharedGlobalScopeServices {
         return new DefaultParallelismConfigurationManager(listenerManager);
     }
 
-    @Override
-    PatternSpecFactory createPatternSpecFactory() {
-        return new CachingPatternSpecFactory();
+    PatternSpecFactory createPatternSpecFactory(CrossBuildInMemoryCacheFactory crossBuildInMemoryCacheFactory) {
+        return new CachingPatternSpecFactory(crossBuildInMemoryCacheFactory);
     }
 
     LoggingManagerInternal createLoggingManager(Factory<LoggingManagerInternal> loggingManagerFactory) {
