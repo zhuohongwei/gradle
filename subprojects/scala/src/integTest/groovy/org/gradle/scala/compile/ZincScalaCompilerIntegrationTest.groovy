@@ -21,6 +21,7 @@ import org.gradle.integtests.fixtures.ScalaCoverage
 import org.gradle.integtests.fixtures.TargetCoverage
 import org.gradle.integtests.fixtures.TestResources
 import org.gradle.internal.hash.Hashing
+import org.gradle.internal.jvm.Jvm
 import org.gradle.test.fixtures.file.ClassFile
 import org.gradle.util.VersionNumber
 import org.junit.Assume
@@ -122,7 +123,7 @@ compileScala.scalaCompileOptions.failOnError = false
 
     def "respects fork options settings and ignores executable"() {
         def differentJvm = AvailableJavaHomes.differentJdkWithValidJre
-        Assume.assumeNotNull(differentJvm)
+        Assume.assumeNotNull([differentJvm] as Jvm[])
         def differentJavacExecutablePath = normaliseFileSeparators(differentJvm.javacExecutable.absolutePath)
 
         file("build.gradle") << """

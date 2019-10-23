@@ -144,7 +144,7 @@ class WorkerDaemonIntegrationTest extends AbstractWorkerExecutorIntegrationTest 
 
     def "worker daemons honor different executable specified in fork options"() {
         def differentJvm = AvailableJavaHomes.differentJdkWithValidJre
-        Assume.assumeNotNull(differentJvm)
+        Assume.assumeNotNull([differentJvm] as Jvm[])
         def differentJavacExecutablePath = normaliseFileSeparators(differentJvm.getJavaExecutable().absolutePath)
         def workAction = getWorkActionThatVerifiesExecutable(differentJvm)
 

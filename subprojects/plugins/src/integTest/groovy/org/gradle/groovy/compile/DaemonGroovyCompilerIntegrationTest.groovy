@@ -24,7 +24,7 @@ import static org.gradle.util.TextUtil.normaliseFileSeparators
 class DaemonGroovyCompilerIntegrationTest extends ApiGroovyCompilerIntegrationSpec {
     def "respects fork options settings and ignores executable"() {
         Jvm differentJvm = AvailableJavaHomes.differentJdkWithValidJre
-        Assume.assumeNotNull(differentJvm)
+        Assume.assumeNotNull([differentJvm] as Jvm[])
         def differentJavacExecutablePath = normaliseFileSeparators(differentJvm.javacExecutable.absolutePath)
 
         file("src/main/groovy/JavaThing.java") << "public class JavaThing {}"
