@@ -107,7 +107,7 @@ class GradleInstallationForTestEnvironmentProvider(project: Project) : CommandLi
     @Internal
     val gradleGeneratedApiJarCacheDir = project.objects.directoryProperty()
 
-    @Internal
+    @Classpath
     val toolingApiShadedJarDir = project.objects.directoryProperty()
 
     /**

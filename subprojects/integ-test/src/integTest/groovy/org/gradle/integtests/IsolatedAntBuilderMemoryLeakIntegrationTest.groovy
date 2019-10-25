@@ -125,7 +125,7 @@ buildscript {
 }
 
 import org.ajoberstar.grgit.*
-Grgit.open(currentDir: project.rootProject.rootDir)
+Grgit.init(dir: project.rootProject.rootDir)
 """
         withCheckstyle()
         goodCode('localGroovy()')
