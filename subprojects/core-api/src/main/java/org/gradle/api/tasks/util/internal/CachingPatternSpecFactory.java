@@ -21,6 +21,7 @@ import com.google.common.base.Objects;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.logging.Logger;
@@ -97,6 +98,10 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
 
         @Override
         public boolean isSatisfiedBy(FileTreeElement element) {
+            LOGGER.quiet("element: " + element.getName());
+            if (element.getName().contains("foo")) {
+                LOGGER.quiet(ExceptionUtils.getStackTrace(new Exception()));
+            }
             if (element.isDirectory() && include) {
                 return true;
             } else {
