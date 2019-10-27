@@ -23,6 +23,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.cache.internal.HeapProportionalCacheSizer;
 import org.gradle.internal.UncheckedException;
@@ -33,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public class CachingPatternSpecFactory extends PatternSpecFactory {
+    private static final Logger LOGGER = Logging.getLogger(CachingPatternSpecFactory.class);
     private static final int RESULTS_CACHE_MAX_SIZE = 10000;
     private static final int INSTANCES_MAX_SIZE = 30000;
     private final HeapProportionalCacheSizer cacheSizer;
@@ -45,6 +48,7 @@ public class CachingPatternSpecFactory extends PatternSpecFactory {
 
     @Override
     protected Spec<FileTreeElement> createSpec(final Collection<String> patterns, final boolean include, final boolean caseSensitive) {
+        LOGGER.quiet("Pattern: " + patterns);
         if (isFastPattern(patterns)) {
             return fastPatternSpec(patterns, include, caseSensitive);
         }
