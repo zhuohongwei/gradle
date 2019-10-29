@@ -12,7 +12,6 @@
 # ----
 !/.idea
 /.idea/*
-!/.idea/codeStyles
 !/.idea/inspectionProfiles
 */**/.idea
 .shelf
