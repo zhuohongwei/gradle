@@ -28,6 +28,8 @@ import org.gradle.internal.snapshot.MissingFileSnapshot
 import org.gradle.internal.snapshot.RegularFileSnapshot
 import org.gradle.internal.snapshot.impl.DirectorySnapshotter
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.util.Requires
+import org.gradle.util.TestPrecondition
 import org.junit.Assume
 import org.junit.Rule
 import spock.lang.Specification
@@ -515,6 +517,7 @@ class DefaultFileHierarchySetTest extends Specification {
         set.getMetadata("/other.txt").get().type == FileType.RegularFile
     }
 
+    @Requires(TestPrecondition.WINDOWS)
     def "can add to completely different paths with Windows paths"() {
         def firstPath = "C:\\Windows\\log"
         def secondPath = "D:\\Users\\bin"
