@@ -91,7 +91,17 @@ plugins.withType<EclipsePlugin>().configureEach { // lazy as plugin not applied 
 }
 
 val gradleBuildCurrent by tasks.registering(RemoteProject::class) {
-    remoteUri.set(rootDir.absolutePath)
+    remoteUri.set(
+        rootDir.resolve(".git").let { gitMarker ->
+            // Handle git worktree
+            gitMarker.takeIf { it.isFile }?.useLines { lines ->
+                lines.find { it.startsWith("gitdir:") }
+                    ?.removePrefix("gitdir:")
+                    ?.trim()
+                    ?.let { File(it).resolve("../../..").canonicalPath }
+            } ?: rootDir.absolutePath
+        }
+    )
     ref.set(rootProject.tasks.named<DetermineCommitId>("determineCommitId").flatMap { it.determinedCommitId })
 }
 tasks.named("smokeTest") {
