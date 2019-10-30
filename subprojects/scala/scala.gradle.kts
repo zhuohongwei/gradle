@@ -51,6 +51,8 @@ dependencies {
     testImplementation(testFixtures(project(":languageJvm")))
     testImplementation(testFixtures(project(":languageJava")))
 
+    compileOnly("org.scala-lang:scala-compiler:2.13.1")
+
     testRuntimeOnly(project(":runtimeApiInfo"))
 
     integTestImplementation(project(":jvmServices"))

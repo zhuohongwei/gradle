@@ -19,6 +19,9 @@ package org.gradle.scala.scaladoc
 import org.gradle.api.plugins.scala.ScalaPlugin
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 import org.gradle.integtests.fixtures.DirectoryBuildCacheFixture
+import org.gradle.integtests.fixtures.MultiVersionIntegrationSpec
+import org.gradle.integtests.fixtures.ScalaCoverage
+import org.gradle.integtests.fixtures.TargetCoverage
 import org.gradle.scala.ScalaCompilationFixture
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
@@ -72,4 +75,15 @@ class ScalaDocIntegrationTest extends AbstractIntegrationSpec implements Directo
         skipped scaladoc
     }
 
+    def "does not fail"() {
+        classes.baseline()
+        classes.scalaVersion = "2.13.1"
+        buildFile << classes.buildScript()
+        args("-PscalaVersion=2.13.1")
+
+        when:
+        succeeds scaladoc
+        then:
+        executedAndNotSkipped scaladoc
+    }
 }

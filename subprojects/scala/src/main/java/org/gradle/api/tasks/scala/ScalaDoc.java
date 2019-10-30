@@ -15,10 +15,12 @@
  */
 package org.gradle.api.tasks.scala;
 
+import org.gradle.api.Action;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.internal.project.IsolatedAntBuilder;
 import org.gradle.api.internal.tasks.scala.AntScalaDoc;
+import org.gradle.api.internal.tasks.scala.ScalaDocWorkAction;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
@@ -29,7 +31,9 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceTask;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.JavaForkOptions;
 import org.gradle.util.GUtil;
+import org.gradle.workers.WorkerExecutor;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -52,6 +56,11 @@ public class ScalaDoc extends SourceTask {
 
     @Inject
     protected IsolatedAntBuilder getAntBuilder() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Inject
+    protected WorkerExecutor getWorkerExecutor() {
         throw new UnsupportedOperationException();
     }
 
@@ -132,8 +141,27 @@ public class ScalaDoc extends SourceTask {
         if (!GUtil.isTrue(options.getDocTitle())) {
             options.setDocTitle(getTitle());
         }
-        AntScalaDoc antScalaDoc = new AntScalaDoc(getAntBuilder());
-        antScalaDoc.execute(getSource(), getDestinationDir(), getClasspath(), getScalaClasspath(), options);
-    }
 
+        try {
+            AntScalaDoc antScalaDoc = new AntScalaDoc(getAntBuilder());
+            antScalaDoc.execute(getSource(), getDestinationDir(), getClasspath(), getScalaClasspath(), options);
+        } catch (Exception e) {
+            System.out.println(getScalaClasspath().getAsPath());
+            getWorkerExecutor().classLoaderIsolation(spec -> {
+                spec.getClasspath().from(getScalaClasspath());
+//                spec.forkOptions(new Action<JavaForkOptions>() {
+//                    @Override
+//                    public void execute(JavaForkOptions forkOptions) {
+//                        forkOptions.bootstrapClasspath(getScalaClasspath());
+//                    forkOptions.bootstrapClasspath(getScalaClasspath());
+//                    }
+//                });
+            }).submit(ScalaDocWorkAction.class, parameters -> {
+                parameters.getOptions().set(options.optionMap());
+                parameters.getOptions().put("destDir", getDestinationDir());
+                parameters.getOptions().put("classpath", getClasspath().getAsPath());
+                parameters.getSourceFiles().from(getSource());
+            });
+        }
+    }
 }
