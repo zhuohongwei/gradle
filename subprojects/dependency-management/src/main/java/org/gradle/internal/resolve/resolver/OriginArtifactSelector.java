@@ -25,7 +25,7 @@ import org.gradle.internal.component.model.ConfigurationMetadata;
 
 import javax.annotation.Nullable;
 
-public interface OriginArtifactSelector {
+public interface OriginArtifactSelector extends ArtifactResolver {
     /**
      * Creates a set that will resolve the artifacts of the given configuration, minus those artifacts that are excluded.
      */

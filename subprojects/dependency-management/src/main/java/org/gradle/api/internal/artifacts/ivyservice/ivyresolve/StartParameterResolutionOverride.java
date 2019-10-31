@@ -20,14 +20,21 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.internal.artifacts.configurations.dynamicversion.CachePolicy;
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.ExternalResourceCachePolicy;
 import org.gradle.api.internal.artifacts.repositories.resolver.MetadataFetchingCost;
+import org.gradle.api.internal.artifacts.verification.model.ChecksumKind;
+import org.gradle.api.internal.artifacts.verification.model.VerificationsBuilder;
+import org.gradle.api.internal.artifacts.verification.serializer.DependencyVerificationsXmlSerializer;
 import org.gradle.api.internal.component.ArtifactType;
 import org.gradle.api.resources.ResourceException;
+import org.gradle.internal.UncheckedException;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
 import org.gradle.internal.component.external.model.ModuleDependencyMetadata;
 import org.gradle.internal.component.model.ComponentArtifactMetadata;
 import org.gradle.internal.component.model.ComponentOverrideMetadata;
 import org.gradle.internal.component.model.ComponentResolveMetadata;
 import org.gradle.internal.component.model.ConfigurationMetadata;
 import org.gradle.internal.component.model.ModuleSource;
+import org.gradle.internal.hash.HashUtil;
+import org.gradle.internal.hash.HashValue;
 import org.gradle.internal.resolve.ArtifactResolveException;
 import org.gradle.internal.resolve.ModuleVersionResolveException;
 import org.gradle.internal.resolve.result.BuildableArtifactResolveResult;
@@ -41,6 +48,8 @@ import org.gradle.internal.resource.transfer.ExternalResourceConnector;
 import org.gradle.internal.resource.transfer.ExternalResourceReadResponse;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -65,6 +74,10 @@ public class StartParameterResolutionOverride {
             return new OfflineModuleComponentRepository(original);
         }
         return original;
+    }
+
+    public DependencyVerificationOverride dependencyVerificationOverride() {
+        return new WriteDependencyVerificationFile(startParameter.getCurrentDir());
     }
 
     private static class OfflineModuleComponentRepository extends BaseModuleComponentRepository {
@@ -163,6 +176,73 @@ public class StartParameterResolutionOverride {
 
         private ResourceException offlineResource(URI source) {
             return new ResourceException(source, String.format("No cached resource '%s' available for offline mode.", source));
+        }
+    }
+
+    interface DependencyVerificationOverride {
+        DependencyVerificationOverride NO_VERIFICATION = new DependencyVerificationOverride() {
+            @Override
+            public ModuleComponentRepository overrideDependencyVerification(ModuleComponentRepository original) {
+                return original;
+            }
+
+            public void setup() {
+
+            }
+
+            public void complete() {
+
+            }
+        };
+
+        void setup();
+        ModuleComponentRepository overrideDependencyVerification(ModuleComponentRepository original);
+        void complete();
+    }
+
+    static class WriteDependencyVerificationFile implements DependencyVerificationOverride, ArtifactVerificationOperation {
+        private final VerificationsBuilder verificationsBuilder = new VerificationsBuilder();
+        private final File buildDirectory;
+
+        WriteDependencyVerificationFile(File buildDirectory) {
+            this.buildDirectory = buildDirectory;
+        }
+
+        @Override
+        public ModuleComponentRepository overrideDependencyVerification(ModuleComponentRepository original) {
+            return new DependencyVerifyingModuleComponentRepository(original, this::onArtifact);
+        }
+
+        @Override
+        public void setup() {
+        }
+
+        @Override
+        public void complete() {
+            File gradleDir = ensureGradleDirExists();
+            File verifFile = new File(gradleDir, "dependency-verifications.xml");
+            try {
+                DependencyVerificationsXmlSerializer.serialize(
+                    verificationsBuilder.build(),
+                    new FileOutputStream(verifFile)
+                );
+            } catch (IOException e) {
+                throw UncheckedException.throwAsUncheckedException(e);
+            }
+        }
+
+        private File ensureGradleDirExists() {
+            File gradleDir = new File(buildDirectory, "gradle");
+            if (!gradleDir.exists()) {
+                gradleDir.mkdirs();
+            }
+            return gradleDir;
+        }
+
+        @Override
+        public void onArtifact(ModuleComponentArtifactIdentifier id, File file) {
+            HashValue hash = HashUtil.sha512(file);
+            verificationsBuilder.addChecksum(id, ChecksumKind.sha512, hash.asHexString());
         }
     }
 }
