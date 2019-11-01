@@ -49,6 +49,7 @@ import org.gradle.execution.BuildWorkExecutor;
 import org.gradle.execution.DefaultBuildConfigurationActionExecuter;
 import org.gradle.execution.DefaultBuildWorkExecutor;
 import org.gradle.execution.DefaultTasksBuildExecutionAction;
+import org.gradle.execution.DependencyVerificationConfigurationAction;
 import org.gradle.execution.DeprecateUndefinedBuildWorkExecutor;
 import org.gradle.execution.DryRunBuildExecutionAction;
 import org.gradle.execution.ExcludedTaskFilteringBuildConfigurationAction;
@@ -167,7 +168,10 @@ public class GradleScopeServices extends DefaultServiceRegistry {
         List<BuildConfigurationAction> taskSelectionActions = new LinkedList<BuildConfigurationAction>();
         taskSelectionActions.add(new DefaultTasksBuildExecutionAction(projectConfigurer));
         taskSelectionActions.add(new TaskNameResolvingBuildConfigurationAction(commandLineTaskParser));
-        return new DefaultBuildConfigurationActionExecuter(Arrays.asList(new ExcludedTaskFilteringBuildConfigurationAction(taskSelector)), taskSelectionActions, projectStateRegistry);
+        return new DefaultBuildConfigurationActionExecuter(Arrays.asList(
+            new DependencyVerificationConfigurationAction(),
+            new ExcludedTaskFilteringBuildConfigurationAction(taskSelector)),
+            taskSelectionActions, projectStateRegistry);
     }
 
     IncludedBuildControllers createIncludedBuildControllers(GradleInternal gradle, IncludedBuildControllers sharedControllers) {

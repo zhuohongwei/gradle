@@ -77,7 +77,10 @@ public class StartParameterResolutionOverride {
     }
 
     public DependencyVerificationOverride dependencyVerificationOverride() {
-        return new WriteDependencyVerificationFile(startParameter.getCurrentDir());
+        if (startParameter.isWriteDependencyVerifications()) {
+            return new WriteDependencyVerificationFile(startParameter.getCurrentDir());
+        }
+        return DependencyVerificationOverride.NO_VERIFICATION;
     }
 
     private static class OfflineModuleComponentRepository extends BaseModuleComponentRepository {

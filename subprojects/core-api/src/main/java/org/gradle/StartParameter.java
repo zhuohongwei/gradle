@@ -96,6 +96,7 @@ public class StartParameter implements LoggingConfiguration, ParallelismConfigur
     private boolean buildScan;
     private boolean noBuildScan;
     private boolean writeDependencyLocks;
+    private boolean writeDependencyVerifications;
     private List<String> lockedDependenciesToUpdate = emptyList();
 
     /**
@@ -249,6 +250,7 @@ public class StartParameter implements LoggingConfiguration, ParallelismConfigur
         p.setMaxWorkerCount(getMaxWorkerCount());
         p.systemPropertiesArgs = new HashMap<>(systemPropertiesArgs);
         p.writeDependencyLocks = writeDependencyLocks;
+        p.writeDependencyVerifications = writeDependencyVerifications;
         p.lockedDependenciesToUpdate = new ArrayList<>(lockedDependenciesToUpdate);
         return p;
     }
@@ -844,6 +846,14 @@ public class StartParameter implements LoggingConfiguration, ParallelismConfigur
     public void setLockedDependenciesToUpdate(List<String> lockedDependenciesToUpdate) {
         this.lockedDependenciesToUpdate = Lists.newArrayList(lockedDependenciesToUpdate);
         this.writeDependencyLocks = true;
+    }
+
+    public boolean isWriteDependencyVerifications() {
+        return writeDependencyVerifications;
+    }
+
+    public void setWriteDependencyVerifications(boolean writeDependencyVerifications) {
+        this.writeDependencyVerifications = writeDependencyVerifications;
     }
 
     /**

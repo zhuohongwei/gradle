@@ -34,7 +34,7 @@ public class DependencyVerificationsXmlSerializer {
     private final SimpleXmlWriter writer;
 
     private DependencyVerificationsXmlSerializer(OutputStream out) throws IOException {
-        this.writer = new SimpleXmlWriter(out);
+        this.writer = new SimpleXmlWriter(out, "   ");
     }
 
     public static void serialize(DependencyVerifier verifier, OutputStream out) throws IOException {
@@ -71,11 +71,9 @@ public class DependencyVerificationsXmlSerializer {
     }
 
     private void writeArtifactVerifications(List<ArtifactVerification> verifications) throws IOException {
-        writer.startElement("artifacts");
         for (ArtifactVerification verification : verifications) {
             writeArtifactVerification(verification);
         }
-        writer.endElement();
     }
 
     private void writeArtifactVerification(ArtifactVerification verification) throws IOException {
@@ -94,7 +92,7 @@ public class DependencyVerificationsXmlSerializer {
             String kind = entry.getKey().name();
             String value = entry.getValue();
             writer.startElement(kind);
-            writer.characters(value);
+            writer.attribute("value", value);
             writer.endElement();
         }
     }

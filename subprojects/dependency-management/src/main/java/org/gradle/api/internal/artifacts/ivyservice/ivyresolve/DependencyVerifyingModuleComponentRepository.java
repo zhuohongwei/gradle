@@ -40,11 +40,13 @@ import java.util.Map;
 
 public class DependencyVerifyingModuleComponentRepository implements ModuleComponentRepository {
     private final ModuleComponentRepository delegate;
+    private final ModuleComponentRepositoryAccess localAccess;
     private final ModuleComponentRepositoryAccess remoteAccess;
     private final ArtifactVerificationOperation operation;
 
     public DependencyVerifyingModuleComponentRepository(ModuleComponentRepository delegate, ArtifactVerificationOperation operation) {
         this.delegate = delegate;
+        this.localAccess = new VerifyingModuleComponentRepositoryAccess(delegate.getLocalAccess());
         this.remoteAccess = new VerifyingModuleComponentRepositoryAccess(delegate.getRemoteAccess());
         this.operation = operation;
     }
@@ -61,7 +63,7 @@ public class DependencyVerifyingModuleComponentRepository implements ModuleCompo
 
     @Override
     public ModuleComponentRepositoryAccess getLocalAccess() {
-        return delegate.getLocalAccess();
+        return localAccess;
     }
 
     @Override
