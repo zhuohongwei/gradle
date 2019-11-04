@@ -259,12 +259,7 @@ public class DefaultSourceIncludesResolver implements SourceIncludesResolver {
     }
 
     private DirectoryContents toDir(File includeDir) {
-        DirectoryContents directoryContents = includeRoots.get(includeDir);
-        if (directoryContents == null) {
-            directoryContents = new DirectoryContents(includeDir);
-            includeRoots.put(includeDir, directoryContents);
-        }
-        return directoryContents;
+        return includeRoots.computeIfAbsent(includeDir, key -> new DirectoryContents(includeDir));
     }
 
     private IncludePath prependSourceDir(File sourceFile, FixedIncludePath includePaths) {
