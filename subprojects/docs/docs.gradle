@@ -663,6 +663,7 @@ samples {
     javaComponentsWithJUnit4Tests {
         sampleDirectory = file("src/samples/next-gen/java/components-with-junit-4-tests")
         description = "Demonstrate how to test Java components using JUnit 4"
+        displayName = "Java Components With JUnit 4 Tests"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/java-basic-application") { into("application") }
             from("$templateDir/java-junit4-test-for-application") { into("application") }
