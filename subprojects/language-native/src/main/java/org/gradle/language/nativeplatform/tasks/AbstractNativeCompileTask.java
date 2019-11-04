@@ -260,10 +260,18 @@ public abstract class AbstractNativeCompileTask extends DefaultTask {
     /**
      * Returns the source files to be compiled.
      */
+    @Internal
+    public ConfigurableFileCollection getSource() {
+        return source;
+    }
+
+    /**
+     * Stupid trick to snapshot this before headers.
+     */
     @SkipWhenEmpty
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    public ConfigurableFileCollection getSource() {
+    protected ConfigurableFileCollection get0Source() {
         return source;
     }
 
