@@ -678,7 +678,7 @@ samples {
 }
 
 tasks.register("publishSamplesToDocsZip", Sync) {
-    dependsOn("asciidocSampleIndex", *samples.collect { "assemble${it.name.capitalize()}Sample" })
+    dependsOn("generateSampleIndex", *samples.collect { "assemble${it.name.capitalize()}Sample" })
     from(layout.buildDirectory.dir("gradle-samples"))
     into(new File(docsDir, "samples"))
 }
