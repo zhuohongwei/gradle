@@ -547,11 +547,11 @@ tasks.named("check") {
     dependsOn(checkDeadInternalLinks)
 }
 
+dependencies {
+    sampleAsciidoctorRuntime project.files("src/main/resources")
+}
 tasks.withType(SampleAsciidoctorTask).configureEach {
     stylesheetFile.set(file("$srcDocsDir/css/manual.css"));
-    inputs.dir(file("src/main/resources"))
-        .withPropertyName("resources")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 samples.configureEach { sample ->
