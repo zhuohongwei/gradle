@@ -38,8 +38,8 @@ public class UnknownSnapshot extends AbstractIncompleteSnapshotWithChildren {
     }
 
     @Override
-    protected FileSystemNode withIncompleteChildren(String pathToParent, List<? extends FileSystemNode> merged) {
-        return new UnknownSnapshot(pathToParent, merged);
+    protected FileSystemNode withIncompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren) {
+        return new UnknownSnapshot(pathToParent, newChildren);
     }
 
     @Override
@@ -52,4 +52,8 @@ public class UnknownSnapshot extends AbstractIncompleteSnapshotWithChildren {
         return this;
     }
 
+    @Override
+    protected FileSystemNode withCompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren) {
+        return withIncompleteChildren(pathToParent, newChildren);
+    }
 }

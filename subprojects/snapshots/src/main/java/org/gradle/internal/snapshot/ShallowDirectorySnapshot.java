@@ -44,8 +44,13 @@ public class ShallowDirectorySnapshot extends AbstractIncompleteSnapshotWithChil
     }
 
     @Override
-    protected FileSystemNode withIncompleteChildren(String prefix, List<? extends FileSystemNode> newChildren) {
-        return new PartialDirectorySnapshot(prefix, newChildren);
+    protected FileSystemNode withIncompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren) {
+        return new PartialDirectorySnapshot(pathToParent, newChildren);
+    }
+
+    @Override
+    protected FileSystemNode withCompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren) {
+        return new ShallowDirectorySnapshot(pathToParent, newChildren);
     }
 
     @Override

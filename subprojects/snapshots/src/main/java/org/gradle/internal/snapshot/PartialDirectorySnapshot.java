@@ -44,6 +44,11 @@ public class PartialDirectorySnapshot extends AbstractIncompleteSnapshotWithChil
     }
 
     @Override
+    protected FileSystemNode withCompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren) {
+        return withIncompleteChildren(pathToParent, newChildren);
+    }
+
+    @Override
     protected Optional<FileSystemNode> withAllChildrenRemoved() {
         return Optional.of(new PartialDirectorySnapshot(getPathToParent(), ImmutableList.of()));
     }

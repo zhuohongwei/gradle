@@ -95,10 +95,24 @@ public abstract class AbstractIncompleteSnapshotWithChildren extends AbstractFil
     /**
      * Returns an updated node with an updated list of children.
      *
+     * Direct children of the node have been invalidated or added.
+     * That means the returned node can only have a partial knowledge of the children after this method.
+     *
      * Caller must ensure the child list is not be mutated as the method
      * doesn't make a defensive copy.
      */
     protected abstract FileSystemNode withIncompleteChildren(String prefix, List<? extends FileSystemNode> newChildren);
+
+    /**
+     * Returns an updated node with an updated list of children.
+     *
+     * No direct children of the node have been invalidated or added.
+     * The children have only been updated.
+     *
+     * Caller must ensure the child list is not be mutated as the method
+     * doesn't make a defensive copy.
+     */
+    protected abstract FileSystemNode withCompleteChildren(String pathToParent, List<? extends FileSystemNode> newChildren);
 
     /**
      * Returns an updated node with all children removed, or {@link Optional#empty()}
@@ -111,10 +125,10 @@ public abstract class AbstractIncompleteSnapshotWithChildren extends AbstractFil
             return AbstractIncompleteSnapshotWithChildren.this;
         }
         if (children.size() == 1) {
-            return withIncompleteChildren(getPathToParent(), ImmutableList.of(newChild));
+            return withCompleteChildren(getPathToParent(), ImmutableList.of(newChild));
         }
         List<FileSystemNode> merged = new ArrayList<>(children);
         merged.set(childIndex, newChild);
-        return withIncompleteChildren(getPathToParent(), merged);
+        return withCompleteChildren(getPathToParent(), merged);
     }
 }
