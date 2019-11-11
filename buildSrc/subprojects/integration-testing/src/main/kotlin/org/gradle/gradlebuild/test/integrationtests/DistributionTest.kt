@@ -98,7 +98,7 @@ class GradleInstallationForTestEnvironmentProvider(project: Project) : CommandLi
     val toolingApiShadedJarDir = project.objects.directoryProperty()
 
     @Internal
-    val gradleSamplesDir = project.objects.directoryProperty()
+    val gradleSnippetsDir = project.objects.directoryProperty()
 
     /**
      * The user home dir is not wiped out by clean.
@@ -113,7 +113,7 @@ class GradleInstallationForTestEnvironmentProvider(project: Project) : CommandLi
     override fun asArguments() =
         mapOf(
             "integTest.gradleHomeDir" to absolutePathOf(gradleHomeDir),
-            "integTest.samplesdir" to absolutePathOf(gradleSamplesDir),
+            "integTest.samplesdir" to absolutePathOf(gradleSnippetsDir),
             "integTest.gradleUserHomeDir" to absolutePathOf(gradleUserHomeDir),
             "integTest.gradleGeneratedApiJarCacheDir" to absolutePathOf(gradleGeneratedApiJarCacheDir),
             "org.gradle.integtest.daemon.registry" to absolutePathOf(daemonRegistry),
