@@ -400,3 +400,18 @@ allprojects {
     }
 }
 
+// This an example of a task that is only created conditionally
+// Conditional creation of tasks is sometimes used to avoid expensive configuration slowing down builds that don't need it
+// This technique has been supplanted by the TaskContainer.register() API which accomplishes the time savings without the pitfalls
+// See this guide on task configuration avoidance for more information:
+//      https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
+if(System.getenv("CI") != null) {
+    tasks.register("ciDiagnostics") {
+        // This is admittedly contrived, so let's make-believe this does something actually useful
+        doLast {
+            println("Doing some expensive calculations...")
+            Thread.sleep(1000L)
+            println("Everything is A-Okay")
+        }
+    }
+}
