@@ -128,6 +128,11 @@ public class KotlinCompatibilityTest {
         .build();
 
     @ArchTest
+    public void exampleFailure() {
+        throw new RuntimeException("example test failure");
+    }
+
+    @ArchTest
     public static final ArchRule consistent_nullable_annotations_on_public_api = classes().that(are(gradlePublicApi())).should(haveAccessorsWithSymmetricalNullableAnnotations(IGNORED_PUBLIC_API_PROPERTIES));
 
     @ArchTest
