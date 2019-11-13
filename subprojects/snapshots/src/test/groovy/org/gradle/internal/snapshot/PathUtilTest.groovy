@@ -28,6 +28,10 @@ import static org.gradle.internal.snapshot.PathUtil.sizeOfCommonPrefix
 @Unroll
 class PathUtilTest extends Specification {
 
+    def "a test that fails"() {
+        throw new RuntimeException("this test deliberately fails")
+    }
+
     def "file name of '#path' is '#name'"() {
         expect:
         getFileName(path) == name
