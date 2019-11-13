@@ -1,4 +1,5 @@
 import org.gradle.api.internal.FeaturePreviews
+import java.io.ByteArrayOutputStream
 
 /*
  * Copyright 2010 the original author or authors.
@@ -26,6 +27,38 @@ pluginManagement {
 plugins {
     id("com.gradle.enterprise").version("3.0")
 }
+
+fun execute(vararg command: String): String {
+    val baos = ByteArrayOutputStream()
+    exec {
+        commandLine(*command)
+        standardOutput = baos
+        workingDir = rootDir
+    }
+    return baos.toString()
+}
+
+gradleEnterprise {
+    buildScan {
+        publishAlways()
+        server = "https://enterprise-training.gradle.com"
+        // Run expensive operations on a background thread to avoid slowing down configuration time unnecessarily
+        background {
+            val currentBranch = execute("git", "rev-parse", "--abbrev-ref", "HEAD").trim()
+            val diffWithMastter = execute("git", "diff", "master...$currentBranch")
+            value("Git Diff with 'master'", diffWithMastter)
+        }
+    }
+}
+
+gradleEnterprise {
+    buildScan {
+        background {
+
+        }
+    }
+}
+
 
 apply(from = "gradle/build-cache-configuration.settings.gradle.kts")
 apply(from = "gradle/shared-with-buildSrc/mirrors.settings.gradle.kts")
