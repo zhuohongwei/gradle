@@ -18,6 +18,7 @@ package org.gradle.integtests.fixtures
 
 import groovy.io.FileType
 import org.gradle.internal.FileUtils
+import org.gradle.test.fixtures.file.TestFile
 
 import java.util.function.Predicate
 
@@ -42,15 +43,18 @@ class CompilationOutputsFixture {
     }
 
     private List<File> snapshot = []
+    private Map<File, String> snapshotHash = [:]
 
     // Executes optional operation and makes a snapshot of outputs (sets the last modified timestamp to zero for all files)
     public <T> T snapshot(Closure<T> operation = null) {
         T result = operation?.call()
         snapshot.clear()
+        snapshotHash.clear()
         targetDir.eachFileRecurse(FileType.FILES) {
             if (isIncluded(it)) {
                 it.lastModified = 0
                 snapshot << it
+                snapshotHash.put(it, TestFile.md5(it).toString())
             }
         }
         result
@@ -120,7 +124,7 @@ class CompilationOutputsFixture {
 
     private Set<String> getChangedFileNames() {
         // Get all of the files that do not have a zero last modified timestamp
-        return getFiles { it.lastModified() > 0 }
+        return getFiles { it.lastModified() > 0 && TestFile.md5(it).toString() != snapshotHash[it] }
     }
 
     private Set<String> getFiles(Predicate<File> criteria) {
