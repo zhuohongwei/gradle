@@ -77,11 +77,13 @@ public class JUnitPlatformTestClassProcessor extends AbstractJUnitTestClassProce
     }
 
     private class CollectAllTestClassesExecutor implements Action<String> {
-        private final List<Class<?>> testClasses = new ArrayList<>();
+        private final List<Class<?>> testClasses;
         private final TestResultProcessor resultProcessor;
+        private boolean hasExecutedTests;
 
         CollectAllTestClassesExecutor(TestResultProcessor resultProcessor) {
             this.resultProcessor = resultProcessor;
+            this.testClasses = new ArrayList<>();
         }
 
         @Override
@@ -94,9 +96,16 @@ public class JUnitPlatformTestClassProcessor extends AbstractJUnitTestClassProce
         }
 
         private void processAllTestClasses() {
-            Launcher launcher = LauncherFactory.create();
-            launcher.registerTestExecutionListeners(new JUnitPlatformTestExecutionListener(resultProcessor, clock, idGenerator));
-            launcher.execute(createLauncherDiscoveryRequest(testClasses));
+            // This is a bit dirty.  JUnitPlatform relies on the test infrastructure to stop() the test class processor
+            // before it even starts executing tests.  It shouldn't be this way.
+            // The worker process attempts to stop worker actions on unrecoverable errors.  This can sometimes cause
+            // test processes to fail after all tests have executed because we try to stop the test class processor twice.
+            if (!hasExecutedTests) {
+                hasExecutedTests = true;
+                Launcher launcher = LauncherFactory.create();
+                launcher.registerTestExecutionListeners(new JUnitPlatformTestExecutionListener(resultProcessor, clock, idGenerator));
+                launcher.execute(createLauncherDiscoveryRequest(testClasses));
+            }
         }
     }
 
