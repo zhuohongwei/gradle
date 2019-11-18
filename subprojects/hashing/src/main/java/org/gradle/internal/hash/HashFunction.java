@@ -42,7 +42,7 @@ public interface HashFunction {
     HashCode hashString(CharSequence string);
 
     /**
-     * Returns the size of the hash length in bits.
+     * Returns the number of hexadecimal digits needed to represent the hash.
      */
-    int getHashBits();
+    int getHexDigits();
 }

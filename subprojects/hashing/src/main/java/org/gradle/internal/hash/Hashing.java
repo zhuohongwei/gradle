@@ -38,9 +38,9 @@ public class Hashing {
 
     private static final HashFunction SHA1 = MessageDigestHashFunction.of("SHA-1");
 
-    private static final HashFunction SHA256 = MessageDigestHashFunction.of("SHA-256");
+    private static final HashFunction SHA512 = MessageDigestHashFunction.of("SHA-512");
 
-    private static final HashFunction DEFAULT = SHA256;
+    private static final HashFunction DEFAULT = SHA512;
 
     /**
      * Returns a new {@link Hasher} based on the default hashing implementation.
@@ -123,10 +123,10 @@ public class Hashing {
     }
 
     private static abstract class MessageDigestHashFunction implements HashFunction {
-        private final int hashBits;
+        private final int hexDigits;
 
         public MessageDigestHashFunction(int hashBits) {
-            this.hashBits = hashBits;
+            this.hexDigits = hashBits / 4;
         }
 
         public static MessageDigestHashFunction of(String algorithm) {
@@ -173,8 +173,8 @@ public class Hashing {
         protected abstract MessageDigest createDigest();
 
         @Override
-        public int getHashBits() {
-            return hashBits;
+        public int getHexDigits() {
+            return hexDigits;
         }
     }
 

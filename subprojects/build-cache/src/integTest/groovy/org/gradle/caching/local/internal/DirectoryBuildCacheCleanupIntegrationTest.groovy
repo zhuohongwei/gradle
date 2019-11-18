@@ -77,7 +77,7 @@ class DirectoryBuildCacheCleanupIntegrationTest extends AbstractIntegrationSpec 
         run '--stop' // ensure daemon does not cache file access times in memory
         def lastCleanupCheck = gcFile().makeOlder().lastModified()
 
-        def hashStringLength = Hashing.defaultFunction().hashBits / 4
+        def hashStringLength = Hashing.defaultFunction().hexDigits
 
         when:
         def newTrashFile = cacheDir.file("0" * hashStringLength).createFile()
