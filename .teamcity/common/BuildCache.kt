@@ -30,7 +30,7 @@ data class RemoteBuildCache(val url: String, val username: String = "%gradle.cac
     }
 }
 
-val builtInRemoteBuildCacheNode = RemoteBuildCache("%gradle.cache.remote.url%")
+val builtInRemoteBuildCacheNode = NoBuildCache() //RemoteBuildCache("%gradle.cache.remote.url%")
 
 object NoBuildCache : BuildCache {
     override fun gradleParameters(os: Os): List<String> {
