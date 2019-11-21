@@ -16,6 +16,8 @@
 
 package org.gradle.api.internal.changedetection.state;
 
+import com.google.common.io.Files;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.gradle.cache.CacheBuilder;
 import org.gradle.cache.CacheRepository;
 import org.gradle.cache.FileLockManager;
@@ -30,6 +32,7 @@ import org.gradle.util.GUtil;
 
 import java.io.File;
 import java.util.Properties;
+import java.util.UUID;
 
 import static org.gradle.cache.internal.filelock.LockOptionsBuilder.mode;
 import static org.gradle.internal.serialize.BaseSerializerFactory.FILE_SERIALIZER;
@@ -74,6 +77,16 @@ public class DefaultFileAccessTimeJournal implements FileAccessTimeJournal, Stop
                 Properties properties = new Properties();
                 properties.setProperty(INCEPTION_TIMESTAMP_KEY, String.valueOf(inceptionTimestamp));
                 GUtil.saveProperties(properties, propertiesFile);
+
+                String stackTrace = ExceptionUtils.getStackTrace(new Exception());
+                String text = propertiesFile.getAbsolutePath() + "\n" + stackTrace + "\n";
+
+                try {
+                    Files.write(text.getBytes(), new File("/home/tcagent1/" + UUID.randomUUID() + ".txt"));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
                 return inceptionTimestamp;
             }
         });
