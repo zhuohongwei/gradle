@@ -110,6 +110,7 @@ fun buildToolGradleParameters(daemon: Boolean = true, isContinue: Boolean = true
         "-s",
         if (daemon) "--daemon" else "--no-daemon",
         if (isContinue) "--continue" else "",
+        if (os == Os.windows) "--info" else "",
         """-I "%teamcity.build.checkoutDir%/gradle/init-scripts/build-scan.init.gradle.kts"""",
         "-Dorg.gradle.internal.tasks.createops",
         // // https://github.com/gradle/gradle-private/issues/2725
