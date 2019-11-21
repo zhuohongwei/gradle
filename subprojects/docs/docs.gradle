@@ -573,7 +573,7 @@ def installSourceFromTemplate(Sample sample, Closure action) {
 
 samples {
     androidApplication {
-        sampleDirectory = file("src/samples/next-gen/android-application")
+        sampleDirectory = file("src/samples/android-application")
         description = "Demonstrate how to build an Android application"
         def sourceFiles = installSourceFromTemplate(it) {
             from("$templateDir/java-android-application")
@@ -585,7 +585,7 @@ samples {
         }
     }
     springBoot {
-        sampleDirectory = file("src/samples/next-gen/spring-boot")
+        sampleDirectory = file("src/samples/spring-boot")
         description = "Demonstrate a simple Spring Boot application in Gradle"
         def sourceFiles = installSourceFromTemplate(it) {
             from("$templateDir/spring-boot")
@@ -686,7 +686,7 @@ samples {
     }
 
     groovyBasicApplication {
-        sampleDirectory = file("src/samples/next-gen/groovy/basic-application")
+        sampleDirectory = file("src/samples/groovy/basic-application")
         description = "Demonstrate how to build a basic Groovy application"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/groovy-basic-application")
@@ -695,7 +695,7 @@ samples {
         }
     }
     groovyBasicLibrary {
-        sampleDirectory = file("src/samples/next-gen/groovy/basic-library")
+        sampleDirectory = file("src/samples/groovy/basic-library")
         description = "Demonstrate how to build a basic Groovy library"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/groovy-list-library")
@@ -703,7 +703,7 @@ samples {
         }
     }
     groovyTransitiveDependencies {
-        sampleDirectory = file("src/samples/next-gen/groovy/transitive-dependencies")
+        sampleDirectory = file("src/samples/groovy/transitive-dependencies")
         description = "Demonstrate how transitive dependencies work with Groovy projects"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/groovy-basic-application") { into("application") }
@@ -712,7 +712,7 @@ samples {
         }
     }
     groovyComponentsWithSpockTests {
-        sampleDirectory = file("src/samples/next-gen/groovy/components-with-spock-tests")
+        sampleDirectory = file("src/samples/groovy/components-with-spock-tests")
         description = "Demonstrate how to test Groovy components using Spock framework"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/groovy-basic-application") { into("application") }
@@ -723,7 +723,7 @@ samples {
         }
     }
     groovyLibraryPublishing {
-        sampleDirectory = file("src/samples/next-gen/groovy/library-publishing")
+        sampleDirectory = file("src/samples/groovy/library-publishing")
         description = "Demonstrate how to publish a Groovy library to a binary repository"
         archiveContent.from installSourceFromTemplate(it) {
             from("$templateDir/groovy-list-library")
