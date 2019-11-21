@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import org.gradle.gradlebuild.test.integrationtests.IntegrationTest
 import org.gradle.gradlebuild.unittestandcompile.ModuleType
 
 plugins {
@@ -88,4 +89,9 @@ gradlebuildJava {
 
 classycle {
     excludePatterns.set(listOf("org/gradle/language/nativeplatform/internal/**"))
+}
+
+tasks.withType<IntegrationTest>().configureEach {
+    include("org/gradle/language/cpp/CppIncrementalBuildStaleOutputsIntegrationTest.class")
+    outputs.doNotCacheIf("Always run the test") { true }
 }
