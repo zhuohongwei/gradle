@@ -16,8 +16,8 @@
 package org.gradle.ide.visualstudio
 
 import org.gradle.ide.visualstudio.fixtures.AbstractVisualStudioIntegrationSpec
-import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
 import org.gradle.integtests.fixtures.Sample
+import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
 import org.gradle.test.fixtures.file.TestDirectoryProvider
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
@@ -55,6 +55,7 @@ class NativeIdeSamplesIntegrationTest extends AbstractVisualStudioIntegrationSpe
     @Requires(TestPrecondition.MSBUILD)
     @ToBeFixedForInstantExecution
     def "build generated visual studio solution"() {
+        println "Start building generated vs solution"
         useMsbuildTool()
 
         given:

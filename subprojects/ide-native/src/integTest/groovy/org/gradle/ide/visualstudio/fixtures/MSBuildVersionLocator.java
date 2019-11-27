@@ -40,10 +40,14 @@ public class MSBuildVersionLocator {
             vsVersion = VersionNumber.version(15);
         }
 
+        System.out.println("VS version: " + vsVersion);
+
         File vswhere = vswhereLocator.getVswhereInstall();
         if (vswhere == null) {
             throw new IllegalStateException("vswhere tool is required to be installed");
         }
+
+        System.out.println("VS where: " + vswhere);
 
         ExecOutput vsWhereOutput = new TestFile(vswhere).exec("-version", String.format("[%s.0,%s.0)", vsVersion.getMajor(), vsVersion.getMajor() + 1), "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-property", "installationPath");
         if (!vsWhereOutput.getError().trim().isEmpty()) {
@@ -51,14 +55,16 @@ public class MSBuildVersionLocator {
         }
 
         String location = vsWhereOutput.getOut().trim();
+        System.out.println("VS where output: " + location);
         TestFile msbuild;
         if (!location.isEmpty()) {
             msbuild = new TestFile(location).file("MSBuild/" + vsVersion.getMajor() + ".0/Bin/MSBuild.exe");
-        } else if (vsVersion.getMajor() == 11){
+        } else if (vsVersion.getMajor() == 11) {
             msbuild = new TestFile("C:/Windows/Microsoft.Net/Framework/v4.0.30319/MSBuild.exe");
         } else {
             msbuild = new TestFile("C:/program files (x86)/MSBuild/" + vsVersion.getMajor() + ".0/Bin/MSBuild.exe");
         }
+        System.out.println("msbuild: " + msbuild);
 
         // There is some value to the other ways to locate MSBuild (aka matching the MSBuild installation with the VS installation), this is a last chance to try and locate a usable MSBuild installation which will just try to get the latest available MSBuild. We can refine this later.
         if (!msbuild.exists()) {
@@ -69,6 +75,7 @@ public class MSBuildVersionLocator {
         if (!msbuild.exists()) {
             throw new IllegalStateException(String.format("This test requires MSBuild %s to be installed. Expected it to be installed at %s.", vsVersion.getMajor(), msbuild));
         }
+        System.out.println("msbuild: " + msbuild);
         return msbuild;
     }
 }

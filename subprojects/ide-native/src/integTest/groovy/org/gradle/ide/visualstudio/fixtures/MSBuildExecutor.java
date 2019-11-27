@@ -220,7 +220,9 @@ public class MSBuildExecutor {
     }
 
     private TestFile findMSBuild() {
-        return new TestFile(new MSBuildVersionLocator(VisualStudioLocatorTestFixture.getVswhereLocator()).getMSBuildInstall(toolChain));
+        File install = new MSBuildVersionLocator(VisualStudioLocatorTestFixture.getVswhereLocator()).getMSBuildInstall(toolChain);
+        System.out.println("MS Build install: " + install);
+        return new TestFile(install);
     }
 
     private static class ExecutionOutput {

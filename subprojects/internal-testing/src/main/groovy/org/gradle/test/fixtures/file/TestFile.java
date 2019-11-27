@@ -73,6 +73,8 @@ import static org.junit.Assume.assumeTrue;
 public class TestFile extends File {
     private boolean useNativeTools;
 
+
+
     public TestFile(File file, Object... path) {
         super(join(file, path).getAbsolutePath());
     }
