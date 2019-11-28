@@ -19,6 +19,7 @@ package org.gradle.internal.file;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.file.internal.FilePathUtil;
+import org.gradle.internal.os.OperatingSystem;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -110,6 +111,9 @@ public class DefaultFileHierarchySet {
                 absolutePath = "";
             } else if (absolutePath.endsWith(File.separator)) {
                 absolutePath = absolutePath.substring(0, absolutePath.length() - 1);
+            }
+            if (OperatingSystem.current().isWindows() && absolutePath.endsWith(":")) {
+                absolutePath = "";
             }
             return absolutePath;
         }

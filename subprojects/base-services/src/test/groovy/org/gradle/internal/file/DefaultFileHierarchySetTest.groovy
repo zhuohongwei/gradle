@@ -17,6 +17,8 @@
 package org.gradle.internal.file
 
 import org.gradle.test.fixtures.file.TestNameTestDirectoryProvider
+import org.gradle.util.Requires
+import org.gradle.util.TestPrecondition
 import org.junit.Rule
 import spock.lang.Specification
 
@@ -95,6 +97,13 @@ class DefaultFileHierarchySetTest extends Specification {
     def "creates from file system root files"() {
         expect:
         def set = DefaultFileHierarchySet.of(Arrays.asList(File.listRoots()))
+        set.contains(tmpDir.file("any"))
+    }
+
+    @Requires(TestPrecondition.WINDOWS)
+    def "can handle windows system root"() {
+        expect:
+        def set = DefaultFileHierarchySet.of((0..<26).collect { new File("${('A' + it) as char}:") })
         set.contains(tmpDir.file("any"))
     }
 
