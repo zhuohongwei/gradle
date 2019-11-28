@@ -23,7 +23,8 @@ import org.junit.Rule
 import spock.lang.Specification
 
 class DefaultFileHierarchySetTest extends Specification {
-    @Rule TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider()
+    @Rule
+    TestNameTestDirectoryProvider tmpDir = new TestNameTestDirectoryProvider()
 
     def "creates from a single file"() {
         def dir = tmpDir.createDir("dir")
@@ -103,7 +104,8 @@ class DefaultFileHierarchySetTest extends Specification {
     @Requires(TestPrecondition.WINDOWS)
     def "can handle windows system root"() {
         expect:
-        def set = DefaultFileHierarchySet.of((0..<26).collect { new File("${('A' + it) as char}:") })
+        // A:\ B:\ C:\ ... Z:\
+        def set = DefaultFileHierarchySet.of((0..<26).collect { new File("${(it + ('A' as char)) as char}:\\") })
         set.contains(tmpDir.file("any"))
     }
 
