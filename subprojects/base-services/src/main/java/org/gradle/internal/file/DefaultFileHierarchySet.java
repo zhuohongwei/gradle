@@ -115,6 +115,9 @@ public class DefaultFileHierarchySet {
             if (OperatingSystem.current().isWindows() && absolutePath.endsWith(":")) {
                 absolutePath = "";
             }
+            if (Boolean.getBoolean("DEBUG")) {
+                System.out.println("rootDir: " + rootDir + ", dir: " + absolutePath);
+            }
             return absolutePath;
         }
     }

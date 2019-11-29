@@ -105,8 +105,12 @@ class DefaultFileHierarchySetTest extends Specification {
     def "can handle windows system root"() {
         expect:
         // A:\ B:\ C:\ ... Z:\
+        System.setProperty("DEBUG", "true")
         def set = DefaultFileHierarchySet.of((0..<26).collect { new File("${(it + ('A' as char)) as char}:\\") })
         set.contains(tmpDir.file("any"))
+
+        cleanup:
+        System.setProperty("DEBUG", null)
     }
 
     def "can add dir to empty set"() {
