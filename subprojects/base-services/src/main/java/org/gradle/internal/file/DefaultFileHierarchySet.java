@@ -73,6 +73,13 @@ public class DefaultFileHierarchySet {
     private static class PrefixFileSet implements FileHierarchySet {
         private final Node rootNode;
 
+        @Override
+        public String toString() {
+            return "PrefixFileSet{" +
+                "rootNode=" + rootNode +
+                '}';
+        }
+
         PrefixFileSet(File rootDir) {
             String path = toPath(rootDir);
             this.rootNode = new Node(path);
@@ -122,9 +129,17 @@ public class DefaultFileHierarchySet {
         }
     }
 
-    private static class Node {
+    public static class Node {
         private final String prefix;
         private final List<Node> children;
+
+        @Override
+        public String toString() {
+            return "Node{" +
+                "prefix='" + prefix + '\'' +
+                ", children=" + children +
+                '}';
+        }
 
         Node(String prefix) {
             this.prefix = prefix;

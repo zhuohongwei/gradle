@@ -115,6 +115,16 @@ class DefaultFileHierarchySetTest extends Specification {
         System.setProperty("DEBUG", null)
     }
 
+    def testNode() {
+        setup:
+        DefaultFileHierarchySet.Node node = new DefaultFileHierarchySet.Node("")
+        node = node.plus("")
+        node.contains("/a/b", 0)
+
+        expect:
+        true
+    }
+
     def "can add dir to empty set"() {
         def empty = DefaultFileHierarchySet.of([])
         def dir1 = tmpDir.createDir("dir1")
