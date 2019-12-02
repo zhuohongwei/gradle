@@ -23,6 +23,9 @@ import org.gradle.test.fixtures.server.http.BlockingHttpServer
 import org.junit.Rule
 
 class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolutionTest {
+
+
+
     @Rule
     BlockingHttpServer server = new BlockingHttpServer()
 
@@ -40,7 +43,7 @@ class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolut
             buildFile << """
                 def usage = Attribute.of('usage', String)
                 def artifactType = Attribute.of('artifactType', String)
-    
+
                 allprojects {
                     dependencies {
                         attributesSchema {
@@ -60,21 +63,21 @@ class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolut
                     }
                     configurations {
                         compile
-                    }            
+                    }
                 }
-    
+
                 import org.gradle.api.artifacts.transform.TransformParameters
 
                 abstract class SynchronizedTransform implements TransformAction<TransformParameters.None> {
                     @InputArtifact
                     abstract Provider<FileSystemLocation> getInputArtifact()
-    
+
                     void transform(TransformOutputs outputs) {
                         def input = inputArtifact.get().asFile
                         ${server.callFromBuildUsingExpression("input.name")}
                         if (input.name.startsWith("bad")) {
                             throw new RuntimeException("Transform Failure: " + input.name)
-                        }        
+                        }
                         if (!input.exists()) {
                             throw new IllegalStateException("Input file \${input} does not exist")
                         }
@@ -136,7 +139,7 @@ class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolut
             include "lib1", "lib2", "lib3"
         """
 
-        buildFile << """            
+        buildFile << """
             configure([project(":lib1"), project(":lib2"), project(":lib3")]) {
 
                 task jar(type: Jar) {
@@ -377,7 +380,7 @@ class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolut
             include "lib", "app1", "app2"
         """
 
-        buildFile << """            
+        buildFile << """
             project(":lib") {
                 dependencies {
                     compile files("lib1.jar")
@@ -438,7 +441,7 @@ class ArtifactTransformParallelIntegrationTest extends AbstractDependencyResolut
                         }.artifacts
                         inputs.files(artifacts.artifactFiles)
 
-                        doLast { 
+                        doLast {
                             ${server.callFromBuildUsingExpression('"resolveStarted_" + project.name')}
                             assert artifacts.artifactFiles.collect { it.name } == [project.name + '.jar.txt']
                         }
