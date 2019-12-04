@@ -51,22 +51,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         Action action = Mock()
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
-        def connection = outgoingConnector.connect(acceptor.address).create(serializer)
-
-        then:
-        connection != null
-
-        cleanup:
-        acceptor?.stop()
-        connection?.stop()
-    }
-
-    def "client can connect to server using remote addresses"() {
-        Action action = Mock()
-
-        when:
-        def acceptor = incomingConnector.accept(action, true)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(serializer)
 
         then:
@@ -81,7 +66,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         Action action = Mock()
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(serializer)
         thread.blockUntil.connected
 
@@ -119,7 +104,7 @@ class TcpConnectorTest extends ConcurrentSpec {
 
     def "client cannot connect after server stopped"() {
         when:
-        def acceptor = incomingConnector.accept(Mock(Action), false)
+        def acceptor = incomingConnector.accept(Mock(Action))
         acceptor.stop()
         outgoingConnector.connect(acceptor.address)
 
@@ -138,7 +123,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         }
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(serializer)
         def result = connection.receive()
 
@@ -159,7 +144,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         }
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         async {
             def connection = outgoingConnector.connect(acceptor.address).create(serializer)
             connection.stop()
@@ -186,7 +171,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         }
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(serializer)
         thread.blockUntil.connected
         operation.stop {
@@ -211,7 +196,7 @@ class TcpConnectorTest extends ConcurrentSpec {
             connection.dispatch("bye")
             connection.stop()
             instant.closed
-        } as Action, false)
+        } as Action)
 
         def connection = outgoingConnector.connect(acceptor.address).create(serializer)
         thread.blockUntil.closed
@@ -234,14 +219,14 @@ class TcpConnectorTest extends ConcurrentSpec {
             def connection = completion.create(Serializers.stateful(incomingSerializer))
             connection.dispatch("string")
             connection.stop()
-        } as Action
+        } as Action<ConnectCompletion>
         def outgoingSerializer = { Decoder decoder ->
             decoder.readInt()
             return decoder.readString()
         } as Serializer
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(Serializers.stateful(outgoingSerializer))
         def result = connection.receive()
 
@@ -262,13 +247,13 @@ class TcpConnectorTest extends ConcurrentSpec {
             def connection = completion.create(serializer)
             connection.dispatch("string")
             connection.stop()
-        } as Action
+        } as Action<ConnectCompletion>
         outgoingSerializer.read(_) >> { Decoder decoder ->
             throw failure
         }
 
         when:
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def connection = outgoingConnector.connect(acceptor.address).create(Serializers.stateful(outgoingSerializer))
         connection.receive()
 
@@ -307,7 +292,7 @@ class TcpConnectorTest extends ConcurrentSpec {
         given:
         def action = Mock(Action)
         def socketChannel = SocketChannel.open()
-        def acceptor = incomingConnector.accept(action, false)
+        def acceptor = incomingConnector.accept(action)
         def communicationAddress = addressFactory.getLocalBindingAddress()
         def bindAnyPort = new InetSocketAddress(communicationAddress, 0)
         def connectAddress = new InetSocketAddress(communicationAddress, acceptor.address.port)

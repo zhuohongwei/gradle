@@ -51,7 +51,7 @@ public class TcpIncomingConnector implements IncomingConnector {
     }
 
     @Override
-    public ConnectionAcceptor accept(Action<ConnectCompletion> action, boolean allowRemote) {
+    public ConnectionAcceptor accept(Action<ConnectCompletion> action) {
         final ServerSocketChannel serverSocket;
         int localPort;
         try {
@@ -67,8 +67,8 @@ public class TcpIncomingConnector implements IncomingConnector {
         final Address address = new MultiChoiceAddress(id, localPort, addresses);
         LOGGER.debug("Listening on {}.", address);
 
-        final ManagedExecutor executor = executorFactory.create("Incoming " + (allowRemote ? "remote" : "local")+ " TCP Connector on port " + localPort);
-        executor.execute(new Receiver(serverSocket, action, allowRemote));
+        final ManagedExecutor executor = executorFactory.create("Incoming local TCP Connector on port " + localPort);
+        executor.execute(new Receiver(serverSocket, action));
 
         return new ConnectionAcceptor() {
             @Override
@@ -92,12 +92,10 @@ public class TcpIncomingConnector implements IncomingConnector {
     private class Receiver implements Runnable {
         private final ServerSocketChannel serverSocket;
         private final Action<ConnectCompletion> action;
-        private final boolean allowRemote;
 
-        public Receiver(ServerSocketChannel serverSocket, Action<ConnectCompletion> action, boolean allowRemote) {
+        public Receiver(ServerSocketChannel serverSocket, Action<ConnectCompletion> action) {
             this.serverSocket = serverSocket;
             this.action = action;
-            this.allowRemote = allowRemote;
         }
 
         @Override
@@ -108,7 +106,7 @@ public class TcpIncomingConnector implements IncomingConnector {
                         final SocketChannel socket = serverSocket.accept();
                         InetSocketAddress remoteSocketAddress = (InetSocketAddress) socket.socket().getRemoteSocketAddress();
                         InetAddress remoteInetAddress = remoteSocketAddress.getAddress();
-                        if (!allowRemote && !addressFactory.isCommunicationAddress(remoteInetAddress)) {
+                        if (!addressFactory.isCommunicationAddress(remoteInetAddress)) {
                             LOGGER.error("Cannot accept connection from remote address {}.", remoteInetAddress);
                             socket.close();
                             continue;
