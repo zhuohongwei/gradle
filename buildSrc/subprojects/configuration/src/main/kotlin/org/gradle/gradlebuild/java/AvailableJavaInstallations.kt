@@ -2,8 +2,8 @@ package org.gradle.gradlebuild.java
 
 import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion
-import org.gradle.api.services.BuildService
-import org.gradle.api.services.BuildServiceParameters
+//import org.gradle.api.services.BuildService
+//import org.gradle.api.services.BuildServiceParameters
 import org.gradle.internal.concurrent.CompositeStoppable
 import org.gradle.internal.jvm.JavaInfo
 import org.gradle.internal.jvm.Jvm
@@ -86,12 +86,12 @@ private
 const val productionJdkName = "AdoptOpenJDK 11"
 
 
-interface AvailableJavaInstallationsParameters : BuildServiceParameters {
-    var testJavaProperty: String?
-}
+//interface AvailableJavaInstallationsParameters : BuildServiceParameters {
+//    var testJavaProperty: String?
+//}
 
 
-abstract class AvailableJavaInstallations : BuildService<AvailableJavaInstallationsParameters>, AutoCloseable {
+class AvailableJavaInstallations : AutoCloseable {
     // Duplicate some of the Gradle services here because:
     // 1. no services are currently available for injection into build services and
     // 2. we probably don't want to expose these internal services anyway
@@ -105,7 +105,7 @@ abstract class AvailableJavaInstallations : BuildService<AvailableJavaInstallati
 
     val currentJavaInstallation: JavaInstallation = JavaInstallation(true, Jvm.current(), JavaVersion.current(), javaInstallationProbe)
     val javaInstallationForTest by lazy {
-        determineJavaInstallation(testJavaHomePropertyName, parameters.testJavaProperty)
+        determineJavaInstallation(testJavaHomePropertyName, null)
     }
     val javaInstallationForCompilation by lazy {
         determineJavaInstallationForCompilation()
