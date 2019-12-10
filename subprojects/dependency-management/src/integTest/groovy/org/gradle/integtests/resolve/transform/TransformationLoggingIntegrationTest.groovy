@@ -19,6 +19,7 @@ package org.gradle.integtests.resolve.transform
 import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
 import org.gradle.integtests.fixtures.console.AbstractConsoleGroupedTaskFunctionalTest
+import org.gradle.test.fixtures.ConcurrentTestUtil
 import org.gradle.test.fixtures.server.http.BlockingHttpServer
 import org.junit.Rule
 import spock.lang.Unroll
@@ -182,13 +183,12 @@ class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFun
         // Build scan plugin filters artifact transform logging by the name of the progress display name
         // since that is the only way it currently can distinguish transforms.
         // When it has a better way, then this test can be removed.
-
         consoleType = ConsoleOutput.Rich
         server.start()
         buildFile << """
             allprojects {
                 dependencies {
-                    registerTransform(RedMultiplier) {
+                    registerTransform(Red) {
                         from.attribute(artifactType, "jar")
                         to.attribute(artifactType, "red")
                     }
@@ -206,11 +206,12 @@ class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFun
                 }
             }
 
-            abstract class RedMultiplier extends Multiplier {
-                RedMultiplier() {
+            // NOTE: This is named "Red" so that the status message fits on one line
+            abstract class Red extends Multiplier {
+                Red() {
                     super("red")
                 }
-                
+
                 @Override
                 void transform(TransformOutputs outputs) {
                     ${server.callFromBuildUsingExpression("inputArtifact.get().asFile.name")}
@@ -220,14 +221,17 @@ class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFun
         """
 
         when:
-        def block = server.expectConcurrentAndBlock(2, "lib1.jar", "lib2.jar")
+        def block = server.expectConcurrentAndBlock("lib1.jar", "lib2.jar")
         def build = executer.withTasks(":util:resolveRed").start()
-        block.waitForAllPendingCalls()
         then:
-        assertHasWorkInProgress(build, "> Transforming artifact")
-        cleanup:
-        block?.releaseAll()
-        build?.waitForFinish()
+        block.waitForAllPendingCalls()
+        ConcurrentTestUtil.poll {
+            assertHasWorkInProgress(build, "> Transforming artifact lib1.jar (project :lib) with Red > Red lib1.jar")
+            assertHasWorkInProgress(build, "> Transforming artifact lib2.jar (project :lib) with Red > Red lib2.jar")
+        }
+        block.releaseAll()
+        build.waitForFinish()
+        server.stop()
     }
 
     @ToBeFixedForInstantExecution
