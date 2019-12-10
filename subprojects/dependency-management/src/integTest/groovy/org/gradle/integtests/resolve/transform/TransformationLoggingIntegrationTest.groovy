@@ -19,12 +19,17 @@ package org.gradle.integtests.resolve.transform
 import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
 import org.gradle.integtests.fixtures.console.AbstractConsoleGroupedTaskFunctionalTest
+import org.gradle.test.fixtures.server.http.BlockingHttpServer
+import org.junit.Rule
 import spock.lang.Unroll
 
 class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFunctionalTest {
     ConsoleOutput consoleType
 
     private static final List<ConsoleOutput> TESTED_CONSOLE_TYPES = [ConsoleOutput.Plain, ConsoleOutput.Verbose, ConsoleOutput.Rich, ConsoleOutput.Auto]
+
+    @Rule
+    BlockingHttpServer server
 
     def setup() {
         settingsFile << """
@@ -179,6 +184,7 @@ class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFun
         // When it has a better way, then this test can be removed.
 
         consoleType = ConsoleOutput.Rich
+        server.start()
         buildFile << """
             allprojects {
                 dependencies {
@@ -207,19 +213,21 @@ class TransformationLoggingIntegrationTest extends AbstractConsoleGroupedTaskFun
                 
                 @Override
                 void transform(TransformOutputs outputs) {
-                    // BlockingHttpServer seems to be too verbose, so blocking here causes
-                    // the progress message to disappear somehow.
-                    // Thread.sleep seems to work just fine.
-                    Thread.sleep(200)
+                    ${server.callFromBuildUsingExpression("inputArtifact.get().asFile.name")}
                     super.transform(outputs)
                 }
             }
         """
 
         when:
-        run ":util:resolveRed"
+        def block = server.expectConcurrentAndBlock(2, "lib1.jar", "lib2.jar")
+        def build = executer.withTasks(":util:resolveRed").start()
+        block.waitForAllPendingCalls()
         then:
-        output.contains("> Transforming artifact ")
+        assertHasWorkInProgress(build, "> Transforming artifact")
+        cleanup:
+        block?.releaseAll()
+        build?.waitForFinish()
     }
 
     @ToBeFixedForInstantExecution
