@@ -232,9 +232,7 @@ public class GradleUserManualPlugin implements Plugin<Project> {
             task.sources(new Closure(null) {
                 public Object doCall(Object ignore) {
                     ((PatternSet)this.getDelegate()).include("**/*.adoc");
-                    ((PatternSet)this.getDelegate()).exclude("javaProject*Layout.adoc");
                     ((PatternSet)this.getDelegate()).exclude("userguide_single.adoc");
-                    ((PatternSet)this.getDelegate()).exclude("snippets/**/*.adoc");
                     return null;
                 }
             });

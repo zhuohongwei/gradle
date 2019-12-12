@@ -164,11 +164,11 @@ image::javaPluginTasks.png[]
 The Java plugin assumes the project layout shown below. None of these directories need to exist or have anything in them. The Java plugin will compile whatever it finds, and handles anything which is missing.
 
 [[javalayout]]
-include::javaProjectMainLayout.adoc[]
+include::_javaProjectMainLayout.adoc[]
 
-include::javaProjectTestLayout.adoc[]
+include::_javaProjectTestLayout.adoc[]
 
-include::javaProjectGenericLayout.adoc[]
+include::_javaProjectGenericLayout.adoc[]
 
 [[sec:java_convention_properties]]
 
