@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import accessors.base
 import org.gradle.build.BuildReceipt
 import org.gradle.build.Install
 import org.gradle.gradlebuild.ProjectGroups.implementationPluginProjects
@@ -21,6 +22,7 @@ import org.gradle.gradlebuild.ProjectGroups.javaProjects
 import org.gradle.gradlebuild.ProjectGroups.kotlinJsProjects
 import org.gradle.gradlebuild.ProjectGroups.pluginProjects
 import org.gradle.gradlebuild.ProjectGroups.publicJavaProjects
+import org.gradle.gradlebuild.ProjectGroups.publicProjects
 import org.gradle.gradlebuild.UpdateBranchStatus
 import org.gradle.gradlebuild.buildquality.incubation.IncubatingApiAggregateReportTask
 import org.gradle.gradlebuild.buildquality.incubation.IncubatingApiReportTask
@@ -30,7 +32,7 @@ plugins {
     gradlebuild.`build-types`
     gradlebuild.`ci-reporting`
     gradlebuild.security
-    id("org.gradle.ci.tag-single-build") version("0.74")
+    id("org.gradle.ci.tag-single-build") version ("0.74")
 }
 
 defaultTasks("assemble")
@@ -214,6 +216,40 @@ subprojects {
         }
     }
 
+    if (project in publicProjects) {
+        apply(plugin = "maven-publish")
+
+        configure<JavaPluginExtension> {
+            withSourcesJar()
+        }
+
+        configure<PublishingExtension> {
+            publications {
+                create<MavenPublication>("gradlePublic") {
+                    artifactId = base.archivesBaseName
+                    from(components["java"])
+                }
+            }
+
+            repositories {
+                maven {
+                    name = "my-local"
+                    url = uri("file://tmp/repo")
+                }
+                /*maven {
+                    credentials {
+                        username = "joe"
+                        password = "secret"
+                    }
+                    val releasesRepoUrl = uri("https://repo.gradle.org/gradle/libs-releases")
+                    val snapshotsRepoUrl = uri("https://repo.gradle.org/gradle/libs-snapshots")
+                    url = if (project.hasProperty("rcNumber") || project.hasProperty("finalRelease")) snapshotsRepoUrl else releasesRepoUrl
+                }*/
+            }
+        }
+
+    }
+
     apply(from = "$rootDir/gradle/shared-with-buildSrc/code-quality-configuration.gradle.kts")
 
     if (project !in kotlinJsProjects) {
@@ -383,12 +419,12 @@ tasks.register<Install>("installAll") {
 tasks.register<UpdateBranchStatus>("updateBranchStatus")
 
 fun distributionImage(named: String) =
-        project(":distributions").property(named) as CopySpec
+    project(":distributions").property(named) as CopySpec
 
 val allIncubationReports = tasks.register<IncubatingApiAggregateReportTask>("allIncubationReports") {
     val allReports = collectAllIncubationReports()
     dependsOn(allReports)
-    reports = allReports.associateBy({ it.title.get()}) { it.textReportFile.asFile.get() }
+    reports = allReports.associateBy({ it.title.get() }) { it.textReportFile.asFile.get() }
 }
 tasks.register<Zip>("allIncubationReportsZip") {
     destinationDir = file("$buildDir/reports/incubation")

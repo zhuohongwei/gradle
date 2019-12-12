@@ -131,6 +131,7 @@ include("kotlinDslIntegTests")
 include("workerProcesses")
 include("pineapple")
 include("samples")
+include("api")
 
 val upperCaseLetters = "\\p{Upper}".toRegex()
 
