@@ -18,13 +18,11 @@ package org.gradle.api.tasks;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.Action;
-import org.gradle.api.Incubating;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.jvm.inspection.JvmVersionDetector;
 import org.gradle.process.CommandLineArgumentProvider;
@@ -101,13 +99,11 @@ import java.util.Map;
  * }
  * </pre>
  */
-public class JavaExec extends ConventionTask implements JavaExecSpec {
+public abstract class JavaExec extends ConventionTask implements JavaExecSpec {
     private final JavaExecAction javaExecHandleBuilder;
-    private final Property<ExecResult> execResult;
 
     public JavaExec() {
-        javaExecHandleBuilder = getDslExecActionFactory().newDecoratedJavaExecAction();
-        execResult = getObjectFactory().property(ExecResult.class);
+        this.javaExecHandleBuilder = getDslExecActionFactory().newDecoratedJavaExecAction();
     }
 
     @Inject
@@ -129,7 +125,7 @@ public class JavaExec extends ConventionTask implements JavaExecSpec {
     public void exec() {
         setMain(getMain()); // make convention mapping work (at least for 'main'...
         setJvmArgs(getJvmArgs()); // ...and for 'jvmArgs')
-        execResult.set(javaExecHandleBuilder.execute());
+        getExecutionResult().value(javaExecHandleBuilder.execute()).disallowChanges();
     }
 
     /**
@@ -693,8 +689,5 @@ public class JavaExec extends ConventionTask implements JavaExecSpec {
      * @since 6.1
      */
     @Internal
-    @Incubating
-    public Provider<ExecResult> getExecutionResult() {
-        return execResult;
-    }
+    public abstract Property<ExecResult> getExecutionResult();
 }

@@ -15,11 +15,8 @@
  */
 package org.gradle.api.tasks;
 
-import org.gradle.api.Incubating;
 import org.gradle.api.internal.ConventionTask;
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecResult;
 import org.gradle.process.ExecSpec;
@@ -43,18 +40,11 @@ import java.util.Map;
  */
 public abstract class AbstractExecTask<T extends AbstractExecTask> extends ConventionTask implements ExecSpec {
     private final Class<T> taskType;
-    private final Property<ExecResult> execResult;
     private ExecAction execAction;
 
     public AbstractExecTask(Class<T> taskType) {
-        execAction = getExecActionFactory().newExecAction();
-        execResult = getObjectFactory().property(ExecResult.class);
+        this.execAction = getExecActionFactory().newExecAction();
         this.taskType = taskType;
-    }
-
-    @Inject
-    protected ObjectFactory getObjectFactory() {
-        throw new UnsupportedOperationException();
     }
 
     @Inject
@@ -64,7 +54,7 @@ public abstract class AbstractExecTask<T extends AbstractExecTask> extends Conve
 
     @TaskAction
     protected void exec() {
-        execResult.set(execAction.execute());
+        getExecutionResult().value(execAction.execute()).disallowChanges();
     }
 
     /**
@@ -375,7 +365,7 @@ public abstract class AbstractExecTask<T extends AbstractExecTask> extends Conve
     @Deprecated
     public ExecResult getExecResult() {
         DeprecationLogger.nagUserOfReplacedMethod("AbstractExecTask.getExecResult()", "AbstractExecTask.getExecutionResult()");
-        return execResult.getOrNull();
+        return getExecutionResult().getOrNull();
     }
 
     /**
@@ -385,8 +375,5 @@ public abstract class AbstractExecTask<T extends AbstractExecTask> extends Conve
      * @since 6.1
      */
     @Internal
-    @Incubating
-    public Provider<ExecResult> getExecutionResult() {
-        return execResult;
-    }
+    public abstract Property<ExecResult> getExecutionResult();
 }
