@@ -26,6 +26,8 @@ object Workarounds {
 
     private
     val ignoredBeanFields = listOf(
+        // Protobuf: ignore Closure captured Dependency field for now
+        "dep" to "com.google.protobuf.gradle.ToolsLocator${'$'}_registerDependencyWithTasks_closure2",
         // Ignore a lambda field for now
         "mFolderFilter" to "com.android.ide.common.resources.DataSet"
     )
