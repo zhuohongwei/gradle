@@ -21,6 +21,7 @@ plugins {
 }
 
 dependencies {
+    // TODO maybe add groovy-all to the dependency list, otherwise Closure and friends won't be available for the consumer 
     implementation(project(":core"))
     implementation(project(":workerProcesses"))
     implementation(project(":workers"))

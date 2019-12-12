@@ -32,7 +32,7 @@ plugins {
     gradlebuild.`build-types`
     gradlebuild.`ci-reporting`
     gradlebuild.security
-    id("org.gradle.ci.tag-single-build") version ("0.74")
+    id("org.gradle.ci.tag-single-build") version("0.74")
 }
 
 defaultTasks("assemble")
@@ -231,11 +231,14 @@ subprojects {
                 }
             }
 
+            // TODO the dependency resolution fails for the `org.gradle:gradle-api` dependency when gradleMetadata() is not enabled for the  consumer projet's repository declaration
             repositories {
+                // TODO use libs and libs-releases repository for publishing
                 maven {
                     name = "my-local"
                     url = uri("file://tmp/repo")
                 }
+
                 /*maven {
                     credentials {
                         username = "joe"

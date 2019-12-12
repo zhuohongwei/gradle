@@ -21,6 +21,8 @@ import org.gradle.kotlin.dsl.*
 import java.io.File
 
 
+// TODO remove legacy publishing from the codebase
+// TODO verify that grade/gradle and gradle/publish is correct when this PR gets merged
 open class GeneratePom : DefaultTask() {
     @OutputFile
     val pomFile = File(temporaryDir, "pom.xml")
