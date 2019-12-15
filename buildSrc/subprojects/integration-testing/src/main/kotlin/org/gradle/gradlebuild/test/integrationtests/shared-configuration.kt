@@ -85,7 +85,7 @@ internal
 fun Project.createTestTask(name: String, executer: String, sourceSet: SourceSet, testType: TestType, extraConfig: Action<IntegrationTest>): TaskProvider<IntegrationTest> {
     println("fuck2")
 
-    return tasks.register(name, IntegrationTest::class) {
+    tasks.register(name, IntegrationTest::class) {
         println("fuck1")
         BuildBucketProvider.getInstance(project).configureTest(this, sourceSet, testType)
         description = "Runs ${testType.prefix} with $executer executer"
