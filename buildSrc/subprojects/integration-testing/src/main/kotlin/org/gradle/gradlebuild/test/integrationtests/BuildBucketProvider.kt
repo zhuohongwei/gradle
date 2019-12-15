@@ -33,29 +33,26 @@ interface BuildBucketProvider {
         var instance: BuildBucketProvider? = null
 
         fun getInstance(project: Project): BuildBucketProvider {
-            if (instance == null) {
-                println("include: " + project.stringPropertyOrEmpty("includeTestClasses"))
-                println("exclude: " + project.stringPropertyOrEmpty("excludeTestClasses"))
-                instance = when {
-                    project.stringPropertyOrEmpty("includeTestClasses").isNotBlank() -> {
-                        val content = project.rootProject.buildDir.resolve("include-test-classes.properties").readText()
-                        println("Tests to be included:\n$content")
-                        IncludeTestClassProvider(readTestClasses(content))
-                    }
-                    project.stringPropertyOrEmpty("excludeTestClasses").isNotBlank() -> {
-                        val content = project.rootProject.buildDir.resolve("exclude-test-classes.properties").readText()
-                        println("Tests to be excluded:\n$content")
-                        ExcludeTestClassProvider(readTestClasses(content))
-                    }
-                    project.stringPropertyOrEmpty("onlyTestGradleMajorVersion").isNotBlank() -> {
-                        CrossVersionBucketProvider(project.stringPropertyOrEmpty("onlyTestGradleMajorVersion"))
-                    }
-                    else -> {
-                        NoOpTestClassProvider()
-                    }
+            println("include: " + project.stringPropertyOrEmpty("includeTestClasses"))
+            println("exclude: " + project.stringPropertyOrEmpty("excludeTestClasses"))
+            instance = when {
+                project.stringPropertyOrEmpty("includeTestClasses").isNotBlank() -> {
+                    val content = project.rootProject.buildDir.resolve("include-test-classes.properties").readText()
+                    println("Tests to be included:\n$content")
+                    IncludeTestClassProvider(readTestClasses(content))
+                }
+                project.stringPropertyOrEmpty("excludeTestClasses").isNotBlank() -> {
+                    val content = project.rootProject.buildDir.resolve("exclude-test-classes.properties").readText()
+                    println("Tests to be excluded:\n$content")
+                    ExcludeTestClassProvider(readTestClasses(content))
+                }
+                project.stringPropertyOrEmpty("onlyTestGradleMajorVersion").isNotBlank() -> {
+                    CrossVersionBucketProvider(project.stringPropertyOrEmpty("onlyTestGradleMajorVersion"))
+                }
+                else -> {
+                    NoOpTestClassProvider()
                 }
             }
-            println("fuck: " + instance!!)
 
             return instance!!
         }

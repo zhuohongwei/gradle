@@ -59,7 +59,6 @@ fun Project.createTasks(sourceSet: SourceSet, testType: TestType) {
     // For all of the other executers, add an executer specific task
     testType.executers.forEach { executer ->
         val taskName = "$executer${prefix.capitalize()}Test"
-        println("fuck3")
         createTestTask(taskName, executer, sourceSet, testType, Action {
             if (testType == TestType.CROSSVERSION) {
                 // the main crossVersion test tasks always only check the latest version,
@@ -83,10 +82,8 @@ fun Project.createTasks(sourceSet: SourceSet, testType: TestType) {
 
 internal
 fun Project.createTestTask(name: String, executer: String, sourceSet: SourceSet, testType: TestType, extraConfig: Action<IntegrationTest>): TaskProvider<IntegrationTest> {
-    println("fuck2")
 
     tasks.register(name, IntegrationTest::class) {
-        println("fuck1")
         BuildBucketProvider.getInstance(project).configureTest(this, sourceSet, testType)
         description = "Runs ${testType.prefix} with $executer executer"
         systemProperties["org.gradle.integtest.executer"] = executer
