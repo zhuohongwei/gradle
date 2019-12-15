@@ -34,6 +34,8 @@ interface BuildBucketProvider {
 
         fun getInstance(project: Project): BuildBucketProvider {
             if (instance == null) {
+                println("include: " + project.stringPropertyOrEmpty("includeTestClasses"))
+                println("exclude: " + project.stringPropertyOrEmpty("excludeTestClasses"))
                 instance = when {
                     project.stringPropertyOrEmpty("includeTestClasses").isNotBlank() -> {
                         val content = project.rootProject.buildDir.resolve("include-test-classes.properties").readText()
