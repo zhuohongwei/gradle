@@ -23,10 +23,11 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.options.Option;
+import org.gradle.api.internal.project.ProjectStateRegistry;
 import org.gradle.api.reporting.dependents.internal.TextDependentComponentsReportRenderer;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutputFactory;
 import org.gradle.model.internal.registry.ModelRegistry;
@@ -124,31 +125,32 @@ public class DependentComponentsReport extends DefaultTask {
         throw new UnsupportedOperationException();
     }
 
+    @Inject
+    protected ProjectStateRegistry getProjectStateRegistry() {
+        throw new UnsupportedOperationException();
+    }
+
     @TaskAction
     public void report() {
-         // Output reports per execution, not mixed.
-         // Cross-project ModelRegistry operations do not happen concurrently.
-        synchronized (DependentComponentsReport.class) {
-            Project project = getProject();
-            ModelRegistry modelRegistry = getModelRegistry();
-            DependentBinariesResolver dependentBinariesResolver = modelRegistry.find("dependentBinariesResolver", DependentBinariesResolver.class);
+        Project project = getProject();
+        ModelRegistry modelRegistry = getModelRegistry();
+        DependentBinariesResolver dependentBinariesResolver = modelRegistry.find("dependentBinariesResolver", DependentBinariesResolver.class);
 
-            StyledTextOutput textOutput = getTextOutputFactory().create(DependentComponentsReport.class);
-            TextDependentComponentsReportRenderer reportRenderer = new TextDependentComponentsReportRenderer(dependentBinariesResolver, showNonBuildable, showTestSuites);
+        StyledTextOutput textOutput = getTextOutputFactory().create(DependentComponentsReport.class);
+        TextDependentComponentsReportRenderer reportRenderer = new TextDependentComponentsReportRenderer(dependentBinariesResolver, showNonBuildable, showTestSuites);
 
-            reportRenderer.setOutput(textOutput);
-            reportRenderer.startProject(project);
+        reportRenderer.setOutput(textOutput);
+        reportRenderer.startProject(project);
 
-            Set<ComponentSpec> allComponents = getAllComponents(modelRegistry);
-            if (showTestSuites) {
-                allComponents.addAll(getAllTestSuites(modelRegistry));
-            }
-            reportRenderer.renderComponents(getReportedComponents(allComponents));
-            reportRenderer.renderLegend();
-
-            reportRenderer.completeProject(project);
-            reportRenderer.complete();
+        Set<ComponentSpec> allComponents = getAllComponents(modelRegistry);
+        if (showTestSuites) {
+            allComponents.addAll(getAllTestSuites(modelRegistry));
         }
+        reportRenderer.renderComponents(getReportedComponents(allComponents));
+        reportRenderer.renderLegend();
+
+        reportRenderer.completeProject(project);
+        reportRenderer.complete();
     }
 
     private Set<ComponentSpec> getReportedComponents(Set<ComponentSpec> allComponents) {

@@ -34,11 +34,12 @@ public class DefaultProjectModelResolver implements ProjectModelResolver {
         if (projectInternal == null) {
             throw new UnknownProjectException("Project with path '" + path + "' not found.");
         }
-
-        // TODO This is a brain-dead way to ensure that the reference project's model is ready to access
-        projectInternal.prepareForRuleBasedPlugins();
-        projectInternal.evaluate();
-        projectInternal.getTasks().discoverTasks();
-        return projectInternal.getModelRegistry();
+        return projectInternal.getMutationState().withMutableState(() -> {
+            // TODO This is a brain-dead way to ensure that the reference project's model is ready to access
+            projectInternal.prepareForRuleBasedPlugins();
+            projectInternal.evaluate();
+            projectInternal.getTasks().discoverTasks();
+            return projectInternal.getModelRegistry();
+        });
     }
 }
