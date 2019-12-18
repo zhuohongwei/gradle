@@ -78,6 +78,7 @@ dependencies {
     crossVersionTestRuntimeOnly(project(":apiMetadata"))
     crossVersionTestRuntimeOnly(project(":runtimeApiInfo"))
     crossVersionTestRuntimeOnly(project(":testingJunitPlatform"))
+    crossVersionTestRuntimeOnly(project(":toolingApiBuilders"))
     crossVersionTestRuntimeOnly(testLibrary("cglib")) {
         because("BuildFinishedCrossVersionSpec classpath inference requires cglib enhancer")
     }
