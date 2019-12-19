@@ -117,10 +117,10 @@ object KotlinDslScriptsModelBuilder : ToolingModelBuilder {
         val parameter = project.parameterFromRequest()
         try {
             return buildFor(parameter, project).also {
-                println("$parameter => $it - took ${timer.elapsed}")
+                project.logger.info("$parameter => $it - took ${timer.elapsed}")
             }
         } catch (ex: Exception) {
-            println("$parameter => $ex - took ${timer.elapsed}")
+            project.logger.error("$parameter => $ex - took ${timer.elapsed}")
             throw ex
         }
     }

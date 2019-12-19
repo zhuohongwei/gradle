@@ -34,11 +34,14 @@ dependencies {
     implementation(project(":coreApi"))
     implementation(project(":modelCore"))
     implementation(project(":core"))
+    implementation(project(":logging"))
     implementation(project(":resources"))
     implementation(project(":platformBase"))
     implementation(project(":platformJvm"))
     implementation(project(":plugins"))
     implementation(project(":toolingApi"))
+
+    implementation(library("slf4j_api"))
 
     testImplementation(project(":kotlinDslTestFixtures"))
     integTestImplementation(project(":kotlinDslTestFixtures"))
@@ -47,7 +50,6 @@ dependencies {
     integTestRuntimeOnly(project(":runtimeApiInfo"))
 
     crossVersionTestImplementation(project(":persistentCache"))
-    crossVersionTestImplementation(library("slf4j_api"))
     crossVersionTestImplementation(library("guava"))
     crossVersionTestImplementation(library("ant"))
     crossVersionTestRuntimeOnly(project(":pluginDevelopment"))

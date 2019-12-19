@@ -115,13 +115,13 @@ object KotlinBuildScriptModelBuilder : ToolingModelBuilder {
         val parameter = requestParameterOf(modelRequestProject)
         try {
             return kotlinBuildScriptModelFor(modelRequestProject, parameter).also {
-                log("$parameter => $it")
+                modelRequestProject.logger.info("$parameter => $it")
             }
         } catch (e: Exception) {
-            log("$parameter => $e")
+            modelRequestProject.logger.error("$parameter => $e")
             throw e
         } finally {
-            log("MODEL built in ${timer.elapsed}.")
+            modelRequestProject.logger.info("MODEL built in ${timer.elapsed}.")
         }
     }
 
@@ -167,9 +167,6 @@ object KotlinBuildScriptModelBuilder : ToolingModelBuilder {
             (modelRequestProject.findProperty(KotlinBuildScriptModel.SCRIPT_GRADLE_PROPERTY_NAME) as? String)?.let(::canonicalFile),
             modelRequestProject.findProperty(KotlinDslModelsParameters.CORRELATION_ID_GRADLE_PROPERTY_NAME) as? String
         )
-
-    private
-    fun log(message: String) = println(message)
 }
 
 
