@@ -22,7 +22,7 @@ interface BuildCache {
 
 data class RemoteBuildCache(val url: String, val username: String = "%gradle.cache.remote.username%", val password: String = "%gradle.cache.remote.password%") : BuildCache {
     override fun gradleParameters(os: Os): List<String> {
-        return listOf("--build-cache",
+        return listOf("--no-build-cache",
                 os.escapeKeyValuePair("-Dgradle.cache.remote.url", url),
                 os.escapeKeyValuePair("-Dgradle.cache.remote.username", username),
                 os.escapeKeyValuePair("-Dgradle.cache.remote.password", password)
