@@ -178,6 +178,10 @@ public class DefaultProject extends AbstractPluginAware implements ProjectIntern
 
     }
 
+    public void doNothing3() {
+
+    }
+
     private Object group;
 
     private Object version;
