@@ -170,6 +170,10 @@ public class DefaultProject extends AbstractPluginAware implements ProjectIntern
 
     private final String name;
 
+    private void doNothing() {
+        //trigger rebuild
+    }
+
     private Object group;
 
     private Object version;
