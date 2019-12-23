@@ -12,7 +12,7 @@ object Project : Project({
     name = "Util"
 
     params {
-        password("teamcity.user.bot-gradle.token", "credentialsJSON:f7693dfa-ff3d-48a3-8309-9cd5a2770810", display = ParameterDisplay.HIDDEN)
+        password("teamcity.user.bot-gradle.token", "credentialsJSON:6b612db7-378d-4c16-adeb-f74543ff29ae", display = ParameterDisplay.HIDDEN)
     }
 
     features {
