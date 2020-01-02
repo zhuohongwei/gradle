@@ -73,6 +73,7 @@ dependencies {
     crossVersionTestRuntimeOnly(project(":kotlinDsl"))
     crossVersionTestRuntimeOnly(project(":kotlinDslProviderPlugins"))
     crossVersionTestRuntimeOnly(project(":kotlinDslToolingBuilders"))
+    crossVersionTestRuntimeOnly(project(":languageNative"))
     crossVersionTestRuntimeOnly(project(":ivy"))
     crossVersionTestRuntimeOnly(project(":maven"))
     crossVersionTestRuntimeOnly(project(":apiMetadata"))
