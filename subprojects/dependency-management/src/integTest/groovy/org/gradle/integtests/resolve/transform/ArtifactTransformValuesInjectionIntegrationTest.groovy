@@ -20,7 +20,11 @@ import com.google.common.reflect.TypeToken
 import org.gradle.api.artifacts.transform.InputArtifact
 import org.gradle.api.artifacts.transform.InputArtifactDependencies
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.file.ProjectLayout
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.tasks.Console
 import org.gradle.api.tasks.Destroys
@@ -35,7 +39,8 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.OutputFiles
 import org.gradle.api.tasks.options.OptionValues
 import org.gradle.integtests.fixtures.AbstractDependencyResolutionTest
-import org.gradle.integtests.fixtures.ToBeFixedForInstantExecution
+import org.gradle.internal.reflect.Instantiator
+import org.gradle.process.ExecOperations
 import spock.lang.Unroll
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -217,7 +222,88 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
         outputContains("result = [out-1.txt]")
     }
 
-    @ToBeFixedForInstantExecution
+    @Unroll
+    def "transform can receive Gradle provided service #serviceType via injection"() {
+        settingsFile << """
+            include 'a', 'b'
+        """
+        setupBuildWithColorTransform()
+        buildFile << """
+            project(':a') {
+                dependencies {
+                    implementation project(':b')
+                }
+            }
+
+            abstract class MakeGreen implements TransformAction<TransformParameters.None> {
+                private final ${serviceType} service
+
+                @Inject
+                MakeGreen(${serviceType} service) {
+                    this.service = service
+                }
+
+                void transform(TransformOutputs outputs) {
+                    assert service != null
+                    println("received service")
+                }
+            }
+        """
+
+        when:
+        run(":a:resolve")
+
+        then:
+        output.count("received service") == 1
+
+        where:
+        serviceType << [
+            ObjectFactory,
+            ProviderFactory,
+            FileSystemOperations,
+            ExecOperations,
+        ].collect { it.name }
+    }
+
+    @Unroll
+    def "transform cannot receive Gradle provided service #serviceType via injection"() {
+        settingsFile << """
+            include 'a', 'b'
+        """
+        setupBuildWithColorTransform()
+        buildFile << """
+            project(':a') {
+                dependencies {
+                    implementation project(':b')
+                }
+            }
+
+            abstract class MakeGreen implements TransformAction<TransformParameters.None> {
+                @Inject
+                abstract ${serviceType} getService()
+
+                void transform(TransformOutputs outputs) {
+                    service
+                    throw new RuntimeException()
+                }
+            }
+        """
+
+        when:
+        fails(":a:resolve")
+
+        then:
+        failure.assertHasDescription("Execution failed for task ':a:resolve'.")
+        failure.assertHasCause("Failed to transform b.jar (project :b) to match attributes {artifactType=jar, color=green}.")
+        failure.assertHasCause("No service of type interface ${serviceType} available.")
+
+        where:
+        serviceType << [
+            ProjectLayout, // not isolated
+            Instantiator, // internal
+        ].collect { it.name }
+    }
+
     def "transform parameters are validated for input output annotations"() {
         settingsFile << """
             include 'a', 'b'
@@ -345,10 +431,9 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
 
         then:
         failure.assertResolutionFailure(':a:implementation')
-        failure.assertHasCause("Cannot query parameters for artifact transform without parameters.")
+        failure.assertHasCause("Cannot query the parameters of an instance of TransformAction that takes no parameters.")
     }
 
-    @ToBeFixedForInstantExecution
     def "transform parameters type cannot use caching annotations"() {
         settingsFile << """
             include 'a', 'b', 'c'
@@ -391,7 +476,6 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
     }
 
     @Unroll
-    @ToBeFixedForInstantExecution
     def "transform parameters type cannot use annotation @#annotation.simpleName"() {
         settingsFile << """
             include 'a', 'b'
@@ -624,7 +708,6 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
     }
 
     @Unroll
-    @ToBeFixedForInstantExecution
     def "transform can receive dependencies via abstract getter of type #targetType"() {
         settingsFile << """
             include 'a', 'b', 'c'

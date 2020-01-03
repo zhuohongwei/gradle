@@ -68,7 +68,7 @@ abstract class AbstractSmokeTest extends Specification {
         static spotbugs = "3.0.0"
 
         // https://plugins.gradle.org/plugin/com.bmuschko.docker-java-application
-        static docker = "6.0.0"
+        static docker = "6.1.1"
 
         // https://plugins.gradle.org/plugin/com.bmuschko.tomcat
         static tomcat = "2.5"
@@ -82,7 +82,7 @@ abstract class AbstractSmokeTest extends Specification {
         // https://developer.android.com/studio/releases/build-tools
         static androidTools = "29.0.2"
         // https://developer.android.com/studio/releases/gradle-plugin
-        static androidGradle = Versions.of("3.4.2", "3.5.3", "3.6.0-beta05")
+        static androidGradle = Versions.of("3.4.2", "3.5.3", "3.6.0-rc01", "4.0.0-alpha06")
 
         // https://search.maven.org/search?q=g:org.jetbrains.kotlin%20AND%20a:kotlin-project&core=gav
         static kotlin = Versions.of('1.3.21', '1.3.31', '1.3.41', '1.3.50', '1.3.61')
@@ -112,8 +112,12 @@ abstract class AbstractSmokeTest extends Specification {
         static protobufPlugin = "0.8.10"
         static protobufTools = "3.11.1"
 
-        // https://plugins.gradle.org/plugin/io.freefair.aspectj
-        static aspectj = "4.1.6"
+        // https://plugins.gradle.org/plugin/org.gradle.test-retry
+        static testRetryPlugin = "1.0.0"
+
+        // https://plugins.gradle.org/plugin/com.jfrog.artifactory
+        static artifactoryPlugin = "4.12.0"
+        static artifactoryRepoOSSVersion = "6.16.0"
     }
 
     static class Versions implements Iterable<String> {

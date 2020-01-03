@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":baseServices"))
     implementation(project(":logging"))
     implementation(project(":fileCollections"))
+    implementation(project(":execution"))
     implementation(project(":processServices"))
     implementation(project(":coreApi"))
     implementation(project(":modelCore"))
@@ -26,6 +27,7 @@ dependencies {
     implementation(library("asm"))
 
     testImplementation(project(":native"))
+    testImplementation(project(":snapshots"))
     testImplementation(library("ant"))
     testImplementation(testFixtures(project(":core")))
     testImplementation(testFixtures(project(":diagnostics")))

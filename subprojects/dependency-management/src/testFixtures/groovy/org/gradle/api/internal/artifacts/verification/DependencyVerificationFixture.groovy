@@ -16,25 +16,32 @@
 
 package org.gradle.api.internal.artifacts.verification
 
+import com.google.common.io.Files
 import groovy.transform.CompileStatic
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
 import org.gradle.api.internal.artifacts.verification.model.ArtifactVerificationMetadata
 import org.gradle.api.internal.artifacts.verification.model.ChecksumKind
 import org.gradle.api.internal.artifacts.verification.model.ComponentVerificationMetadata
+import org.gradle.api.internal.artifacts.verification.model.IgnoredKey
 import org.gradle.api.internal.artifacts.verification.serializer.DependencyVerificationsXmlReader
 import org.gradle.api.internal.artifacts.verification.serializer.DependencyVerificationsXmlWriter
+import org.gradle.api.internal.artifacts.verification.verifier.DependencyVerifier
+import org.gradle.api.internal.artifacts.verification.verifier.DependencyVerifierBuilder
 import org.gradle.internal.component.external.model.DefaultModuleComponentArtifactIdentifier
 import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier
+import org.gradle.internal.component.external.model.ModuleComponentFileArtifactIdentifier
 import org.gradle.util.TextUtil
 
 @CompileStatic
 class DependencyVerificationFixture {
     private final File verificationFile
+    private final File dryRunVerificationFile
 
     private DependencyVerifier verifier
 
     DependencyVerificationFixture(File verificationFile) {
         this.verificationFile = verificationFile
+        this.dryRunVerificationFile = new File(verificationFile.parentFile, "${Files.getNameWithoutExtension(verificationFile.name)}.dryrun.xml")
     }
 
     void assertMetadataExists() {
@@ -59,12 +66,37 @@ class DependencyVerificationFixture {
         }
     }
 
+    void hasIgnoredKeys(Collection<String> ignoredKeys) {
+        withVerifier {
+            def actualIgnored = configuration.ignoredKeys
+            def expected = ignoredKeys as Set
+            assert actualIgnored == expected
+        }
+    }
+
+    void hasTrustedKeys(Collection<String> trustedKeys) {
+        withVerifier {
+            def actualIgnored = configuration.trustedKeys*.keyId as Set
+            def expected = trustedKeys as Set
+            assert actualIgnored == expected
+        }
+    }
+
     void hasNoModules() {
         hasModules([])
     }
 
     void assertXmlContents(String expected) {
         def actualContents = TextUtil.normaliseLineSeparators(verificationFile.text)
+        // remove namespace declaration for readability of tests
+        actualContents = actualContents.replaceAll("<verification-metadata .+>", "<verification-metadata>")
+        assert actualContents == expected
+    }
+
+    void assertDryRunXmlContents(String expected) {
+        def actualContents = TextUtil.normaliseLineSeparators(dryRunVerificationFile.text)
+        // remove namespace declaration for readability of tests
+        actualContents = actualContents.replaceAll("<verification-metadata .+>", "<verification-metadata>")
         assert actualContents == expected
     }
 
@@ -76,6 +108,12 @@ class DependencyVerificationFixture {
         action.delegate = verifier
         action.resolveStrategy = Closure.DELEGATE_FIRST
         action()
+    }
+
+    void replaceMetadataFile(@DelegatesTo(value = Builder, strategy = Closure.DELEGATE_FIRST) Closure config) {
+        assertMetadataExists()
+        verificationFile.delete()
+        createMetadataFile(config)
     }
 
     void createMetadataFile(@DelegatesTo(value = Builder, strategy = Closure.DELEGATE_FIRST) Closure config) {
@@ -101,6 +139,19 @@ class DependencyVerificationFixture {
             action.delegate = new ComponentVerification(md)
             action.resolveStrategy = Closure.DELEGATE_FIRST
             action()
+        }
+    }
+
+    void hasNoModule(String id) {
+        withVerifier {
+            def list = id.split(":")
+            def group = list[0]
+            def name = list[1]
+            def version = list.size() == 3 ? list[2] : "1.0"
+            def md = verificationMetadata.find {
+                it.componentId.group == group && it.componentId.module == name && it.componentId.version == version
+            }
+            assert md == null : "Didn't expect module $id to be present but it was"
         }
     }
 
@@ -167,6 +218,30 @@ class DependencyVerificationFixture {
     static class Builder {
         private final DependencyVerifierBuilder builder = new DependencyVerifierBuilder()
 
+        void noMetadataVerification() {
+            builder.verifyMetadata = false
+        }
+
+        void verifySignatures() {
+            builder.verifySignatures = true
+        }
+
+        void keyServer(String uri) {
+            builder.addKeyServer(new URI(uri))
+        }
+
+        void keyServer(URI uri) {
+            builder.addKeyServer(uri)
+        }
+
+        void trust(String group, String name = null, String version = null, String fileName = null, boolean regex = false) {
+            builder.addTrustedArtifact(group, name, version, fileName, regex)
+        }
+
+        void addGloballyIgnoredKey(String id, String reason = "for tests") {
+            builder.addIgnoredKey(new IgnoredKey(id, reason))
+        }
+
         void addChecksum(String id, String algo, String checksum, String type="jar", String ext="jar", String origin = null) {
             def parts = id.split(":")
             def group = parts[0]
@@ -185,6 +260,63 @@ class DependencyVerificationFixture {
                 ChecksumKind.valueOf(algo),
                 checksum,
                 origin
+            )
+        }
+
+        void addTrustedKey(String id, String key, String type="jar", String ext="jar") {
+            def parts = id.split(":")
+            def group = parts[0]
+            def name = parts[1]
+            def version = parts.size() == 3 ? parts[2] : "1.0"
+            builder.addTrustedKey(
+                new DefaultModuleComponentArtifactIdentifier(
+                    DefaultModuleComponentIdentifier.newId(
+                        DefaultModuleIdentifier.newId(group, name),
+                        version
+                    ),
+                    name,
+                    type,
+                    ext
+                ),
+                key
+            )
+        }
+
+        void addTrustedKeyByFileName(String id, String fileName, String key) {
+            def parts = id.split(":")
+            def group = parts[0]
+            def name = parts[1]
+            def version = parts.size() == 3 ? parts[2] : "1.0"
+            builder.addTrustedKey(
+                new ModuleComponentFileArtifactIdentifier(
+                    DefaultModuleComponentIdentifier.newId(
+                        DefaultModuleIdentifier.newId(group, name),
+                        version
+                    ),
+                    fileName
+                ),
+                key
+            )
+        }
+
+        void addGloballyTrustedKey(String keyId, String group = null, String name = null, String version = null, String fileName = null, boolean regex = false) {
+            builder.addTrustedKey(keyId, group, name, version, fileName, regex)
+        }
+
+        void addIgnoredKeyByFileName(String id, String fileName, String key, String reason = "for tests") {
+            def parts = id.split(":")
+            def group = parts[0]
+            def name = parts[1]
+            def version = parts.size() == 3 ? parts[2] : "1.0"
+            builder.addIgnoredKey(
+                new ModuleComponentFileArtifactIdentifier(
+                    DefaultModuleComponentIdentifier.newId(
+                        DefaultModuleIdentifier.newId(group, name),
+                        version
+                    ),
+                    fileName
+                ),
+                new IgnoredKey(key, reason)
             )
         }
 
